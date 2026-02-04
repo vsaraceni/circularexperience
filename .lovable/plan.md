@@ -1,146 +1,95 @@
 
-
-# Plano: Layout Circular para os 7 R's
+# Plano: Aumentar Area do Circulo dos 7 Rs
 
 ## Resumo
-Criar um layout circular para os 7 R's que transmita visualmente o conceito de circularidade, similar ao diagrama oficial do Movimento Circular. Os icones serao posicionados em circulo ao redor de um elemento central.
+Aumentar o tamanho do container do circulo e dobrar o raio de posicionamento dos icones para diminuir o espacamento entre os textos e criar um visual mais impactante.
 
 ---
 
-## Conceito Visual
+## Alteracoes no Arquivo
 
-O novo layout tera:
-- **Circulo externo**: 7 icones posicionados radialmente (como um relogio)
-- **Centro**: Logo ou texto "Economia Circular"
-- **Setas conectoras**: Linhas curvas ou setas SVG conectando os Rs (opcional)
-- **Animacao**: Rotacao suave ou destaque ao passar o mouse
+### `src/components/landing/About.tsx`
 
-```text
-                    Recusar
-                       |
-        Regenerar  ----+----  Repensar
-                  \    |    /
-                   \   |   /
-                    \  |  /
-        Reparar -----[EC]-----  Reduzir
-                    /  |  \
-                   /   |   \
-                  /    |    \
-        Reciclar  ----+----  Reutilizar
-```
+**Valores Atuais:**
+- Container: `w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80`
+- Raio: `110px` (mobile), `120px` (tablet), `130px` (desktop) - apenas 110 esta sendo usado
 
----
+**Novos Valores (dobrando):**
+- Container: `w-[480px] h-[480px] sm:w-[520px] sm:h-[520px] md:w-[560px] md:h-[560px]`
+- Raio: `180px` (mobile), `200px` (tablet), `220px` (desktop)
 
-## Implementacao Tecnica
+### Alteracoes Especificas
 
-### Posicionamento Circular com CSS
-
-Cada item sera posicionado usando `transform: rotate()` e `translate()`:
-
+1. **Linha 63** - Aumentar container principal:
 ```tsx
-const sevenRs = [
-  { icon: Hand, label: "Recusar", angle: 0 },
-  { icon: Lightbulb, label: "Repensar", angle: 51.4 },
-  { icon: Droplets, label: "Reduzir", angle: 102.8 },
-  { icon: RefreshCw, label: "Reutilizar", angle: 154.3 },
-  { icon: Recycle, label: "Reciclar", angle: 205.7 },
-  { icon: Wrench, label: "Reparar", angle: 257.1 },
-  { icon: TreeDeciduous, label: "Regenerar", angle: 308.6 },
-];
+// De:
+<div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80">
+
+// Para:
+<div className="relative w-[400px] h-[400px] sm:w-[480px] sm:h-[480px] md:w-[560px] md:h-[560px]">
 ```
 
-### Estrutura do Componente
-
+2. **Linha 65** - Aumentar circulo central:
 ```tsx
-<div className="relative w-80 h-80 mx-auto">
-  {/* Circulo central */}
-  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                  w-24 h-24 rounded-full gradient-hero flex items-center justify-center">
-    <span className="text-white text-center text-xs font-bold">
-      Economia<br/>Circular
-    </span>
-  </div>
-  
-  {/* Circulo tracejado de conexao */}
-  <div className="absolute inset-8 rounded-full border-2 border-dashed border-primary/30" />
-  
-  {/* Items posicionados em circulo */}
-  {sevenRs.map((item, index) => {
-    const angle = (index * 360) / 7 - 90; // Comeca no topo
-    const radius = 130; // Raio em pixels
-    const x = Math.cos((angle * Math.PI) / 180) * radius;
-    const y = Math.sin((angle * Math.PI) / 180) * radius;
-    
-    return (
-      <div
-        key={index}
-        className="absolute top-1/2 left-1/2 flex flex-col items-center"
-        style={{
-          transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
-        }}
-      >
-        <div className="w-14 h-14 rounded-full gradient-hero flex items-center justify-center 
-                        shadow-lg hover:scale-110 transition-transform cursor-pointer">
-          <item.icon className="w-7 h-7 text-primary-foreground" />
-        </div>
-        <span className="mt-2 text-xs font-semibold text-foreground whitespace-nowrap">
-          {item.label}
-        </span>
-      </div>
-    );
-  })}
-</div>
+// De:
+w-20 h-20 sm:w-24 sm:h-24
+
+// Para:
+w-28 h-28 sm:w-32 sm:h-32
 ```
 
----
+3. **Linha 72** - Ajustar inset do circulo tracejado:
+```tsx
+// De:
+inset-8 sm:inset-10
 
-## CSS Adicional (index.css)
+// Para:
+inset-16 sm:inset-20
+```
 
-Adicionar animacao de rotacao suave para o circulo tracejado:
+4. **Linha 77** - Dobrar o raio:
+```tsx
+// De:
+const radius = 110;
 
-```css
-@keyframes slow-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+// Para:
+const radius = 180; // Dobrado para mobile
+```
 
-.animate-slow-spin {
-  animation: slow-spin 30s linear infinite;
-}
+5. **Linhas 91-92** - Aumentar tamanho dos icones:
+```tsx
+// De:
+w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14
+w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7
+
+// Para:
+w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18
+w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9
+```
+
+6. **Linha 94** - Aumentar tamanho do texto:
+```tsx
+// De:
+text-[10px] sm:text-xs
+
+// Para:
+text-xs sm:text-sm
 ```
 
 ---
 
 ## Resumo das Alteracoes
 
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/components/landing/About.tsx` | Substituir grid por layout circular com posicionamento absoluto |
-| `src/index.css` | Adicionar keyframe slow-spin para animacao |
-
----
-
-## Opcoes de Estilo
-
-1. **Minimalista**: Apenas icones em circulo com linhas tracejadas
-2. **Conectado**: Setas SVG entre cada R mostrando o fluxo
-3. **Animado**: Circulo externo gira lentamente, icones permanecem fixos
-
----
-
-## Responsividade
-
-- **Desktop**: Circulo grande (320px)
-- **Tablet**: Circulo medio (280px)
-- **Mobile**: Circulo menor (240px) ou fallback para grid simples
-
-```tsx
-<div className="relative w-60 h-60 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto">
-```
+| Elemento | Valor Atual | Novo Valor |
+|----------|-------------|------------|
+| Container | 256-320px | 400-560px |
+| Raio | 110px | 180px |
+| Circulo central | 80-96px | 112-128px |
+| Icones | 44-56px | 56-72px |
+| Texto | 10-12px | 12-14px |
 
 ---
 
 ## Resultado Esperado
 
-Um diagrama circular interativo onde os 7 R's estao dispostos em circulo, transmitindo visualmente o conceito de economia circular e ciclo continuo, similar ao diagrama oficial do Movimento Circular.
-
+O circulo dos 7 Rs ficara significativamente maior, com os icones mais espacados do centro mas com os textos dos labels mais proximos uns dos outros devido ao maior arco do circulo. Isso criara um visual mais impactante e legivel.
