@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Clock, Users, Award, MapPin } from "lucide-react";
 import heroImage from "@/assets/hero-circular-new.png";
-import circularExperienceLogo from "@/assets/circular-experience-logo.png";
 const Hero = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -20,13 +19,11 @@ const Hero = () => {
 
       <div className="container mx-auto px-4 md:!px-[46px] relative z-10">
         <div className="max-w-3xl">
-          {/* Logo Circular Experience */}
+          {/* Badge Metodologia */}
           <div className="mb-6 animate-fade-up">
-            <img 
-              src={circularExperienceLogo} 
-              alt="Circular Experience" 
-              className="h-16 md:h-20 w-auto"
-            />
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+              <span className="text-sm font-medium text-primary">Metodologia Circular Experience</span>
+            </span>
           </div>
 
           {/* Headline */}

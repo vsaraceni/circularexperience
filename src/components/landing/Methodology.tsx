@@ -1,4 +1,5 @@
 import { Lightbulb, Search, Wrench } from "lucide-react";
+import circularExperienceLogo from "@/assets/circular-experience-logo.png";
 
 const steps = [
   {
@@ -45,6 +46,13 @@ const Methodology = () => {
     <section id="metodologia" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-16">
+          <div className="flex justify-center mb-6">
+            <img 
+              src={circularExperienceLogo} 
+              alt="Circular Experience" 
+              className="h-16 md:h-20 w-auto"
+            />
+          </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Nossa <span className="text-gradient-primary">Metodologia</span>
           </h2>
