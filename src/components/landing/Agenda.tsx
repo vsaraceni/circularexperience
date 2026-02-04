@@ -36,7 +36,7 @@ const agendaItems = [
 const Agenda = () => {
   return (
     <section id="agenda" className="py-20 bg-background">
-      <div className="container mx-auto !px-[36px]">
+      <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             <span className="text-gradient-primary">Agenda</span> do Evento
