@@ -5,7 +5,7 @@ import logo from "@/assets/movimento-circular-logo.png";
 const Footer = () => {
   return (
     <footer className="py-12" style={{ backgroundColor: "#F0ECEA" }}>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-[26px]">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
           <div className="flex flex-col items-center md:items-start gap-2">

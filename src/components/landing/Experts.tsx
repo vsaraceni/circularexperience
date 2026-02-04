@@ -26,7 +26,7 @@ const experts = [{
 const Experts = () => {
   return (
     <section id="especialistas" className="py-20 bg-muted/30">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-[26px]">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Nossos <span className="text-gradient-primary">Coordenadores Técnicos</span>
