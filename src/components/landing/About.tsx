@@ -60,21 +60,21 @@ const About = () => {
 
           {/* 7 R's Visual - Circular Layout */}
           <div className="relative flex items-center justify-center">
-            <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80">
+          <div className="relative w-[400px] h-[400px] sm:w-[480px] sm:h-[480px] md:w-[560px] md:h-[560px]">
               {/* Círculo central */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 sm:w-24 sm:h-24 rounded-full gradient-hero flex items-center justify-center shadow-glow-primary z-10">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 sm:w-32 sm:h-32 rounded-full gradient-hero flex items-center justify-center shadow-glow-primary z-10">
                 <span className="text-primary-foreground text-center text-[10px] sm:text-xs font-bold leading-tight">
                   Economia<br/>Circular
                 </span>
               </div>
               
               {/* Círculo tracejado de conexão com animação */}
-              <div className="absolute inset-8 sm:inset-10 rounded-full border-2 border-dashed border-primary/30 animate-slow-spin" />
+              <div className="absolute inset-16 sm:inset-20 rounded-full border-2 border-dashed border-primary/30 animate-slow-spin" />
               
               {/* Items posicionados em círculo */}
               {sevenRs.map((item, index) => {
                 const angle = (index * 360) / 7 - 90; // Começa no topo
-                const radius = 110; // Raio em pixels para mobile
+                const radius = 180; // Raio dobrado
                 const radiusSm = 120; // Raio para tablet
                 const radiusMd = 130; // Raio para desktop
                 const x = Math.cos((angle * Math.PI) / 180);
@@ -88,10 +88,10 @@ const About = () => {
                       transform: `translate(calc(-50% + ${x * radius}px), calc(-50% + ${y * radius}px))`
                     }}
                   >
-                    <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full gradient-hero flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 cursor-pointer">
-                      <item.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary-foreground" />
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-[72px] md:h-[72px] rounded-full gradient-hero flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 cursor-pointer">
+                      <item.icon className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 text-primary-foreground" />
                     </div>
-                    <span className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold text-foreground whitespace-nowrap">
+                    <span className="mt-1 sm:mt-2 text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">
                       {item.label}
                     </span>
                   </div>
