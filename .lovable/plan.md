@@ -1,70 +1,146 @@
 
 
-# Plano: Atualizar Botões para cor Roxo #5F2558
+# Plano: Layout Circular para os 7 R's
 
 ## Resumo
-Os botões da landing page estão usando cores de gradiente que diferem da cor primária **#5F2558** definida no tema. Este plano vai alinhar todos os botões de call-to-action e gradientes com a cor roxa oficial do Movimento Circular.
+Criar um layout circular para os 7 R's que transmita visualmente o conceito de circularidade, similar ao diagrama oficial do Movimento Circular. Os icones serao posicionados em circulo ao redor de um elemento central.
 
 ---
 
-## Alteracoes
+## Conceito Visual
 
-### 1. Correcao do CSS Global (`src/index.css`)
+O novo layout tera:
+- **Circulo externo**: 7 icones posicionados radialmente (como um relogio)
+- **Centro**: Logo ou texto "Economia Circular"
+- **Setas conectoras**: Linhas curvas ou setas SVG conectando os Rs (opcional)
+- **Animacao**: Rotacao suave ou destaque ao passar o mouse
 
-A cor **#5F2558** convertida para HSL e: **307 44% 26%** (ja esta correta como --primary)
-
-Problema: Os gradientes estao usando cores diferentes:
-- Atual: `hsl(328 100% 45%)` (rosa/magenta vibrante)
-- Correto: `hsl(307 44% 26%)` (roxo #5F2558)
-
-Alteracoes necessarias:
-- `--gradient-primary`: atualizar para usar o roxo correto
-- `--gradient-hero`: atualizar para usar o roxo correto
-- `--shadow-glow-primary`: atualizar cor do glow
-
-### 2. Correcao dos Gradientes
-
-De:
-```css
---gradient-primary: linear-gradient(135deg, hsl(328 100% 45%) 0%, hsl(280 80% 55%) 100%);
---gradient-hero: linear-gradient(135deg, hsl(174 72% 35%) 0%, hsl(328 100% 40%) 100%);
---shadow-glow-primary: 0 8px 32px -8px hsl(328 100% 45% / 0.4);
+```text
+                    Recusar
+                       |
+        Regenerar  ----+----  Repensar
+                  \    |    /
+                   \   |   /
+                    \  |  /
+        Reparar -----[EC]-----  Reduzir
+                    /  |  \
+                   /   |   \
+                  /    |    \
+        Reciclar  ----+----  Reutilizar
 ```
 
-Para:
-```css
---gradient-primary: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
---gradient-hero: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
---shadow-glow-primary: 0 8px 32px -8px hsl(307 44% 26% / 0.4);
+---
+
+## Implementacao Tecnica
+
+### Posicionamento Circular com CSS
+
+Cada item sera posicionado usando `transform: rotate()` e `translate()`:
+
+```tsx
+const sevenRs = [
+  { icon: Hand, label: "Recusar", angle: 0 },
+  { icon: Lightbulb, label: "Repensar", angle: 51.4 },
+  { icon: Droplets, label: "Reduzir", angle: 102.8 },
+  { icon: RefreshCw, label: "Reutilizar", angle: 154.3 },
+  { icon: Recycle, label: "Reciclar", angle: 205.7 },
+  { icon: Wrench, label: "Reparar", angle: 257.1 },
+  { icon: TreeDeciduous, label: "Regenerar", angle: 308.6 },
+];
 ```
 
-### 3. Atualizacao das Animacoes no Tailwind (`tailwind.config.ts`)
+### Estrutura do Componente
 
-A animacao `pulse-glow` tambem usa a cor magenta incorreta:
-```ts
-'pulse-glow': {
-  '0%, 100%': { boxShadow: '0 0 20px hsl(328 100% 45% / 0.3)' },
-  '50%': { boxShadow: '0 0 40px hsl(328 100% 45% / 0.5)' }
+```tsx
+<div className="relative w-80 h-80 mx-auto">
+  {/* Circulo central */}
+  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
+                  w-24 h-24 rounded-full gradient-hero flex items-center justify-center">
+    <span className="text-white text-center text-xs font-bold">
+      Economia<br/>Circular
+    </span>
+  </div>
+  
+  {/* Circulo tracejado de conexao */}
+  <div className="absolute inset-8 rounded-full border-2 border-dashed border-primary/30" />
+  
+  {/* Items posicionados em circulo */}
+  {sevenRs.map((item, index) => {
+    const angle = (index * 360) / 7 - 90; // Comeca no topo
+    const radius = 130; // Raio em pixels
+    const x = Math.cos((angle * Math.PI) / 180) * radius;
+    const y = Math.sin((angle * Math.PI) / 180) * radius;
+    
+    return (
+      <div
+        key={index}
+        className="absolute top-1/2 left-1/2 flex flex-col items-center"
+        style={{
+          transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`
+        }}
+      >
+        <div className="w-14 h-14 rounded-full gradient-hero flex items-center justify-center 
+                        shadow-lg hover:scale-110 transition-transform cursor-pointer">
+          <item.icon className="w-7 h-7 text-primary-foreground" />
+        </div>
+        <span className="mt-2 text-xs font-semibold text-foreground whitespace-nowrap">
+          {item.label}
+        </span>
+      </div>
+    );
+  })}
+</div>
+```
+
+---
+
+## CSS Adicional (index.css)
+
+Adicionar animacao de rotacao suave para o circulo tracejado:
+
+```css
+@keyframes slow-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-slow-spin {
+  animation: slow-spin 30s linear infinite;
 }
 ```
 
-Sera atualizada para usar `hsl(307 44% 26%)`.
-
 ---
 
-## Resumo das Alteracoes de Arquivos
+## Resumo das Alteracoes
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/index.css` | Atualizar gradientes e sombras para usar #5F2558 |
-| `tailwind.config.ts` | Atualizar keyframe pulse-glow |
+| `src/components/landing/About.tsx` | Substituir grid por layout circular com posicionamento absoluto |
+| `src/index.css` | Adicionar keyframe slow-spin para animacao |
+
+---
+
+## Opcoes de Estilo
+
+1. **Minimalista**: Apenas icones em circulo com linhas tracejadas
+2. **Conectado**: Setas SVG entre cada R mostrando o fluxo
+3. **Animado**: Circulo externo gira lentamente, icones permanecem fixos
+
+---
+
+## Responsividade
+
+- **Desktop**: Circulo grande (320px)
+- **Tablet**: Circulo medio (280px)
+- **Mobile**: Circulo menor (240px) ou fallback para grid simples
+
+```tsx
+<div className="relative w-60 h-60 sm:w-72 sm:h-72 md:w-80 md:h-80 mx-auto">
+```
 
 ---
 
 ## Resultado Esperado
 
-- Botoes "Quero Participar" (Hero, Header, LeadForm) - roxo #5F2558
-- Botao "Saiba Mais" - borda/texto em roxo ou estilo outline adequado
-- Textos em destaque com gradiente - roxo #5F2558
-- Glow e sombras - usando a cor roxa correta
+Um diagrama circular interativo onde os 7 R's estao dispostos em circulo, transmitindo visualmente o conceito de economia circular e ciclo continuo, similar ao diagrama oficial do Movimento Circular.
 
