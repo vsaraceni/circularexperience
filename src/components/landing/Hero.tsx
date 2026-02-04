@@ -45,7 +45,7 @@ const Hero = () => {
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
               Quero Participar
             </Button>
-            <Button variant="outline" size="xl" onClick={() => scrollToSection("sobre")}>
+            <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("sobre")}>
               Saiba Mais
             </Button>
           </div>

@@ -26,17 +26,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 265 4% 12.9%;
 
-    /* Magenta - Primary brand color */
-    --primary: 307 44% 26%;
-    --primary-foreground: 248 0.3% 98.4%;
+    /* Magenta - Primary brand color (MC vibrant) */
+    --primary: 328 100% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Teal - Secondary color */
-    --secondary: 186 61% 47%;
-    --secondary-foreground: 266 4% 20.8%;
+    /* Teal - Secondary color (MC teal) */
+    --secondary: 174 72% 40%;
+    --secondary-foreground: 0 0% 100%;
 
-    /* Yellow/Gold - Accent */
-    --accent: 248 0.7% 96.8%;
-    --accent-foreground: 266 4% 20.8%;
+    /* Yellow/Gold - Accent (MC yellow) */
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 10%;
 
     --muted: 248 0.7% 96.8%;
     --muted-foreground: 257 4.6% 55.4%;
