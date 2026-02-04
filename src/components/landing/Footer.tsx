@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import logo from "@/assets/circular-experience-logo.png";
-import { LogoImage } from "@/components/LogoImage";
+
 
 const Footer = () => {
   return (
@@ -9,10 +9,10 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
           <div className="flex flex-col items-center md:items-start gap-2">
-            <LogoImage
+            <img
               src={logo}
               alt="Circular Experience"
-              className="h-10 w-auto brightness-0 invert"
+              className="h-16 md:h-20 w-auto brightness-0 invert"
               loading="lazy"
               decoding="async"
             />
