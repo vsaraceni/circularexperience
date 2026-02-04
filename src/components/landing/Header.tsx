@@ -23,7 +23,7 @@ const Header = () => {
             <img 
               src={logo} 
               alt="Circular Experience" 
-              className="h-[72px] md:h-[84px] w-auto"
+              className="h-[94px] md:h-[110px] w-auto"
             />
           </div>
 
