@@ -43,7 +43,7 @@ const Methodology = () => {
 
   return (
     <section id="metodologia" className="py-20 bg-muted/30">
-      <div className="container mx-auto !px-[26px]">
+      <div className="container mx-auto !px-[36px]">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Nossa <span className="text-gradient-primary">Metodologia</span>
