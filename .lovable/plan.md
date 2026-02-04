@@ -1,34 +1,70 @@
 
 
-# Plano: Substituir Imagem de Fundo do Hero
+# Plano: Atualizar Botões para cor Roxo #5F2558
 
-## Objetivo
-Substituir a imagem de fundo atual do Hero (`hero-circular.jpg`) pela nova imagem com os icones de economia circular enviada pelo usuario.
+## Resumo
+Os botões da landing page estão usando cores de gradiente que diferem da cor primária **#5F2558** definida no tema. Este plano vai alinhar todos os botões de call-to-action e gradientes com a cor roxa oficial do Movimento Circular.
 
-## O que sera feito
+---
 
-### 1. Copiar a nova imagem para o projeto
-- Copiar `user-uploads://AT_3anos_News_PT-1.png` para `src/assets/hero-circular-new.png`
+## Alteracoes
 
-### 2. Atualizar o componente Hero
-- Alterar o import da imagem de `hero-circular.jpg` para `hero-circular-new.png`
-- Ajustar o overlay gradiente se necessario para garantir boa legibilidade do texto sobre a nova imagem
+### 1. Correcao do CSS Global (`src/index.css`)
 
-### 3. Verificar a renderizacao
-- Confirmar que a nova imagem esta sendo exibida corretamente
-- Garantir que o conteudo do Hero (texto, botoes, cards) permanece legivel
+A cor **#5F2558** convertida para HSL e: **307 44% 26%** (ja esta correta como --primary)
 
-## Detalhes Tecnicos
+Problema: Os gradientes estao usando cores diferentes:
+- Atual: `hsl(328 100% 45%)` (rosa/magenta vibrante)
+- Correto: `hsl(307 44% 26%)` (roxo #5F2558)
 
-**Arquivo afetado:**
-- `src/components/landing/Hero.tsx`
+Alteracoes necessarias:
+- `--gradient-primary`: atualizar para usar o roxo correto
+- `--gradient-hero`: atualizar para usar o roxo correto
+- `--shadow-glow-primary`: atualizar cor do glow
 
-**Alteracao no import:**
-```text
-Antes:  import heroImage from "@/assets/hero-circular.jpg";
-Depois: import heroImage from "@/assets/hero-circular-new.png";
+### 2. Correcao dos Gradientes
+
+De:
+```css
+--gradient-primary: linear-gradient(135deg, hsl(328 100% 45%) 0%, hsl(280 80% 55%) 100%);
+--gradient-hero: linear-gradient(135deg, hsl(174 72% 35%) 0%, hsl(328 100% 40%) 100%);
+--shadow-glow-primary: 0 8px 32px -8px hsl(328 100% 45% / 0.4);
 ```
 
-**Consideracoes sobre o overlay:**
-A nova imagem tem fundo claro (`#F0ECEA` aproximadamente) com icones em roxo. O overlay gradiente atual vai da esquerda para a direita e pode precisar de ajuste para garantir contraste adequado com o texto do Hero.
+Para:
+```css
+--gradient-primary: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
+--gradient-hero: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
+--shadow-glow-primary: 0 8px 32px -8px hsl(307 44% 26% / 0.4);
+```
+
+### 3. Atualizacao das Animacoes no Tailwind (`tailwind.config.ts`)
+
+A animacao `pulse-glow` tambem usa a cor magenta incorreta:
+```ts
+'pulse-glow': {
+  '0%, 100%': { boxShadow: '0 0 20px hsl(328 100% 45% / 0.3)' },
+  '50%': { boxShadow: '0 0 40px hsl(328 100% 45% / 0.5)' }
+}
+```
+
+Sera atualizada para usar `hsl(307 44% 26%)`.
+
+---
+
+## Resumo das Alteracoes de Arquivos
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/index.css` | Atualizar gradientes e sombras para usar #5F2558 |
+| `tailwind.config.ts` | Atualizar keyframe pulse-glow |
+
+---
+
+## Resultado Esperado
+
+- Botoes "Quero Participar" (Hero, Header, LeadForm) - roxo #5F2558
+- Botao "Saiba Mais" - borda/texto em roxo ou estilo outline adequado
+- Textos em destaque com gradiente - roxo #5F2558
+- Glow e sombras - usando a cor roxa correta
 
