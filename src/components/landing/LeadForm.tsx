@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CheckCircle, Loader2, Send } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
-
+import { supabase } from "@/integrations/supabase/client";
 const brazilianStates = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
   "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
@@ -64,9 +64,19 @@ const LeadForm = () => {
 
     setIsSubmitting(true);
 
-    // Simulate form submission (replace with actual API call)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { data, error } = await supabase.functions.invoke("send-lead-email", {
+        body: result.data,
+      });
+
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erro ao enviar formulário");
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || "Erro ao enviar e-mail");
+      }
       
       setIsSuccess(true);
       toast.success("Inscrição realizada com sucesso! Em breve entraremos em contato.");
@@ -80,7 +90,8 @@ const LeadForm = () => {
         city: "",
         state: "",
       });
-    } catch {
+    } catch (err) {
+      console.error("Submit error:", err);
       toast.error("Erro ao enviar. Por favor, tente novamente.");
     } finally {
       setIsSubmitting(false);
