@@ -1,9 +1,7 @@
 import { Mail, Phone, MapPin, Linkedin } from "lucide-react";
 import LeadForm from "./LeadForm";
-
 const CTA = () => {
-  return (
-    <section id="contato" className="py-20 bg-muted/50">
+  return <section id="contato" className="py-20 bg-muted/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6">
@@ -40,43 +38,32 @@ const CTA = () => {
               </h3>
               
               <div className="space-y-4">
-                <a 
-                  href="mailto:vinicius@atinaedu.com.br"
-                  className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-primary/10 transition-colors group"
-                >
+                <a href="mailto:vinicius@atinaedu.com.br" className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-primary/10 transition-colors group">
                   <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                     <Mail className="w-5 h-5 text-primary-foreground" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground">E-mail</p>
-                    <p className="text-sm text-muted-foreground">vinicius@atinaedu.com.br</p>
+                    <p className="text-sm text-muted-foreground">contato@movimentocircular.io</p>
                   </div>
                 </a>
 
-                <a 
-                  href="tel:+5511981272111"
-                  className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-secondary/10 transition-colors group"
-                >
+                <a href="tel:+5511981272111" className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-secondary/10 transition-colors group">
                   <div className="w-12 h-12 rounded-full gradient-secondary flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                     <Phone className="w-5 h-5 text-secondary-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">Telefone</p>
+                    <p className="font-medium text-foreground">Whatsapp</p>
                     <p className="text-sm text-muted-foreground">+55 11 98127-2111</p>
                   </div>
                 </a>
 
-                <a 
-                  href="https://www.linkedin.com/in/viniciussaraceni"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-accent/10 transition-colors group"
-                >
+                <a href="https://www.linkedin.com/in/viniciussaraceni" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-accent/10 transition-colors group">
                   <div className="w-12 h-12 rounded-full gradient-accent flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                     <Linkedin className="w-5 h-5 text-accent-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">LinkedIn</p>
+                    <p className="font-medium text-foreground">LinkedIn do Diretor Geral</p>
                     <p className="text-sm text-muted-foreground">Vinicius Saraceni</p>
                   </div>
                 </a>
@@ -88,18 +75,14 @@ const CTA = () => {
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-foreground mb-2">Onde atuamos</p>
-                  <p className="text-sm text-muted-foreground">
-                    São Paulo • Florianópolis • Salvador • Recife • Cidade do México • Buenos Aires
-                  </p>
+                  <p className="font-medium text-foreground mb-2">Representações regionais</p>
+                  <p className="text-sm text-muted-foreground">São Paulo • Florianópolis • Salvador • Recife</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default CTA;
