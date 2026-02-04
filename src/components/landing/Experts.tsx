@@ -1,45 +1,25 @@
 import { GraduationCap, Award, Globe } from "lucide-react";
-
-const experts = [
-  {
-    name: "Prof. Dr. Edson Grandisoli",
-    title: "Embaixador do Movimento Circular",
-    credentials: [
-      "Pós-doutor pelo IEA-USP",
-      "Doutor em Educação para a Sustentabilidade",
-      "Assessor da UNESCO",
-    ],
-    image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&crop=face",
-  },
-  {
-    name: "Profa. Dra. Sueli Furlan",
-    title: "Docente FFLCH-USP",
-    credentials: [
-      "Pós-doutora pela Universidade de Cádiz",
-      "Mestre e Doutora em Ciências pela USP",
-      "Pesquisa em Educomunicação Socioambiental",
-    ],
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face",
-  },
-  {
-    name: "Prof. Dr. Flávio Ribeiro",
-    title: "Embaixador do Movimento Circular",
-    credentials: [
-      "Conselheiro do Pacto Global da ONU",
-      "Doutor em Ciências Ambientais",
-      "Especialista em Logística Reversa",
-    ],
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
-  },
-];
-
+const experts = [{
+  name: "Prof. Dr. Edson Grandisoli",
+  title: "Embaixador do Movimento Circular",
+  credentials: ["Pós-doutor pelo IEA-USP", "Doutor em Educação para a Sustentabilidade", "Assessor da UNESCO"],
+  image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&crop=face"
+}, {
+  name: "Profa. Dra. Sueli Furlan",
+  title: "Docente FFLCH-USP",
+  credentials: ["Pós-doutora pela Universidade de Cádiz", "Mestre e Doutora em Ciências pela USP", "Pesquisa em Educomunicação Socioambiental"],
+  image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face"
+}, {
+  name: "Prof. Dr. Flávio Ribeiro",
+  title: "Embaixador do Movimento Circular",
+  credentials: ["Conselheiro do Pacto Global da ONU", "Doutor em Ciências Ambientais", "Especialista em Logística Reversa"],
+  image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face"
+}];
 const Experts = () => {
-  return (
-    <section id="especialistas" className="py-20 bg-muted/30">
+  return <section id="especialistas" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Nossos <span className="text-gradient-primary">Especialistas</span>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">Nossos Coordenadores<span className="text-gradient-primary">Especialistas</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Aprenda com profissionais reconhecidos nacionalmente em Economia Circular
@@ -47,18 +27,10 @@ const Experts = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {experts.map((expert, index) => (
-            <div 
-              key={index}
-              className="group bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl"
-            >
+          {experts.map((expert, index) => <div key={index} className="group bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
               {/* Image */}
               <div className="relative h-64 overflow-hidden">
-                <img 
-                  src={expert.image} 
-                  alt={expert.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                <img src={expert.image} alt={expert.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
               </div>
 
@@ -73,17 +45,14 @@ const Experts = () => {
                   </p>
 
                   <ul className="space-y-2">
-                    {expert.credentials.map((credential, idx) => (
-                      <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                    {expert.credentials.map((credential, idx) => <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
                         <GraduationCap className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
                         <span>{credential}</span>
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
                 </div>
               </div>
-            </div>
-          ))}
+            </div>)}
         </div>
 
         {/* Note */}
@@ -107,8 +76,6 @@ const Experts = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Experts;

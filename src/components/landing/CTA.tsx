@@ -10,9 +10,7 @@ const CTA = () => {
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Participe do <span className="text-gradient-primary">Circular Experience</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Preencha o formulário abaixo e nossa equipe entrará em contato para levar a oficina para sua região.
-          </p>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Preencha o formulário abaixo e nossa equipe entrará em contato para levar a oficina para sua empresa, cidade ou região.</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
