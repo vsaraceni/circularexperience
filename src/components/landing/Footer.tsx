@@ -12,9 +12,23 @@ const Footer = () => {
 
           {/* Links */}
           <div className="flex items-center gap-6">
-            <a href="https://movimentocircular.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors">Saiba mais sobre o Movimento Circular<ExternalLink className="w-3.5 h-3.5" />
+            <a 
+              href="https://movimentocircular.io" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors"
+            >
+              Saiba mais sobre o Movimento Circular
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
-            <a href="https://atinaedu.com.br" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors"><ExternalLink className="w-3.5 h-3.5" />
+            <a 
+              href="https://atinaedu.com.br" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors"
+            >
+              Atina Edu
+              <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
 
