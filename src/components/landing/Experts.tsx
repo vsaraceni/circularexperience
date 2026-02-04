@@ -1,20 +1,25 @@
 import { GraduationCap, Award, Globe } from "lucide-react";
+import edsonImage from "@/assets/perfil-edson.jpg";
+import sueliImage from "@/assets/perfil-sueli.jpg";
+import flavioImage from "@/assets/perfil-flavio.jpg";
+
 const experts = [{
   name: "Prof. Dr. Edson Grandisoli",
   title: "Embaixador do Movimento Circular",
   credentials: ["Pós-doutor pelo IEA-USP", "Doutor em Educação para a Sustentabilidade", "Assessor da UNESCO"],
-  image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop&crop=face"
+  image: edsonImage
 }, {
   name: "Profa. Dra. Sueli Furlan",
   title: "Docente FFLCH-USP",
   credentials: ["Pós-doutora pela Universidade de Cádiz", "Mestre e Doutora em Ciências pela USP", "Pesquisa em Educomunicação Socioambiental"],
-  image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&crop=face"
+  image: sueliImage
 }, {
   name: "Prof. Dr. Flávio Ribeiro",
   title: "Embaixador do Movimento Circular",
   credentials: ["Conselheiro do Pacto Global da ONU", "Doutor em Ciências Ambientais", "Especialista em Logística Reversa"],
-  image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face"
+  image: flavioImage
 }];
+
 const Experts = () => {
   return <section id="especialistas" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
