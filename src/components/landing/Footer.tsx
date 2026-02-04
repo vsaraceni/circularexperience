@@ -9,12 +9,12 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
           <div className="flex flex-col items-center md:items-start gap-2">
-            <LogoImage 
-              src={logo} 
-              alt="Circular Experience" 
-              className="h-16 md:h-20 w-auto" 
-              loading="lazy" 
-              decoding="async" 
+            <LogoImage
+              src={logo}
+              alt="Circular Experience"
+              className="h-16 md:h-20 w-auto"
+              loading="lazy"
+              decoding="async"
             />
             <span className="text-xs" style={{ color: "#5F2558" }}>
               Uma iniciativa do Movimento Circular
@@ -23,24 +23,14 @@ const Footer = () => {
 
           {/* Links */}
           <div className="flex items-center gap-6">
-            <a 
-              href="https://movimentocircular.io" 
-              target="_blank" 
-              rel="noopener noreferrer" 
+            <a
+              href="https://movimentocircular.io"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
               style={{ color: "#5F2558" }}
             >
               Saiba mais sobre o Movimento Circular
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-            <a 
-              href="https://atinaedu.com.br" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
-              style={{ color: "#5F2558" }}
-            >
-              Atina Edu
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           </div>
