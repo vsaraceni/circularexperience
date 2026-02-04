@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Clock, Users, Award, MapPin } from "lucide-react";
-import heroImage from "@/assets/hero-circular.jpg";
+import heroImage from "@/assets/hero-circular-new.png";
 const Hero = () => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
