@@ -1,26 +1,37 @@
 import { Button } from "@/components/ui/button";
 import { Target, Lightbulb, Recycle, RefreshCw, Leaf, Wrench, Brain } from "lucide-react";
-
-const sevenRs = [
-  { icon: Recycle, label: "Reduzir" },
-  { icon: RefreshCw, label: "Reutilizar" },
-  { icon: Recycle, label: "Reciclar" },
-  { icon: Lightbulb, label: "Redefinir" },
-  { icon: Leaf, label: "Reaproveitar" },
-  { icon: Wrench, label: "Recuperar" },
-  { icon: Brain, label: "Repensar" },
-];
-
+const sevenRs = [{
+  icon: Recycle,
+  label: "Reduzir"
+}, {
+  icon: RefreshCw,
+  label: "Reutilizar"
+}, {
+  icon: Recycle,
+  label: "Reciclar"
+}, {
+  icon: Lightbulb,
+  label: "Redefinir"
+}, {
+  icon: Leaf,
+  label: "Reaproveitar"
+}, {
+  icon: Wrench,
+  label: "Recuperar"
+}, {
+  icon: Brain,
+  label: "Repensar"
+}];
 const About = () => {
   const scrollToContact = () => {
     const element = document.getElementById("contato");
     if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+      element.scrollIntoView({
+        behavior: "smooth"
+      });
     }
   };
-
-  return (
-    <section id="sobre" className="py-20 bg-background">
+  return <section id="sobre" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
@@ -67,20 +78,16 @@ const About = () => {
               </h3>
               
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {sevenRs.map((item, index) => (
-                  <div 
-                    key={index}
-                    className="group flex flex-col items-center p-4 rounded-xl bg-muted/50 hover:bg-primary/10 transition-all duration-300"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
+                {sevenRs.map((item, index) => <div key={index} className="group flex flex-col items-center p-4 rounded-xl bg-muted/50 hover:bg-primary/10 transition-all duration-300" style={{
+                animationDelay: `${index * 0.1}s`
+              }}>
                     <div className="w-12 h-12 rounded-full gradient-hero flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                       <item.icon className="w-6 h-6 text-primary-foreground" />
                     </div>
                     <span className="text-sm font-semibold text-foreground text-center">
                       {item.label}
                     </span>
-                  </div>
-                ))}
+                  </div>)}
               </div>
 
               {/* Decorative circle */}
@@ -98,7 +105,7 @@ const About = () => {
                 A quem se destina?
               </h3>
               <p className="text-primary-foreground/90">
-                Microempreendedor Individual • Microempresa • Empresa de Pequeno Porte • Artesão • Produtor Rural
+                Profissionais que desejam compreender como a Economia Circular pode ser aplicada em seus negócios, segmentos ou área de atuação.            
               </p>
             </div>
             <Button variant="accent" size="lg" onClick={scrollToContact}>
@@ -107,8 +114,6 @@ const About = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default About;
