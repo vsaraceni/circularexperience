@@ -7,17 +7,20 @@ const experts = [{
   name: "Prof. Dr. Edson Grandisoli",
   title: "Embaixador do Movimento Circular",
   credentials: ["Pós-doutor pelo IEA-USP", "Doutor em Educação para a Sustentabilidade", "Assessor da UNESCO"],
-  image: edsonImage
+  image: edsonImage,
+  imagePosition: "object-top"
 }, {
   name: "Profa. Dra. Sueli Furlan",
   title: "Docente FFLCH-USP",
   credentials: ["Pós-doutora pela Universidade de Cádiz", "Mestre e Doutora em Ciências pela USP", "Pesquisa em Educomunicação Socioambiental"],
-  image: sueliImage
+  image: sueliImage,
+  imagePosition: "object-center"
 }, {
   name: "Prof. Dr. Flávio Ribeiro",
   title: "Embaixador do Movimento Circular",
   credentials: ["Conselheiro do Pacto Global da ONU", "Doutor em Ciências Ambientais", "Especialista em Logística Reversa"],
-  image: flavioImage
+  image: flavioImage,
+  imagePosition: "object-top"
 }];
 
 const Experts = () => {
@@ -35,7 +38,7 @@ const Experts = () => {
           {experts.map((expert, index) => <div key={index} className="group bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
               {/* Image */}
               <div className="relative h-64 overflow-hidden">
-                <img src={expert.image} alt={expert.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <img src={expert.image} alt={expert.name} className={`w-full h-full object-cover ${expert.imagePosition} group-hover:scale-105 transition-transform duration-500`} />
                 <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
               </div>
 
