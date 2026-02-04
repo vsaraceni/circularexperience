@@ -1,113 +1,57 @@
 
 
-# Plano: Substituir Logos e Mover Logo Atual para Hero
+# Plano: Aumentar Margem Lateral do Corpo
 
 ## Resumo
-Substituir o logo "Circular Experience" no header e footer pelo novo logo "Movimento Circular" enviado, e mover o logo atual para a secao Hero, substituindo o badge de texto "Metodologia Movimento Circular".
+Aumentar as margens esquerda e direita de todas as secoes do corpo da pagina em 10 pixels, mantendo o header com o padding atual.
 
 ---
 
-## Passo 1: Copiar Nova Imagem
+## Analise Atual
 
-Copiar o arquivo enviado para o projeto:
-- **Origem:** `user-uploads://Movimento-Circular_logotipo_horizontal.png`
-- **Destino:** `src/assets/movimento-circular-logo.png`
+Todas as secoes usam o padrao:
+```tsx
+<div className="container mx-auto px-4">
+```
+
+O valor `px-4` equivale a `1rem` = `16px`. 
+Para adicionar mais 10px, o novo valor sera `26px` = `px-[26px]`.
 
 ---
 
-## Alteracoes nos Arquivos
-
-### 1. `src/components/landing/Header.tsx`
-
-**Alterar import do logo:**
-```tsx
-// De:
-import logo from "@/assets/circular-experience-logo.png";
-
-// Para:
-import logo from "@/assets/movimento-circular-logo.png";
-```
-
-**Atualizar alt text:**
-```tsx
-// De:
-alt="Circular Experience"
-
-// Para:
-alt="Movimento Circular"
-```
-
----
-
-### 2. `src/components/landing/Footer.tsx`
-
-**Alterar import do logo:**
-```tsx
-// De:
-import logo from "@/assets/circular-experience-logo.png";
-
-// Para:
-import logo from "@/assets/movimento-circular-logo.png";
-```
-
-**Atualizar alt text e remover texto "Uma iniciativa do...":**
-```tsx
-// De:
-<div className="flex flex-col items-center md:items-start gap-2">
-  <LogoImage src={logo} alt="Circular Experience" ... />
-  <span className="text-xs">Uma iniciativa do Movimento Circular</span>
-</div>
-
-// Para:
-<div className="flex flex-col items-center md:items-start gap-2">
-  <LogoImage src={logo} alt="Movimento Circular" ... />
-</div>
-```
-
-O texto "Uma iniciativa do Movimento Circular" sera removido pois o logo ja e do Movimento Circular.
-
----
-
-### 3. `src/components/landing/Hero.tsx`
-
-**Adicionar import do logo Circular Experience:**
-```tsx
-import circularExperienceLogo from "@/assets/circular-experience-logo.png";
-```
-
-**Substituir o badge de texto pelo logo:**
-```tsx
-// De (linhas 23-26):
-<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 mb-6 animate-fade-up">
-  <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-  <span className="text-sm font-medium text-secondary">Metodologia Movimento Circular</span>
-</div>
-
-// Para:
-<div className="mb-6 animate-fade-up">
-  <img 
-    src={circularExperienceLogo} 
-    alt="Circular Experience" 
-    className="h-16 md:h-20 w-auto"
-  />
-</div>
-```
-
----
-
-## Resumo das Alteracoes
+## Arquivos a Alterar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/assets/movimento-circular-logo.png` | Novo arquivo (copia do upload) |
-| `src/components/landing/Header.tsx` | Trocar logo para Movimento Circular |
-| `src/components/landing/Footer.tsx` | Trocar logo para Movimento Circular, remover texto redundante |
-| `src/components/landing/Hero.tsx` | Substituir badge de texto pelo logo Circular Experience |
+| `src/components/landing/Hero.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/Stats.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/About.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/Methodology.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/Agenda.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/Video.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/Experts.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/SDGs.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/CTA.tsx` | `px-4` → `px-[26px]` |
+| `src/components/landing/Footer.tsx` | `px-4` → `px-[26px]` |
+
+**NAO ALTERAR:**
+- `src/components/landing/Header.tsx` - permanece com `px-4`
+
+---
+
+## Exemplo de Alteracao
+
+```tsx
+// De:
+<div className="container mx-auto px-4">
+
+// Para:
+<div className="container mx-auto px-[26px]">
+```
 
 ---
 
 ## Resultado Esperado
 
-- **Header/Footer:** Exibirao o logo "Movimento Circular" (novo)
-- **Hero:** Exibira o logo "Circular Experience" (atual) no lugar do badge de texto, antes do titulo principal
+Todas as secoes do corpo da pagina (Hero, Stats, About, Methodology, Agenda, Video, Experts, SDGs, CTA e Footer) terao 26px de padding lateral, enquanto o header mantera 16px, preservando sua aparencia atual.
 
