@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import logo from "@/assets/circular-experience-logo.png";
+import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
 const Header = () => {
@@ -23,7 +23,7 @@ const Header = () => {
           <div className="flex items-center">
             <LogoImage
               src={logo}
-              alt="Circular Experience"
+              alt="Movimento Circular"
               className="h-16 md:h-20 w-auto"
             />
           </div>

@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { LogoImage } from "@/components/LogoImage";
-import logo from "@/assets/circular-experience-logo.png";
+import logo from "@/assets/movimento-circular-logo.png";
 
 const Footer = () => {
   return (
@@ -11,14 +11,11 @@ const Footer = () => {
           <div className="flex flex-col items-center md:items-start gap-2">
             <LogoImage
               src={logo}
-              alt="Circular Experience"
+              alt="Movimento Circular"
               className="h-16 md:h-20 w-auto"
               loading="lazy"
               decoding="async"
             />
-            <span className="text-xs" style={{ color: "#5F2558" }}>
-              Uma iniciativa do Movimento Circular
-            </span>
           </div>
 
           {/* Links */}
