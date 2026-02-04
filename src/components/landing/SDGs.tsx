@@ -34,7 +34,7 @@ const sdgs = [
 const SDGs = () => {
   return (
     <section className="py-20 bg-background">
-      <div className="container mx-auto px-[26px]">
+      <div className="container mx-auto !px-[26px]">
         <div className="text-center mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Diálogo com os <span className="text-gradient-primary">ODS</span>

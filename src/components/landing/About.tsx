@@ -20,7 +20,7 @@ const About = () => {
     }
   };
   return <section id="sobre" className="py-20 bg-background">
-      <div className="container mx-auto px-[26px]">
+      <div className="container mx-auto !px-[26px]">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
           <div>
