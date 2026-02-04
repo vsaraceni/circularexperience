@@ -18,7 +18,7 @@ const Hero = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/60" />
       </div>
 
-      <div className="container mx-auto !px-[36px] relative z-10">
+      <div className="container mx-auto px-4 md:!px-[46px] relative z-10">
         <div className="max-w-3xl">
           {/* Logo Circular Experience */}
           <div className="mb-6 animate-fade-up">
