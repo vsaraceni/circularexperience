@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/circular-experience-logo.png";
+import { LogoImage } from "@/components/LogoImage";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,9 +21,9 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <img 
-              src={logo} 
-              alt="Circular Experience" 
+            <LogoImage
+              src={logo}
+              alt="Circular Experience"
               className="h-16 md:h-20 w-auto"
             />
           </div>
