@@ -3,7 +3,7 @@ import { Play } from "lucide-react";
 const Video = () => {
   return (
     <section className="py-20 gradient-hero">
-      <div className="container mx-auto !px-[26px]">
+      <div className="container mx-auto !px-[36px]">
         <div className="text-center mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
             Conheça o Circular Experience
