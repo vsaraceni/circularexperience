@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import logo from "@/assets/circular-experience-logo.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,14 +19,12 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full gradient-hero flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">C</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-display font-bold text-foreground leading-tight">Circular</span>
-              <span className="text-xs text-primary font-semibold -mt-1">EXPERIENCE</span>
-            </div>
+          <div className="flex items-center">
+            <img 
+              src={logo} 
+              alt="Circular Experience" 
+              className="h-10 md:h-12 w-auto"
+            />
           </div>
 
           {/* Desktop Navigation */}
