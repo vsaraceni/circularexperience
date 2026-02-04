@@ -51,14 +51,14 @@
     --radius: 0.625rem;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(328 100% 45%) 0%, hsl(280 80% 55%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(174 72% 40%) 0%, hsl(174 72% 30%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(174 72% 35%) 0%, hsl(328 100% 40%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(35 100% 50%) 100%);
 
     /* Shadows */
     --shadow-soft: 0 4px 24px -4px hsl(210 40% 15% / 0.1);
-    --shadow-glow-primary: 0 8px 32px -8px hsl(328 100% 45% / 0.4);
+    --shadow-glow-primary: 0 8px 32px -8px hsl(307 44% 26% / 0.4);
     --shadow-glow-secondary: 0 8px 32px -8px hsl(174 72% 40% / 0.4);
 
     --sidebar-background: 0 0% 98%;
