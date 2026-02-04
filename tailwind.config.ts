@@ -144,14 +144,14 @@ export default {
   					transform: 'scale(1)'
   				}
   			},
-  			'pulse-glow': {
-  				'0%, 100%': {
-  					boxShadow: '0 0 20px hsl(328 100% 45% / 0.3)'
-  				},
-  				'50%': {
-  					boxShadow: '0 0 40px hsl(328 100% 45% / 0.5)'
-  				}
-  			},
+			'pulse-glow': {
+				'0%, 100%': {
+					boxShadow: '0 0 20px hsl(307 44% 26% / 0.3)'
+				},
+				'50%': {
+					boxShadow: '0 0 40px hsl(307 44% 26% / 0.5)'
+				}
+			},
   			float: {
   				'0%, 100%': {
   					transform: 'translateY(0)'
