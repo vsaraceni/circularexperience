@@ -1,95 +1,113 @@
 
-# Plano: Aumentar Area do Circulo dos 7 Rs
+
+# Plano: Substituir Logos e Mover Logo Atual para Hero
 
 ## Resumo
-Aumentar o tamanho do container do circulo e dobrar o raio de posicionamento dos icones para diminuir o espacamento entre os textos e criar um visual mais impactante.
+Substituir o logo "Circular Experience" no header e footer pelo novo logo "Movimento Circular" enviado, e mover o logo atual para a secao Hero, substituindo o badge de texto "Metodologia Movimento Circular".
 
 ---
 
-## Alteracoes no Arquivo
+## Passo 1: Copiar Nova Imagem
 
-### `src/components/landing/About.tsx`
+Copiar o arquivo enviado para o projeto:
+- **Origem:** `user-uploads://Movimento-Circular_logotipo_horizontal.png`
+- **Destino:** `src/assets/movimento-circular-logo.png`
 
-**Valores Atuais:**
-- Container: `w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80`
-- Raio: `110px` (mobile), `120px` (tablet), `130px` (desktop) - apenas 110 esta sendo usado
+---
 
-**Novos Valores (dobrando):**
-- Container: `w-[480px] h-[480px] sm:w-[520px] sm:h-[520px] md:w-[560px] md:h-[560px]`
-- Raio: `180px` (mobile), `200px` (tablet), `220px` (desktop)
+## Alteracoes nos Arquivos
 
-### Alteracoes Especificas
+### 1. `src/components/landing/Header.tsx`
 
-1. **Linha 63** - Aumentar container principal:
+**Alterar import do logo:**
 ```tsx
 // De:
-<div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80">
+import logo from "@/assets/circular-experience-logo.png";
 
 // Para:
-<div className="relative w-[400px] h-[400px] sm:w-[480px] sm:h-[480px] md:w-[560px] md:h-[560px]">
+import logo from "@/assets/movimento-circular-logo.png";
 ```
 
-2. **Linha 65** - Aumentar circulo central:
+**Atualizar alt text:**
 ```tsx
 // De:
-w-20 h-20 sm:w-24 sm:h-24
+alt="Circular Experience"
 
 // Para:
-w-28 h-28 sm:w-32 sm:h-32
+alt="Movimento Circular"
 ```
 
-3. **Linha 72** - Ajustar inset do circulo tracejado:
+---
+
+### 2. `src/components/landing/Footer.tsx`
+
+**Alterar import do logo:**
 ```tsx
 // De:
-inset-8 sm:inset-10
+import logo from "@/assets/circular-experience-logo.png";
 
 // Para:
-inset-16 sm:inset-20
+import logo from "@/assets/movimento-circular-logo.png";
 ```
 
-4. **Linha 77** - Dobrar o raio:
+**Atualizar alt text e remover texto "Uma iniciativa do...":**
 ```tsx
 // De:
-const radius = 110;
+<div className="flex flex-col items-center md:items-start gap-2">
+  <LogoImage src={logo} alt="Circular Experience" ... />
+  <span className="text-xs">Uma iniciativa do Movimento Circular</span>
+</div>
 
 // Para:
-const radius = 180; // Dobrado para mobile
+<div className="flex flex-col items-center md:items-start gap-2">
+  <LogoImage src={logo} alt="Movimento Circular" ... />
+</div>
 ```
 
-5. **Linhas 91-92** - Aumentar tamanho dos icones:
-```tsx
-// De:
-w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14
-w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7
+O texto "Uma iniciativa do Movimento Circular" sera removido pois o logo ja e do Movimento Circular.
 
-// Para:
-w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18
-w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9
+---
+
+### 3. `src/components/landing/Hero.tsx`
+
+**Adicionar import do logo Circular Experience:**
+```tsx
+import circularExperienceLogo from "@/assets/circular-experience-logo.png";
 ```
 
-6. **Linha 94** - Aumentar tamanho do texto:
+**Substituir o badge de texto pelo logo:**
 ```tsx
-// De:
-text-[10px] sm:text-xs
+// De (linhas 23-26):
+<div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 mb-6 animate-fade-up">
+  <div className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
+  <span className="text-sm font-medium text-secondary">Metodologia Movimento Circular</span>
+</div>
 
 // Para:
-text-xs sm:text-sm
+<div className="mb-6 animate-fade-up">
+  <img 
+    src={circularExperienceLogo} 
+    alt="Circular Experience" 
+    className="h-16 md:h-20 w-auto"
+  />
+</div>
 ```
 
 ---
 
 ## Resumo das Alteracoes
 
-| Elemento | Valor Atual | Novo Valor |
-|----------|-------------|------------|
-| Container | 256-320px | 400-560px |
-| Raio | 110px | 180px |
-| Circulo central | 80-96px | 112-128px |
-| Icones | 44-56px | 56-72px |
-| Texto | 10-12px | 12-14px |
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/assets/movimento-circular-logo.png` | Novo arquivo (copia do upload) |
+| `src/components/landing/Header.tsx` | Trocar logo para Movimento Circular |
+| `src/components/landing/Footer.tsx` | Trocar logo para Movimento Circular, remover texto redundante |
+| `src/components/landing/Hero.tsx` | Substituir badge de texto pelo logo Circular Experience |
 
 ---
 
 ## Resultado Esperado
 
-O circulo dos 7 Rs ficara significativamente maior, com os icones mais espacados do centro mas com os textos dos labels mais proximos uns dos outros devido ao maior arco do circulo. Isso criara um visual mais impactante e legivel.
+- **Header/Footer:** Exibirao o logo "Movimento Circular" (novo)
+- **Hero:** Exibira o logo "Circular Experience" (atual) no lugar do badge de texto, antes do titulo principal
+
