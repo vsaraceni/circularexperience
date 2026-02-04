@@ -1,13 +1,24 @@
 import { ExternalLink } from "lucide-react";
+import { LogoImage } from "@/components/LogoImage";
 import logo from "@/assets/circular-experience-logo.png";
+
 const Footer = () => {
-  return <footer className="py-12 bg-foreground">
+  return (
+    <footer className="py-12" style={{ backgroundColor: "#F0ECEA" }}>
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
           <div className="flex flex-col items-center md:items-start gap-2">
-            <img src={logo} alt="Circular Experience" className="h-16 md:h-20 w-auto brightness-0 invert" loading="lazy" decoding="async" />
-            <span className="text-xs text-background/60">Uma iniciativa do Movimento Circular</span>
+            <LogoImage 
+              src={logo} 
+              alt="Circular Experience" 
+              className="h-16 md:h-20 w-auto" 
+              loading="lazy" 
+              decoding="async" 
+            />
+            <span className="text-xs" style={{ color: "#5F2558" }}>
+              Uma iniciativa do Movimento Circular
+            </span>
           </div>
 
           {/* Links */}
@@ -16,7 +27,8 @@ const Footer = () => {
               href="https://movimentocircular.io" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors"
+              className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: "#5F2558" }}
             >
               Saiba mais sobre o Movimento Circular
               <ExternalLink className="w-3.5 h-3.5" />
@@ -25,7 +37,8 @@ const Footer = () => {
               href="https://atinaedu.com.br" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="flex items-center gap-2 text-sm text-background/70 hover:text-background transition-colors"
+              className="flex items-center gap-2 text-sm transition-colors hover:opacity-80"
+              style={{ color: "#5F2558" }}
             >
               Atina Edu
               <ExternalLink className="w-3.5 h-3.5" />
@@ -33,11 +46,13 @@ const Footer = () => {
           </div>
 
           {/* Copyright */}
-          <p className="text-sm text-background/50">
+          <p className="text-sm" style={{ color: "#5F2558", opacity: 0.7 }}>
             © {new Date().getFullYear()} Circular Experience. Todos os direitos reservados.
           </p>
         </div>
       </div>
-    </footer>;
+    </footer>
+  );
 };
+
 export default Footer;
