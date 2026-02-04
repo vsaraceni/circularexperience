@@ -152,7 +152,7 @@ export default {
   					boxShadow: '0 0 40px hsl(328 100% 45% / 0.5)'
   				}
   			},
-  			'float': {
+  			float: {
   				'0%, 100%': {
   					transform: 'translateY(0)'
   				},
@@ -168,7 +168,7 @@ export default {
   			'fade-in': 'fade-in 0.4s ease-out',
   			'scale-in': 'scale-in 0.3s ease-out',
   			'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-  			'float': 'float 3s ease-in-out infinite'
+  			float: 'float 3s ease-in-out infinite'
   		}
   	}
   },
