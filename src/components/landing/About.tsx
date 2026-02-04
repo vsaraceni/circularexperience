@@ -1,27 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Target, Lightbulb, Recycle, RefreshCw, Leaf, Wrench, Brain } from "lucide-react";
-const sevenRs = [{
-  icon: Recycle,
-  label: "Reduzir"
-}, {
-  icon: RefreshCw,
-  label: "Reutilizar"
-}, {
-  icon: Recycle,
-  label: "Reciclar"
-}, {
-  icon: Lightbulb,
-  label: "Redefinir"
-}, {
-  icon: Leaf,
-  label: "Reaproveitar"
-}, {
-  icon: Wrench,
-  label: "Recuperar"
-}, {
-  icon: Brain,
-  label: "Repensar"
-}];
+import { Target, Lightbulb, Recycle, RefreshCw, Droplets, Wrench, TreeDeciduous, Hand } from "lucide-react";
+
+const sevenRs = [
+  { icon: Hand, label: "Recusar" },
+  { icon: Lightbulb, label: "Repensar" },
+  { icon: Droplets, label: "Reduzir" },
+  { icon: RefreshCw, label: "Reutilizar" },
+  { icon: Recycle, label: "Reciclar" },
+  { icon: Wrench, label: "Reparar" },
+  { icon: TreeDeciduous, label: "Regenerar" },
+];
 const About = () => {
   const scrollToContact = () => {
     const element = document.getElementById("contato");
@@ -70,29 +58,49 @@ const About = () => {
             </Button>
           </div>
 
-          {/* 7 R's Visual */}
-          <div className="relative">
-            <div className="bg-card rounded-3xl p-8 border border-border shadow-lg">
-              <h3 className="font-display text-xl font-bold text-foreground mb-6 text-center">
-                Os 7 R's da Economia Circular
-              </h3>
+          {/* 7 R's Visual - Circular Layout */}
+          <div className="relative flex items-center justify-center">
+            <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80">
+              {/* Círculo central */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 sm:w-24 sm:h-24 rounded-full gradient-hero flex items-center justify-center shadow-glow-primary z-10">
+                <span className="text-primary-foreground text-center text-[10px] sm:text-xs font-bold leading-tight">
+                  Economia<br/>Circular
+                </span>
+              </div>
               
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {sevenRs.map((item, index) => <div key={index} className="group flex flex-col items-center p-4 rounded-xl bg-muted/50 hover:bg-primary/10 transition-all duration-300" style={{
-                animationDelay: `${index * 0.1}s`
-              }}>
-                    <div className="w-12 h-12 rounded-full gradient-hero flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                      <item.icon className="w-6 h-6 text-primary-foreground" />
+              {/* Círculo tracejado de conexão com animação */}
+              <div className="absolute inset-8 sm:inset-10 rounded-full border-2 border-dashed border-primary/30 animate-slow-spin" />
+              
+              {/* Items posicionados em círculo */}
+              {sevenRs.map((item, index) => {
+                const angle = (index * 360) / 7 - 90; // Começa no topo
+                const radius = 110; // Raio em pixels para mobile
+                const radiusSm = 120; // Raio para tablet
+                const radiusMd = 130; // Raio para desktop
+                const x = Math.cos((angle * Math.PI) / 180);
+                const y = Math.sin((angle * Math.PI) / 180);
+                
+                return (
+                  <div
+                    key={index}
+                    className="absolute top-1/2 left-1/2 flex flex-col items-center group"
+                    style={{
+                      transform: `translate(calc(-50% + ${x * radius}px), calc(-50% + ${y * radius}px))`
+                    }}
+                  >
+                    <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full gradient-hero flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 cursor-pointer">
+                      <item.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-primary-foreground" />
                     </div>
-                    <span className="text-sm font-semibold text-foreground text-center">
+                    <span className="mt-1 sm:mt-2 text-[10px] sm:text-xs font-semibold text-foreground whitespace-nowrap">
                       {item.label}
                     </span>
-                  </div>)}
-              </div>
-
-              {/* Decorative circle */}
-              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-secondary/20 blur-2xl" />
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 rounded-full bg-primary/10 blur-2xl" />
+                  </div>
+                );
+              })}
+              
+              {/* Decorative elements */}
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-secondary/20 blur-2xl" />
+              <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-primary/10 blur-2xl" />
             </div>
           </div>
         </div>
