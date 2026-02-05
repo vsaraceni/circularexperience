@@ -38,7 +38,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Circular Experience <contato@lovable.movimentocircular.io>",
-      to: ["contato@circularexperience.com.br"], // Substitua pelo e-mail de destino
+      to: ["contato@movimentocircular.io"],
       subject: `Nova Inscrição - ${leadData.name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
