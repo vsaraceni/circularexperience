@@ -50,7 +50,7 @@ const Methodology = () => {
             <img 
               src={circularExperienceLogo} 
               alt="Circular Experience" 
-              className="h-16 md:h-20 w-auto"
+              className="h-[83px] md:h-[104px] w-auto"
             />
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
