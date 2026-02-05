@@ -1,30 +1,30 @@
 
-# Plano: Atualizar Domínio de Envio de Email
+# Plano: Alterar Destinatário do Email do Formulário
 
 ## Resumo
-Atualizar o endereço de envio (campo `from`) na edge function `send-lead-email` para utilizar o domínio verificado `lovable.movimentocircular.io`.
+Alterar o endereço de destino (campo `to`) na edge function `send-lead-email` para enviar os emails para o novo endereço de contato.
 
 ## Alteração Necessária
 
 **Arquivo:** `supabase/functions/send-lead-email/index.ts`
 
-**Localização:** Linha 40
+**Localização:** Linha 39
 
 **De:**
 ```typescript
-from: "Circular Experience <onboarding@resend.dev>",
+to: ["contato@circularexperience.com.br"],
 ```
 
 **Para:**
 ```typescript
-from: "Circular Experience <contato@lovable.movimentocircular.io>",
+to: ["contato@movimentocircular.io"],
 ```
 
 ## Justificativa
-O domínio `lovable.movimentocircular.io` está verificado no Resend, permitindo enviar emails para qualquer endereço de destino (neste caso, `contato@circularexperience.com.br`). Isso resolve o erro anterior que permitia apenas enviar para o email do proprietário da conta.
+O novo endereço `contato@movimentocircular.io` será o destinatário de todas as inscrições enviadas através do formulário de leads.
 
 ## Resultado Esperado
-Após esta alteração, o formulário enviará emails com sucesso através do domínio verificado, e os leads receberão a mensagem normalmente.
+Após esta alteração, todos os emails de inscrição do formulário serão entregues no novo endereço de email da Movimento Circular.
 
 ## Arquivos Afetados
-- `supabase/functions/send-lead-email/index.ts` (linha 40)
+- `supabase/functions/send-lead-email/index.ts` (linha 39)
