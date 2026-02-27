@@ -17,6 +17,7 @@ const leadSchema = z.object({
   name: z.string().trim().min(3, "Nome deve ter pelo menos 3 caracteres").max(100, "Nome muito longo"),
   email: z.string().trim().email("E-mail inválido").max(255, "E-mail muito longo"),
   whatsapp: z.string().trim().min(10, "WhatsApp deve ter pelo menos 10 dígitos").max(15, "WhatsApp inválido").regex(/^[\d\s\-\(\)]+$/, "Apenas números são permitidos"),
+  cargo: z.string().trim().min(2, "Cargo deve ter pelo menos 2 caracteres").max(100, "Cargo muito longo"),
   company: z.string().trim().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").max(100, "Nome da empresa muito longo"),
   city: z.string().trim().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100, "Cidade muito longa"),
   state: z.string().min(2, "Selecione um estado"),
@@ -29,6 +30,7 @@ const LeadForm = () => {
     name: "",
     email: "",
     whatsapp: "",
+    cargo: "",
     company: "",
     city: "",
     state: "",
@@ -79,13 +81,14 @@ const LeadForm = () => {
       }
       
       setIsSuccess(true);
-      toast.success("Inscrição realizada com sucesso! Em breve entraremos em contato.");
+      toast.success("Solicitação enviada com sucesso! Em breve entraremos em contato.");
       
       // Reset form after success
       setFormData({
         name: "",
         email: "",
         whatsapp: "",
+        cargo: "",
         company: "",
         city: "",
         state: "",
@@ -105,16 +108,16 @@ const LeadForm = () => {
           <CheckCircle className="w-8 h-8 text-secondary-foreground" />
         </div>
         <h3 className="font-display text-xl font-bold text-foreground mb-2">
-          Inscrição Confirmada!
+          Solicitação Enviada!
         </h3>
         <p className="text-muted-foreground mb-4">
-          Em breve nossa equipe entrará em contato com você.
+          Em breve nossa equipe entrará em contato com uma proposta personalizada.
         </p>
         <Button 
           variant="outline" 
           onClick={() => setIsSuccess(false)}
         >
-          Fazer nova inscrição
+          Fazer nova solicitação
         </Button>
       </div>
     );
@@ -178,14 +181,32 @@ const LeadForm = () => {
         )}
       </div>
 
+      {/* Cargo */}
+      <div className="space-y-2">
+        <Label htmlFor="cargo" className="text-foreground">
+          Cargo <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="cargo"
+          placeholder="Ex: Gerente de RH, Coord. de Sustentabilidade"
+          value={formData.cargo}
+          onChange={(e) => handleChange("cargo", e.target.value)}
+          className={errors.cargo ? "border-destructive" : ""}
+          maxLength={100}
+        />
+        {errors.cargo && (
+          <p className="text-xs text-destructive">{errors.cargo}</p>
+        )}
+      </div>
+
       {/* Company */}
       <div className="space-y-2">
         <Label htmlFor="company" className="text-foreground">
-          Empresa <span className="text-destructive">*</span>
+          Empresa / Organização <span className="text-destructive">*</span>
         </Label>
         <Input
           id="company"
-          placeholder="Nome da sua empresa"
+          placeholder="Nome da sua organização"
           value={formData.company}
           onChange={(e) => handleChange("company", e.target.value)}
           className={errors.company ? "border-destructive" : ""}
@@ -256,13 +277,13 @@ const LeadForm = () => {
         ) : (
           <>
             <Send className="w-4 h-4" />
-            Quero Participar
+            Solicitar Proposta
           </>
         )}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center mt-4">
-        Ao se inscrever, você concorda em receber informações sobre o Circular Experience.
+        Ao enviar, você concorda em receber uma proposta comercial do Circular Experience.
       </p>
     </form>
   );

@@ -9,7 +9,7 @@ const Video = () => {
             Conheça o Circular Experience
           </h2>
           <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-            Assista ao vídeo e descubra como transformar seu negócio
+            Assista ao vídeo e descubra como transformar sua organização
           </p>
         </div>
 

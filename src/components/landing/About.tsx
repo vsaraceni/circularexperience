@@ -30,19 +30,19 @@ const About = () => {
             </div>
 
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
-              Uma oficina para colocar a{" "}
+              Capacite seu time para colocar a{" "}
               <span className="text-gradient-primary">Economia Circular</span>{" "}
-              em prática!
+              em prática
             </h2>
 
             <div className="space-y-4 text-muted-foreground mb-8">
               <p className="text-lg leading-relaxed">
-                <strong className="text-foreground">Objetivo:</strong> Juntos, construiremos estratégias 
+                <strong className="text-foreground">Objetivo:</strong> Juntos com seu time, construiremos estratégias 
                 viáveis para evitar que materiais se tornem resíduos, promovendo a utilização eficiente 
-                e prolongada dos recursos.
+                e prolongada dos recursos na sua operação.
               </p>
               <p className="leading-relaxed">
-                Esta atividade colaborativa incentivará os participantes a desenvolver soluções 
+                Esta atividade colaborativa incentivará os colaboradores a desenvolver soluções 
                 criativas e práticas, aplicáveis diretamente em seus negócios, para minimizar 
                 o desperdício e maximizar a circularidade.
               </p>
@@ -54,7 +54,7 @@ const About = () => {
             </div>
 
             <Button variant="hero" size="lg" onClick={scrollToContact}>
-              Quero Participar
+              Solicitar Proposta
             </Button>
           </div>
 
@@ -113,11 +113,11 @@ const About = () => {
                 A quem se destina?
               </h3>
               <p className="text-primary-foreground/90">
-                Profissionais que desejam compreender como a Economia Circular pode ser aplicada em seus negócios, segmentos ou área de atuação.            
+                Líderes, gestores, colaboradores, fornecedores, clientes que se conectam direta ou indiretamente com o tema mas que precisam compreender o seu papel na transição para a circularidade.
               </p>
             </div>
             <Button variant="accent" size="lg" onClick={scrollToContact}>
-              Inscreva-se Agora
+              Fale com Nossa Equipe
             </Button>
           </div>
         </div>

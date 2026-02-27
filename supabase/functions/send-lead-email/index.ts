@@ -11,6 +11,7 @@ interface LeadData {
   name: string;
   email: string;
   whatsapp: string;
+  cargo: string;
   company: string;
   city: string;
   state: string;
@@ -32,18 +33,18 @@ const handler = async (req: Request): Promise<Response> => {
     const leadData: LeadData = await req.json();
 
     // Validate required fields
-    if (!leadData.name || !leadData.email || !leadData.whatsapp || !leadData.company || !leadData.city || !leadData.state) {
+    if (!leadData.name || !leadData.email || !leadData.whatsapp || !leadData.cargo || !leadData.company || !leadData.city || !leadData.state) {
       throw new Error("Campos obrigatórios faltando");
     }
 
     const emailResponse = await resend.emails.send({
       from: "Circular Experience <contato@lovable.movimentocircular.io>",
       to: ["contato@movimentocircular.io"],
-      subject: `Nova Inscrição - ${leadData.name}`,
+      subject: `Nova Solicitação de Proposta - ${leadData.name}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h1 style="color: #0D5332; border-bottom: 2px solid #7BCC52; padding-bottom: 10px;">
-            Nova Inscrição - Circular Experience
+            Nova Solicitação de Proposta - Circular Experience
           </h1>
           
           <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -52,6 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p><strong>Nome:</strong> ${leadData.name}</p>
             <p><strong>E-mail:</strong> <a href="mailto:${leadData.email}">${leadData.email}</a></p>
             <p><strong>WhatsApp:</strong> <a href="https://wa.me/55${leadData.whatsapp.replace(/\D/g, '')}">${leadData.whatsapp}</a></p>
+            <p><strong>Cargo:</strong> ${leadData.cargo}</p>
             <p><strong>Empresa:</strong> ${leadData.company}</p>
             <p><strong>Cidade/Estado:</strong> ${leadData.city} - ${leadData.state}</p>
           </div>

@@ -59,7 +59,7 @@ const Header = () => {
           {/* CTA Button */}
           <div className="hidden md:block">
             <Button variant="hero" size="lg" onClick={() => scrollToSection("contato")}>
-              Quero Participar
+              Solicitar Proposta
             </Button>
           </div>
 
@@ -101,7 +101,7 @@ const Header = () => {
                 Especialistas
               </button>
               <Button variant="hero" className="mt-2" onClick={() => scrollToSection("contato")}>
-                Quero Participar
+                Solicitar Proposta
               </Button>
             </nav>
           </div>

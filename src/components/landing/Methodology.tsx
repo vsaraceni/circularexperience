@@ -22,7 +22,7 @@ const steps = [
     number: "3",
     title: "Criando Circularidade",
     subtitle: "Experiência mão-na-massa",
-    description: "Oficina colaborativa e construção de um plano de ação prático e personalizado para o empresário.",
+    description: "Oficina colaborativa e construção de um plano de ação prático e personalizado para sua organização.",
     icon: Wrench,
     color: "accent",
   },
@@ -57,7 +57,7 @@ const Methodology = () => {
             Nossa <span className="text-gradient-primary">Metodologia</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Uma jornada de aprendizado prático em 3 etapas para transformar seu negócio
+            Uma jornada em 3 etapas para capacitar sua equipe
           </p>
         </div>
 
@@ -106,11 +106,11 @@ const Methodology = () => {
         {/* Key Benefits */}
         <div className="mt-16 bg-card rounded-2xl p-8 border border-border">
           <h3 className="font-display text-2xl font-bold text-foreground mb-6 text-center">
-            O que você vai aprender
+            O que seu time vai aprender
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              "Conceitos básicos e premissas da Economia Circular com foco em pequenos negócios",
+              "Conceitos básicos e premissas da Economia Circular com foco em operações corporativas",
               "Circularidade de diferentes materiais para evitar desperdícios e minimizar custos",
               "Mapeamento de oportunidades para construção de negócios mais circulares",
               "Ferramentas e estratégias para identificação de processos circulares",
