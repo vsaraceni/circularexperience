@@ -1,55 +1,67 @@
 
-# Plano: Remover Badge "Presencial"
+
+# Plano: Reposicionar Narrativa para B2B
 
 ## Resumo
-Remover o card/badge "Presencial" da secao Hero, mantendo os outros 4 badges (4 Horas, Ate 40 Participantes, Gratuito Certificado, 100% Pratico).
 
-## Alteracoes Necessarias
+Ajustar toda a comunicacao da landing page para o modelo B2B, com a headline atualizada conforme solicitado.
 
-**Arquivo:** `src/components/landing/Hero.tsx`
+## Mudancas por Componente
 
-### 1. Atualizar o grid de 5 para 4 colunas
-**Linha 55 - De:**
-```typescript
-<div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-fade-up"
-```
+### 1. Hero (`Hero.tsx`)
+- **Headline:** "Abra as portas da sua organizacao para a **Economia Circular**"
+- **Subheadline:** "Uma experiencia imersiva e pratica que capacita seu time a aplicar os principios da circularidade, gerando valor e inovacao para sua organizacao."
+- **CTA principal:** "Solicitar Proposta"
+- **Card "Ate 40":** label "Colaboradores", sublabel "Por edicao"
 
-**Para:**
-```typescript
-<div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-up"
-```
+### 2. Header (`Header.tsx`)
+- **Botao CTA:** "Solicitar Proposta" (desktop e mobile)
 
-### 2. Remover o card "Presencial"
-**Linhas 88-96 - Remover completamente:**
-```typescript
-<div className="flex items-center gap-3 p-4 rounded-xl bg-card/80 backdrop-blur-sm border border-border">
-  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-    <MapPin className="w-5 h-5 text-foreground" />
-  </div>
-  <div>
-    <p className="font-bold text-foreground">Presencial</p>
-    <p className="text-xs text-muted-foreground">Formato</p>
-  </div>
-</div>
-```
+### 3. Stats (`Stats.tsx`)
+- **Stat "83% dos pequenos empresarios...":** "Das empresas brasileiras ainda nao possuem estrategia de circularidade"
 
-### 3. Remover import do icone MapPin
-**Linha 2 - De:**
-```typescript
-import { Clock, Users, Award, MapPin, Hammer } from "lucide-react";
-```
+### 4. About (`About.tsx`)
+- **Titulo:** "Capacite seu time para colocar a **Economia Circular** em pratica"
+- **Objetivo:** Linguagem corporativa focada em equipes
+- **CTA:** "Solicitar Proposta"
+- **Box "A quem se destina?":** "Lideres, gestores, colaboradores, fornecedores, clientes que se conectam direta ou indiretamente com o tema mas que precisam compreender o seu papel na transicao para a circularidade."
+- **Botao do box:** "Fale com Nossa Equipe"
 
-**Para:**
-```typescript
-import { Clock, Users, Award, Hammer } from "lucide-react";
-```
+### 5. Methodology (`Methodology.tsx`)
+- **Subtitulo:** "Uma jornada em 3 etapas para capacitar sua equipe"
+- **Step 3:** "para sua organizacao"
+- **Titulo aprendizado:** "O que seu time vai aprender"
 
-## Resultado Final
-A secao Hero tera 4 badges em desktop:
-- 4 Horas (Duracao)
-- Ate 40 (Participantes)
-- Gratuito (Certificado)
-- 100% (Pratico)
+### 6. Agenda (`Agenda.tsx`)
+- **Titulo:** "Agenda da Oficina"
+
+### 7. Video (`Video.tsx`)
+- **Subtitulo:** "como transformar sua organizacao"
+
+### 8. CTA e LeadForm (`CTA.tsx` e `LeadForm.tsx`)
+- **Badge:** "Solicite uma proposta"
+- **Titulo:** "Leve o Circular Experience para sua empresa"
+- **Novo campo:** "Cargo" com validacao Zod (min 2 chars)
+- **Botao submit:** "Solicitar Proposta"
+- **Pos-envio:** "Solicitacao Enviada!" com mensagem de proposta personalizada
+- **Consentimento:** "receber uma proposta comercial do Circular Experience"
+
+### 9. Edge Function (`send-lead-email/index.ts`)
+- Subject: "Nova Solicitacao de Proposta: {name}"
+- Adicionar campo "cargo" ao corpo do email
 
 ## Arquivos Afetados
-- `src/components/landing/Hero.tsx`
+
+| Arquivo | Alteracao |
+|---|---|
+| `src/components/landing/Hero.tsx` | Headline, subheadline, CTA, labels |
+| `src/components/landing/Header.tsx` | Botao CTA |
+| `src/components/landing/Stats.tsx` | Texto de stat |
+| `src/components/landing/About.tsx` | Textos, publico-alvo, CTAs |
+| `src/components/landing/Methodology.tsx` | Textos |
+| `src/components/landing/Agenda.tsx` | Titulo |
+| `src/components/landing/Video.tsx` | Subtitulo |
+| `src/components/landing/CTA.tsx` | Textos |
+| `src/components/landing/LeadForm.tsx` | Novo campo cargo, textos, botao |
+| `supabase/functions/send-lead-email/index.ts` | Campo cargo, subject |
+
