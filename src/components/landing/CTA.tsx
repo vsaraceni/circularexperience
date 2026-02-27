@@ -5,12 +5,12 @@ const CTA = () => {
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6">
-            <span className="text-sm font-medium text-primary">Inscreva-se agora</span>
+            <span className="text-sm font-medium text-primary">Solicite uma proposta</span>
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Participe do <span className="text-gradient-primary">Circular Experience</span>
+            Leve o <span className="text-gradient-primary">Circular Experience</span> para sua empresa
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Preencha o formulário abaixo e nossa equipe entrará em contato para levar a oficina para sua empresa, cidade ou região.</p>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Preencha o formulário e nossa equipe entrará em contato para apresentar uma proposta personalizada para sua organização.</p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
@@ -22,7 +22,7 @@ const CTA = () => {
 
             <div className="relative z-10">
               <h3 className="font-display text-xl font-bold text-foreground mb-6">
-                Formulário de Inscrição
+                Solicitar Proposta
               </h3>
               <LeadForm />
             </div>

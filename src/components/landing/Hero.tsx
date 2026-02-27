@@ -30,21 +30,21 @@ const Hero = () => {
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-up" style={{
           animationDelay: "0.1s"
         }}>
-            Seu negócio saindo na frente com a{" "}
+            Abra as portas da sua organização para a{" "}
             <span className="text-gradient-primary">Economia Circular</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed animate-fade-up" style={{
           animationDelay: "0.2s"
-        }}>Uma oficina prática e transformadora para profissionais aplicarem os princípios da circularidade em seus setores ou negócios e gerarem mais valor.</p>
+        }}>Uma experiência imersiva e prática que capacita seu time a aplicar os princípios da circularidade, gerando valor e inovação para sua organização.</p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-up" style={{
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
-              Quero Participar
+              Solicitar Proposta
             </Button>
             <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("sobre")}>
               Saiba Mais
@@ -71,7 +71,7 @@ const Hero = () => {
               </div>
               <div>
                 <p className="font-bold text-foreground">Até 40</p>
-                <p className="text-xs text-muted-foreground">Participantes</p>
+                <p className="text-xs text-muted-foreground">Colaboradores por edição</p>
               </div>
             </div>
 

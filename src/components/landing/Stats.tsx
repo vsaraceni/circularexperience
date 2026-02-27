@@ -13,7 +13,7 @@ const stats = [
     icon: AlertCircle,
     value: "83%",
     suffix: "",
-    description: "Dos pequenos empresários ainda não compreendem bem o que é Economia Circular",
+    description: "Das empresas brasileiras ainda não possuem estratégia de circularidade",
     source: "Pesquisa SEBRAE, 2024",
     color: "primary" as const,
   },

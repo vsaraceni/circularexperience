@@ -22,7 +22,7 @@ const agendaItems = [
   {
     time: "40 min",
     title: "Conexão com Negócios",
-    description: "Sistematização dos aprendizados e identificação de oportunidades de geração de valor.",
+    description: "Sistematização dos aprendizados e identificação de oportunidades de geração de valor para sua organização.",
     icon: MessageCircle,
   },
   {
@@ -39,7 +39,7 @@ const Agenda = () => {
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-16">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
-            <span className="text-gradient-primary">Agenda</span> do Evento
+            <span className="text-gradient-primary">Agenda</span> da Oficina
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             4 horas de imersão prática e transformadora
