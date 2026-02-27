@@ -10,7 +10,7 @@ const Hero = () => {
       });
     }
   };
-  return <section className="relative min-h-screen flex items-center overflow-hidden pt-20">
+  return <section className="relative min-h-screen flex items-center overflow-hidden pt-28 md:pt-32 pb-16 md:pb-20">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img src={heroImage} alt="Economia Circular" className="w-full h-full object-cover" />
@@ -31,7 +31,7 @@ const Hero = () => {
           animationDelay: "0.1s"
         }}>
             Abra as portas da sua organização para a{" "}
-            <span className="text-gradient-primary">Economia Circular</span>
+            <span className="text-accent font-extrabold">Economia Circular</span>
           </h1>
 
           {/* Subheadline */}
