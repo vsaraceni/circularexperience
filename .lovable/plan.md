@@ -1,67 +1,46 @@
 
 
-# Plano: Reposicionar Narrativa para B2B
+# Plano: Nova Foto de Fundo no Hero com Overlay Humanizado
 
 ## Resumo
 
-Ajustar toda a comunicacao da landing page para o modelo B2B, com a headline atualizada conforme solicitado.
+Substituir a imagem de fundo atual do Hero pela foto da oficina (pessoas trabalhando com ferramentas), aplicar uma pelicula escura semitransparente por cima para garantir legibilidade, e ajustar as cores dos textos para branco/claro sobre a imagem.
 
-## Mudancas por Componente
+## Alteracoes
 
-### 1. Hero (`Hero.tsx`)
-- **Headline:** "Abra as portas da sua organizacao para a **Economia Circular**"
-- **Subheadline:** "Uma experiencia imersiva e pratica que capacita seu time a aplicar os principios da circularidade, gerando valor e inovacao para sua organizacao."
-- **CTA principal:** "Solicitar Proposta"
-- **Card "Ate 40":** label "Colaboradores", sublabel "Por edicao"
+### 1. Copiar a imagem para o projeto
+- Copiar `user-uploads://IMG_6999.jpg` para `src/assets/hero-workshop.jpg`
 
-### 2. Header (`Header.tsx`)
-- **Botao CTA:** "Solicitar Proposta" (desktop e mobile)
+### 2. Atualizar `Hero.tsx`
 
-### 3. Stats (`Stats.tsx`)
-- **Stat "83% dos pequenos empresarios...":** "Das empresas brasileiras ainda nao possuem estrategia de circularidade"
+**Imagem de fundo:**
+- Trocar o import de `hero-circular-new.png` para `hero-workshop.jpg`
 
-### 4. About (`About.tsx`)
-- **Titulo:** "Capacite seu time para colocar a **Economia Circular** em pratica"
-- **Objetivo:** Linguagem corporativa focada em equipes
-- **CTA:** "Solicitar Proposta"
-- **Box "A quem se destina?":** "Lideres, gestores, colaboradores, fornecedores, clientes que se conectam direta ou indiretamente com o tema mas que precisam compreender o seu papel na transicao para a circularidade."
-- **Botao do box:** "Fale com Nossa Equipe"
+**Overlay (pelicula):**
+- Substituir o gradiente lateral atual por uma pelicula escura uniforme com leve gradiente:
+  - `bg-gradient-to-r from-black/70 via-black/50 to-black/40`
+  - Isso escurece a foto o suficiente para o texto branco se destacar sem perder a humanizacao da imagem
 
-### 5. Methodology (`Methodology.tsx`)
-- **Subtitulo:** "Uma jornada em 3 etapas para capacitar sua equipe"
-- **Step 3:** "para sua organizacao"
-- **Titulo aprendizado:** "O que seu time vai aprender"
+**Cores dos textos (sobre fundo escuro):**
+- Headline: de `text-foreground` para `text-white`
+- Span "Economia Circular": manter gradiente ou usar cor clara de destaque (ex: amarelo/teal do branding)
+- Subheadline: de `text-muted-foreground` para `text-white/80`
+- Badge: fundo `bg-white/10 border-white/20` com texto `text-white`
+- Cards info: `bg-white/10 backdrop-blur-md border-white/15` com textos em `text-white` e sublabels em `text-white/70`
+- Icones nos cards: manter os gradientes atuais (eles ja tem contraste proprio)
 
-### 6. Agenda (`Agenda.tsx`)
-- **Titulo:** "Agenda da Oficina"
+**Botoes:**
+- "Solicitar Proposta" (hero variant): ja deve ter bom contraste, verificar
+- "Saiba Mais" (heroOutline): ajustar borda e texto para branco se necessario
 
-### 7. Video (`Video.tsx`)
-- **Subtitulo:** "como transformar sua organizacao"
+**Elementos decorativos:**
+- Ajustar blobs para `bg-white/10` e `bg-primary/20` para nao competir com a foto
 
-### 8. CTA e LeadForm (`CTA.tsx` e `LeadForm.tsx`)
-- **Badge:** "Solicite uma proposta"
-- **Titulo:** "Leve o Circular Experience para sua empresa"
-- **Novo campo:** "Cargo" com validacao Zod (min 2 chars)
-- **Botao submit:** "Solicitar Proposta"
-- **Pos-envio:** "Solicitacao Enviada!" com mensagem de proposta personalizada
-- **Consentimento:** "receber uma proposta comercial do Circular Experience"
+## Resultado Esperado
 
-### 9. Edge Function (`send-lead-email/index.ts`)
-- Subject: "Nova Solicitacao de Proposta: {name}"
-- Adicionar campo "cargo" ao corpo do email
+Hero com foto real da oficina ao fundo, transmitindo a experiencia pratica e humana do Circular Experience. Pelicula escura sutil garante legibilidade. Textos em branco/claro criam contraste elegante sobre a imagem.
 
-## Arquivos Afetados
-
-| Arquivo | Alteracao |
-|---|---|
-| `src/components/landing/Hero.tsx` | Headline, subheadline, CTA, labels |
-| `src/components/landing/Header.tsx` | Botao CTA |
-| `src/components/landing/Stats.tsx` | Texto de stat |
-| `src/components/landing/About.tsx` | Textos, publico-alvo, CTAs |
-| `src/components/landing/Methodology.tsx` | Textos |
-| `src/components/landing/Agenda.tsx` | Titulo |
-| `src/components/landing/Video.tsx` | Subtitulo |
-| `src/components/landing/CTA.tsx` | Textos |
-| `src/components/landing/LeadForm.tsx` | Novo campo cargo, textos, botao |
-| `supabase/functions/send-lead-email/index.ts` | Campo cargo, subject |
+## Arquivo Afetado
+- `src/components/landing/Hero.tsx` (import + overlay + cores)
+- Nova imagem: `src/assets/hero-workshop.jpg`
 
