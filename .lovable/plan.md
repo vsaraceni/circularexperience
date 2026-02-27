@@ -1,46 +1,25 @@
 
 
-# Plano: Nova Foto de Fundo no Hero com Overlay Humanizado
+# Ajustes de Legibilidade e Espacamento no Hero
 
-## Resumo
+## Problemas Identificados
 
-Substituir a imagem de fundo atual do Hero pela foto da oficina (pessoas trabalhando com ferramentas), aplicar uma pelicula escura semitransparente por cima para garantir legibilidade, e ajustar as cores dos textos para branco/claro sobre a imagem.
+1. **Texto "Economia Circular" em roxo** -- a classe `text-gradient-primary` aplica um gradiente roxo escuro que nao tem contraste suficiente sobre a foto escura
+2. **Cards na base** -- estao colados na parte inferior da secao, sem respiro
+3. **Badge superior** -- esta colado na barra de navegacao, sem respiro
 
-## Alteracoes
+## Solucao
 
-### 1. Copiar a imagem para o projeto
-- Copiar `user-uploads://IMG_6999.jpg` para `src/assets/hero-workshop.jpg`
+### 1. Cor do texto "Economia Circular" (`Hero.tsx`, linha 34)
+- Trocar `text-gradient-primary` por `text-white` com um leve destaque visual
+- Alternativa melhor: usar uma cor clara de destaque como o **amarelo/dourado** do branding (`text-[hsl(45,100%,50%)]`) ou simplesmente branco com underline/itálico
+- Recomendacao: usar a cor accent (amarelo) que contrasta bem sobre fundo escuro e mantem identidade visual
 
-### 2. Atualizar `Hero.tsx`
+### 2. Respiro inferior nos cards (`Hero.tsx`, linha 55)
+- Adicionar `pb-16 md:pb-20` na secao principal para criar espaco entre os cards e a borda inferior
 
-**Imagem de fundo:**
-- Trocar o import de `hero-circular-new.png` para `hero-workshop.jpg`
-
-**Overlay (pelicula):**
-- Substituir o gradiente lateral atual por uma pelicula escura uniforme com leve gradiente:
-  - `bg-gradient-to-r from-black/70 via-black/50 to-black/40`
-  - Isso escurece a foto o suficiente para o texto branco se destacar sem perder a humanizacao da imagem
-
-**Cores dos textos (sobre fundo escuro):**
-- Headline: de `text-foreground` para `text-white`
-- Span "Economia Circular": manter gradiente ou usar cor clara de destaque (ex: amarelo/teal do branding)
-- Subheadline: de `text-muted-foreground` para `text-white/80`
-- Badge: fundo `bg-white/10 border-white/20` com texto `text-white`
-- Cards info: `bg-white/10 backdrop-blur-md border-white/15` com textos em `text-white` e sublabels em `text-white/70`
-- Icones nos cards: manter os gradientes atuais (eles ja tem contraste proprio)
-
-**Botoes:**
-- "Solicitar Proposta" (hero variant): ja deve ter bom contraste, verificar
-- "Saiba Mais" (heroOutline): ajustar borda e texto para branco se necessario
-
-**Elementos decorativos:**
-- Ajustar blobs para `bg-white/10` e `bg-primary/20` para nao competir com a foto
-
-## Resultado Esperado
-
-Hero com foto real da oficina ao fundo, transmitindo a experiencia pratica e humana do Circular Experience. Pelicula escura sutil garante legibilidade. Textos em branco/claro criam contraste elegante sobre a imagem.
+### 3. Respiro superior no badge (`Hero.tsx`, linha 23)
+- Aumentar o `pt-20` da secao para `pt-28 md:pt-32` para dar mais espaco entre a navegacao e o badge
 
 ## Arquivo Afetado
-- `src/components/landing/Hero.tsx` (import + overlay + cores)
-- Nova imagem: `src/assets/hero-workshop.jpg`
-
+- `src/components/landing/Hero.tsx` -- 3 ajustes pontuais de classes CSS
