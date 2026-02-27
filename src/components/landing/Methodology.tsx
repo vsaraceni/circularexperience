@@ -43,7 +43,7 @@ const Methodology = () => {
   };
 
   return (
-    <section id="metodologia" className="py-20 bg-muted/30">
+    <section id="metodologia" className="pt-10 pb-20 bg-muted/30">
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-16">
           <div className="flex justify-center mb-6">
