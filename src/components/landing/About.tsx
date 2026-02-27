@@ -19,7 +19,7 @@ const About = () => {
       });
     }
   };
-  return <section id="sobre" className="py-20 bg-background">
+  return <section id="sobre" className="pt-20 pb-10 bg-background">
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
