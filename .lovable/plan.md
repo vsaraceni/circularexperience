@@ -1,22 +1,31 @@
 
-
-# Reduzir logos do header e footer para proporcao equilibrada
+# Auto-avanco de videos no carrossel
 
 ## Problema
-Os logos no header e footer estao usando `h-16 md:h-20`, que e a altura total do header (64px / 80px). Isso faz o logo ocupar 100% da altura sem respiro visual.
+Atualmente, quando um video termina, nada acontece. O usuario precisa clicar manualmente na proxima thumbnail.
 
 ## Solucao
+Usar a YouTube IFrame Player API para detectar o fim de cada video e avancar automaticamente para o proximo.
 
-Reduzir as dimensoes dos logos e adicionar padding adequado para criar respiro.
+### Mudancas em `src/components/landing/Video.tsx`
 
-### `src/components/landing/Header.tsx`
-- Alterar classe do logo de `h-16 md:h-20` para `h-10 md:h-12` (40px / 48px)
-- Isso deixa respiro vertical dentro do header de 64px / 80px
+1. **Carregar a YouTube IFrame API** via script tag dinamico no `useEffect`
+2. **Substituir o iframe manual por `YT.Player`** - criar o player programaticamente para ter acesso aos eventos
+3. **Escutar o evento `onStateChange`** - quando o estado for `YT.PlayerState.ENDED` (0), avancar para o proximo video na lista
+4. **Logica de avanco circular** - ao terminar o ultimo video (5o), parar (nao volta ao primeiro)
+5. **Manter todas as funcionalidades existentes** - autoplay por visibilidade, start=3 no primeiro video, selecao manual por thumbnails
 
-### `src/components/landing/Footer.tsx`
-- Alterar classe do logo de `h-16 md:h-20` para `h-10 md:h-12` (40px / 48px)
-- Manter consistencia visual entre header e footer
+### Detalhes tecnicos
 
-## Resultado
-Logos proporcionais com respiro nas margens, mantendo boa visibilidade sem dominar o espaco.
+- Carregar `https://www.youtube.com/iframe_api` como script externo
+- Usar `window.YT` e `window.onYouTubeIframeAPIReady` para inicializar
+- Criar o player com `new YT.Player(elementId, { events: { onStateChange } })`
+- Passar `playerVars: { autoplay, start }` conforme logica atual
+- Usar `useRef` para manter referencia ao player e destrui-lo/recria-lo ao trocar de video
+- Adicionar tipagem para `window.YT` via declaracao global
 
+### Comportamento esperado
+- Video 1 termina -> Video 2 inicia automaticamente
+- Video 2 termina -> Video 3 inicia automaticamente
+- ...ate o Video 5, que ao terminar simplesmente para
+- Selecao manual por thumbnail continua funcionando normalmente
