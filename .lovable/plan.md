@@ -1,43 +1,40 @@
 
 
-# Ajustes nos slides Hero e Agenda
+# Carrossel de vídeos com thumbnails
 
-## Problema 1: Agenda cortando no topo
-O `SlideWrapper` usa `flex items-center justify-center`, o que centraliza verticalmente. Quando o conteudo da Agenda e maior que 1080px, o flexbox centraliza e corta igualmente em cima e embaixo -- perdendo o topo. Com `overflow-y-auto` o scroll comeca do meio, nao do topo.
+## Resumo
+Transformar a seção Video para exibir 5 vídeos do YouTube: o vídeo principal atual + os 4 shorts fornecidos. Layout com player principal grande e fila de thumbnails clicáveis abaixo.
 
-**Solucao**: Adicionar uma prop `align` ao `SlideWrapper` que permite controlar o alinhamento vertical. Para a Agenda, usar `align="top"` com um padding-top, trocando `items-center` por `items-start` e adicionando `pt-8`. O scroll comecara do topo naturalmente.
+## Vídeos
 
-## Problema 2: Hero nao ocupa toda a tela do slide
-O Hero tem `min-h-screen` mas esta contido dentro do container de 1920x1080 com `flex items-center justify-center`. Ele nao preenche o slide todo -- fica centralizado com espaco ao redor.
+| # | ID do YouTube | Tipo |
+|---|---------------|------|
+| 1 | NgEwR9eBoJI | Video (atual) |
+| 2 | HgdvD6Zf3TI | Short |
+| 3 | kvQPcB1Tkt4 | Short |
+| 4 | Z2QT5dYmxiU | Short |
+| 5 | xx1et3NmK7c | Short |
 
-**Solucao**: Adicionar uma prop `fullBleed` ao `SlideWrapper` que remove o flex centering e faz o children ocupar 100% do espaco. Para o Hero, usar `fullBleed={true}`. O Hero ja tem `min-h-screen` que dentro do container de 1080px de altura vai preencher tudo.
+## Nota sobre Shorts
+Os 4 links sao YouTube Shorts (formato vertical 9:16). No player principal, serao embedados via `youtube.com/embed/{id}` que funciona tanto para videos normais quanto shorts. O aspect ratio do player principal sera mantido em 16:9 (o short aparecera com barras laterais pretas, que e o comportamento padrao).
 
 ## Alteracoes
 
-### `src/components/presentation/SlideWrapper.tsx`
-- Adicionar props opcionais: `align?: "center" | "top"` e `fullBleed?: boolean`
-- Quando `fullBleed=true`: container interno usa `w-full h-full` sem flex centering
-- Quando `align="top"`: trocar `items-center` por `items-start pt-8`
-- Default continua `align="center"` e `fullBleed=false`
+### `src/components/landing/Video.tsx`
+- Adicionar array de videos com `id` e `title`
+- Adicionar estado `useState` para o video ativo (default: primeiro video)
+- Player principal: iframe com o ID do video ativo
+- Abaixo do player: fila horizontal de thumbnails usando `img.youtube.com/vi/{id}/mqdefault.jpg`
+- Thumbnail ativa: borda com cor de destaque (ring-2 ring-white ou similar)
+- Thumbnails inativas: opacidade reduzida (opacity-60) com hover (opacity-100)
+- No mobile: thumbnails com scroll horizontal (`overflow-x-auto`, `flex-nowrap`)
+- Titulo do video abaixo de cada thumbnail
+- Stats (4h, 7 R's, 100%) permanecem no final
 
-### `src/components/presentation/PresentationMode.tsx`
-- Atualizar a definicao dos slides para incluir props extras:
-  - Hero: `{ component: Hero, label: "Capa", fullBleed: true }`
-  - Agenda: `{ component: Agenda, label: "Agenda", align: "top" }`
-- Passar essas props ao `SlideWrapper`
-
-## Detalhes tecnicos
-
-```text
-SlideWrapper props:
-  children: ReactNode
-  isActive: boolean
-  align?: "center" | "top"    (default: "center")
-  fullBleed?: boolean          (default: false)
-
-Container interno:
-  fullBleed=true  -> "w-full h-full"
-  align="top"     -> "w-full h-full overflow-y-auto flex items-start pt-8 justify-center ..."
-  align="center"  -> "w-full h-full overflow-y-auto flex items-center justify-center ..." (atual)
-```
+### Detalhes tecnicos
+- Importar `useState` do React
+- Array de videos definido como constante fora do componente
+- Thumbnails renderizadas com `map()` sobre o array
+- Clique na thumbnail atualiza o estado e troca o iframe `src`
+- Transicao suave com `transition-all duration-300` nas thumbnails
 
