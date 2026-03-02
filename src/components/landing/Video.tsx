@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const videos = [
   { id: "NgEwR9eBoJI", title: "O que é o Circular Experience?" },
@@ -10,9 +10,23 @@ const videos = [
 
 const Video = () => {
   const [activeVideo, setActiveVideo] = useState(videos[0].id);
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.unobserve(el);
+  }, []);
 
   return (
-    <section className="py-20 gradient-hero">
+    <section ref={sectionRef} className="py-20 gradient-hero">
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-12">
           <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
@@ -27,7 +41,7 @@ const Video = () => {
           {/* Player principal */}
           <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-background/10">
             <iframe
-              src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1`}
+              src={`https://www.youtube.com/embed/${activeVideo}?autoplay=${isVisible ? 1 : 0}`}
               title="Circular Experience"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
