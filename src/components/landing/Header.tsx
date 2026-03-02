@@ -28,7 +28,7 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
             <LogoImage
               src={logo}
               alt="Movimento Circular"
-              className="h-16 md:h-20 w-auto"
+              className="h-10 md:h-12 w-auto"
             />
           </div>
 
