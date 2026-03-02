@@ -1,26 +1,22 @@
 
-# Ajustes: Autoplay nos thumbnails + Video fullBleed na apresentacao
 
-## 1. Autoplay ao clicar nas thumbnails
+# Reduzir logos do header e footer para proporcao equilibrada
 
-No `Video.tsx`, adicionar `?autoplay=1` na URL do iframe quando o usuario clica em uma thumbnail. Isso faz o YouTube iniciar a reproducao automaticamente.
+## Problema
+Os logos no header e footer estao usando `h-16 md:h-20`, que e a altura total do header (64px / 80px). Isso faz o logo ocupar 100% da altura sem respiro visual.
 
-**Arquivo:** `src/components/landing/Video.tsx`
-- Alterar a URL do iframe de `https://www.youtube.com/embed/${activeVideo}` para `https://www.youtube.com/embed/${activeVideo}?autoplay=1`
-- Tambem precisa adicionar `autoplay` na lista de `allow` do iframe para que o navegador permita o autoplay
+## Solucao
 
-## 2. Video com fundo roxo ocupando toda a tela no modo apresentacao
+Reduzir as dimensoes dos logos e adicionar padding adequado para criar respiro.
 
-Atualmente o slide de Video usa o layout padrao do `SlideWrapper`, que renderiza o conteudo dentro de um box com `bg-background rounded-lg shadow-2xl` -- isso cria o "box centralizado" que o usuario ve. A solucao e marcar o slide de Video como `fullBleed: true`, igual ao Hero.
+### `src/components/landing/Header.tsx`
+- Alterar classe do logo de `h-16 md:h-20` para `h-10 md:h-12` (40px / 48px)
+- Isso deixa respiro vertical dentro do header de 64px / 80px
 
-**Arquivo:** `src/components/presentation/PresentationMode.tsx`
-- Alterar a linha do slide Video de `{ component: Video, label: "Video" }` para `{ component: Video, label: "Video", fullBleed: true }`
+### `src/components/landing/Footer.tsx`
+- Alterar classe do logo de `h-16 md:h-20` para `h-10 md:h-12` (40px / 48px)
+- Manter consistencia visual entre header e footer
 
-Isso faz o componente Video ocupar 100% do espaco de 1920x1080, e como o Video ja tem a classe `gradient-hero` (fundo roxo), ele preenchera toda a area.
+## Resultado
+Logos proporcionais com respiro nas margens, mantendo boa visibilidade sem dominar o espaco.
 
-## Resumo das alteracoes
-
-| Arquivo | Alteracao |
-|---------|-----------|
-| `Video.tsx` | Adicionar `?autoplay=1` na URL do embed e `autoplay` no `allow` |
-| `PresentationMode.tsx` | Adicionar `fullBleed: true` ao slide de Video |
