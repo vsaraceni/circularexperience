@@ -13,19 +13,19 @@ import agendaVerdeLogo from "@/assets/partners/agenda-verde.png";
 import semanaFuturoLogo from "@/assets/partners/semana-futuro-sebrae.png";
 
 const partners = [
-  { name: "DOW", logo: dowLogo },
-  { name: "Scania", logo: scaniaLogo },
-  { name: "SEBRAE", logo: sebraeLogo },
-  { name: "COOPERCAPS", logo: coopercapsLogo },
-  { name: "Avery Dennison", logo: averyDennisonLogo },
-  { name: "SEMIL", logo: semilLogo },
-  { name: "InvestSP", logo: investspLogo },
+  { name: "DOW", logo: dowLogo, height: "h-8 md:h-10" },
+  { name: "Scania", logo: scaniaLogo, height: "h-8 md:h-10" },
+  { name: "SEBRAE", logo: sebraeLogo, height: "h-10 md:h-14" },
+  { name: "COOPERCAPS", logo: coopercapsLogo, height: "h-10 md:h-14" },
+  { name: "Avery Dennison", logo: averyDennisonLogo, height: "h-8 md:h-10" },
+  { name: "SEMIL", logo: semilLogo, height: "h-12 md:h-16" },
+  { name: "InvestSP", logo: investspLogo, height: "h-10 md:h-14" },
 ];
 
 const events = [
-  { name: "Fórum Mundial de Economia Circular", logo: wcefLogo },
-  { name: "Summit Agenda SP + Verde", logo: agendaVerdeLogo },
-  { name: "Semana do Futuro – SEBRAE", logo: semanaFuturoLogo },
+  { name: "Fórum Mundial de Economia Circular", logo: wcefLogo, height: "h-10 md:h-14" },
+  { name: "Summit Agenda SP + Verde", logo: agendaVerdeLogo, height: "h-10 md:h-14" },
+  { name: "Semana do Futuro – SEBRAE", logo: semanaFuturoLogo, height: "h-10 md:h-14" },
 ];
 
 const categories = [
@@ -75,13 +75,13 @@ const SocialProof = () => {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 items-center justify-items-center">
+          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6">
             {partners.map((p) => (
               <LogoImage
                 key={p.name}
                 src={p.logo}
                 alt={p.name}
-                className="h-10 md:h-14 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                className={`${p.height} w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300`}
               />
             ))}
           </div>
@@ -97,13 +97,13 @@ const SocialProof = () => {
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 items-center justify-items-center">
+          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6">
             {events.map((e) => (
               <LogoImage
                 key={e.name}
                 src={e.logo}
                 alt={e.name}
-                className="h-10 md:h-14 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                className={`${e.height} w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300`}
               />
             ))}
           </div>
