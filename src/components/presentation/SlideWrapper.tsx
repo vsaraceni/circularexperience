@@ -43,7 +43,7 @@ const SlideWrapper: React.FC<SlideWrapperProps> = ({ children, isActive }) => {
           transformOrigin: "center center",
         }}
       >
-        <div className="w-full h-full overflow-hidden">
+        <div className="w-full h-full overflow-hidden flex items-center justify-center">
           {children}
         </div>
       </div>
