@@ -18,13 +18,13 @@ interface PresentationModeProps {
 }
 
 const slides = [
-  { component: Hero, label: "Capa" },
+  { component: Hero, label: "Capa", fullBleed: true },
   { component: SocialProof, label: "Prova Social" },
   { component: Stats, label: "Oportunidade" },
   { component: About, label: "Sobre" },
   { component: MethodologySteps, label: "Metodologia" },
   { component: MethodologyBenefits, label: "Aprendizado" },
-  { component: Agenda, label: "Agenda" },
+  { component: Agenda, label: "Agenda", align: "top" as const },
   { component: Video, label: "Vídeo" },
   { component: Experts, label: "Especialistas" },
   { component: SDGs, label: "ODS" },
@@ -118,7 +118,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({ onExit }) => {
       {slides.map((slide, index) => {
         const SlideComponent = slide.component;
         return (
-          <SlideWrapper key={index} isActive={index === currentSlide}>
+          <SlideWrapper key={index} isActive={index === currentSlide} align={slide.align} fullBleed={slide.fullBleed}>
             <SlideComponent />
           </SlideWrapper>
         );
