@@ -81,7 +81,7 @@ const SocialProof = () => {
                 key={p.name}
                 src={p.logo}
                 alt={p.name}
-                className={`${p.height} w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300`}
+                className={`${p.height} w-auto object-contain opacity-70 hover:opacity-100 transition-all duration-300`}
               />
             ))}
           </div>
@@ -103,7 +103,7 @@ const SocialProof = () => {
                 key={e.name}
                 src={e.logo}
                 alt={e.name}
-                className={`${e.height} w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300`}
+                className={`${e.height} w-auto object-contain opacity-70 hover:opacity-100 transition-all duration-300`}
               />
             ))}
           </div>

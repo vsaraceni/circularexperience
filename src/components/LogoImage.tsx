@@ -4,7 +4,6 @@ type LogoImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> & {
   src: string;
 };
 
-// Cache to avoid re-processing the same asset multiple times (header/footer)
 const processedSrcCache = new Map<string, string>();
 
 function loadImage(src: string) {
@@ -17,20 +16,11 @@ function loadImage(src: string) {
   });
 }
 
-function distSq(r: number, g: number, b: number, c: [number, number, number]) {
-  const dr = r - c[0];
-  const dg = g - c[1];
-  const db = b - c[2];
-  return dr * dr + dg * dg + db * db;
+function isWhiteOrTransparent(r: number, g: number, b: number, a: number, threshold = 240) {
+  return a < 10 || (r >= threshold && g >= threshold && b >= threshold);
 }
 
-function isNearGray(r: number, g: number, b: number, maxChroma: number) {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  return max - min <= maxChroma;
-}
-
-async function removeBakedCheckerboard(src: string) {
+async function autocrop(src: string) {
   const cached = processedSrcCache.get(src);
   if (cached) return cached;
 
@@ -41,62 +31,63 @@ async function removeBakedCheckerboard(src: string) {
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-
   const ctx = canvas.getContext("2d");
   if (!ctx) return src;
 
   ctx.drawImage(img, 0, 0);
+  const { data } = ctx.getImageData(0, 0, w, h);
 
-  const imageData = ctx.getImageData(0, 0, w, h);
-  const d = imageData.data;
-
-  const cornerPoints: Array<[number, number]> = [
-    [0, 0],
-    [w - 1, 0],
-    [0, h - 1],
-    [w - 1, h - 1],
-  ];
-  const cornerColors: Array<[number, number, number]> = cornerPoints.map(([x, y]) => {
+  const px = (x: number, y: number) => {
     const i = (y * w + x) * 4;
-    return [d[i], d[i + 1], d[i + 2]];
-  });
-
-  // Only remove pixels that are (a) close to one of the corner background colors
-  // and (b) low-chroma (near-gray), to avoid eating teal/orange/purple gradients.
-  const thresholdSq = 42 * 42;
-  const maxChroma = 18;
-  const matchesBackground = (i: number) => {
-    const r = d[i];
-    const g = d[i + 1];
-    const b = d[i + 2];
-    if (!isNearGray(r, g, b, maxChroma)) return false;
-    return cornerColors.some((c) => distSq(r, g, b, c) <= thresholdSq);
+    return [data[i], data[i + 1], data[i + 2], data[i + 3]] as const;
   };
 
-  const visited = new Uint8Array(w * h);
-  const stack: Array<[number, number]> = [...cornerPoints];
+  let top = 0, bottom = h - 1, left = 0, right = w - 1;
 
-  while (stack.length) {
-    const [x, y] = stack.pop()!;
-    if (x < 0 || y < 0 || x >= w || y >= h) continue;
-    const idx = y * w + x;
-    if (visited[idx]) continue;
-    visited[idx] = 1;
-
-    const i = idx * 4;
-    if (!matchesBackground(i)) continue;
-
-    // Make pixel fully transparent
-    d[i + 3] = 0;
-
-    // 4-neighborhood flood fill
-    if (x > 0) stack.push([x - 1, y]);
-    if (x < w - 1) stack.push([x + 1, y]);
-    if (y > 0) stack.push([x, y - 1]);
-    if (y < h - 1) stack.push([x, y + 1]);
+  // scan top
+  outer: for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const [r, g, b, a] = px(x, y);
+      if (!isWhiteOrTransparent(r, g, b, a)) { top = y; break outer; }
+    }
   }
 
-  ctx.putImageData(imageData, 0, 0);
+  // scan bottom
+  outer: for (let y = h - 1; y >= top; y--) {
+    for (let x = 0; x < w; x++) {
+      const [r, g, b, a] = px(x, y);
+      if (!isWhiteOrTransparent(r, g, b, a)) { bottom = y; break outer; }
+    }
+  }
+
+  // scan left
+  outer: for (let x = 0; x < w; x++) {
+    for (let y = top; y <= bottom; y++) {
+      const [r, g, b, a] = px(x, y);
+      if (!isWhiteOrTransparent(r, g, b, a)) { left = x; break outer; }
+    }
+  }
+
+  // scan right
+  outer: for (let x = w - 1; x >= left; x--) {
+    for (let y = top; y <= bottom; y++) {
+      const [r, g, b, a] = px(x, y);
+      if (!isWhiteOrTransparent(r, g, b, a)) { right = x; break outer; }
+    }
+  }
+
+  const cw = right - left + 1;
+  const ch = bottom - top + 1;
+
+  if (cw <= 0 || ch <= 0 || (cw === w && ch === h)) {
+    processedSrcCache.set(src, src);
+    return src;
+  }
+
+  const cropped = ctx.getImageData(left, top, cw, ch);
+  canvas.width = cw;
+  canvas.height = ch;
+  ctx.putImageData(cropped, 0, 0);
 
   const blob = await new Promise<Blob>((resolve) => {
     canvas.toBlob((b) => resolve(b as Blob), "image/png");
@@ -112,24 +103,14 @@ export function LogoImage({ src, ...imgProps }: LogoImageProps) {
 
   React.useEffect(() => {
     let cancelled = false;
-
     const cached = processedSrcCache.get(src);
-    if (cached) {
-      setFinalSrc(cached);
-      return;
-    }
+    if (cached) { setFinalSrc(cached); return; }
 
-    removeBakedCheckerboard(src)
-      .then((url) => {
-        if (!cancelled) setFinalSrc(url);
-      })
-      .catch(() => {
-        if (!cancelled) setFinalSrc(src);
-      });
+    autocrop(src)
+      .then((url) => { if (!cancelled) setFinalSrc(url); })
+      .catch(() => { if (!cancelled) setFinalSrc(src); });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [src]);
 
   return <img src={finalSrc} {...imgProps} />;
