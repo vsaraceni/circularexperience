@@ -1,6 +1,16 @@
-import { Play } from "lucide-react";
+import { useState } from "react";
+
+const videos = [
+  { id: "NgEwR9eBoJI", title: "Circular Experience" },
+  { id: "HgdvD6Zf3TI", title: "Impacto" },
+  { id: "kvQPcB1Tkt4", title: "Reputação" },
+  { id: "Z2QT5dYmxiU", title: "Engajamento" },
+  { id: "xx1et3NmK7c", title: "Resultados" },
+];
 
 const Video = () => {
+  const [activeVideo, setActiveVideo] = useState(videos[0].id);
+
   return (
     <section className="py-20 gradient-hero">
       <div className="container mx-auto px-4 md:!px-[46px]">
@@ -9,19 +19,44 @@ const Video = () => {
             Conheça o Circular Experience
           </h2>
           <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-            Assista ao vídeo e descubra como transformar sua organização
+            Assista aos vídeos e descubra como transformar sua organização
           </p>
         </div>
 
         <div className="max-w-4xl mx-auto">
+          {/* Player principal */}
           <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-background/10">
             <iframe
-              src="https://www.youtube.com/embed/NgEwR9eBoJI"
-              title="Circular Experience - Apresentação"
+              src={`https://www.youtube.com/embed/${activeVideo}`}
+              title="Circular Experience"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="w-full h-full"
             />
+          </div>
+
+          {/* Thumbnails */}
+          <div className="mt-6 flex gap-4 overflow-x-auto pb-2 flex-nowrap">
+            {videos.map((video) => (
+              <button
+                key={video.id}
+                onClick={() => setActiveVideo(video.id)}
+                className={`flex-shrink-0 w-36 md:w-44 transition-all duration-300 rounded-lg overflow-hidden ${
+                  activeVideo === video.id
+                    ? "ring-2 ring-primary-foreground opacity-100 scale-105"
+                    : "opacity-60 hover:opacity-100"
+                }`}
+              >
+                <img
+                  src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`}
+                  alt={video.title}
+                  className="w-full aspect-video object-cover rounded-lg"
+                />
+                <p className="text-primary-foreground/80 text-xs mt-1 text-center truncate px-1">
+                  {video.title}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
 
