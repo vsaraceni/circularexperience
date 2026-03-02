@@ -41,7 +41,7 @@ const Video = () => {
           {/* Player principal */}
           <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-background/10">
             <iframe
-              src={`https://www.youtube.com/embed/${activeVideo}?autoplay=${isVisible ? 1 : 0}`}
+              src={`https://www.youtube.com/embed/${activeVideo}?autoplay=${isVisible ? 1 : 0}${activeVideo === videos[0].id ? '&start=3' : ''}`}
               title="Circular Experience"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
