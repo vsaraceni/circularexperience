@@ -3,12 +3,14 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 interface SlideWrapperProps {
   children: React.ReactNode;
   isActive: boolean;
+  align?: "center" | "top";
+  fullBleed?: boolean;
 }
 
 const BASE_WIDTH = 1920;
 const BASE_HEIGHT = 1080;
 
-const SlideWrapper: React.FC<SlideWrapperProps> = ({ children, isActive }) => {
+const SlideWrapper: React.FC<SlideWrapperProps> = ({ children, isActive, align = "center", fullBleed = false }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
@@ -43,7 +45,11 @@ const SlideWrapper: React.FC<SlideWrapperProps> = ({ children, isActive }) => {
           transformOrigin: "center center",
         }}
       >
-        <div className="w-full h-full overflow-y-auto flex items-center justify-center scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent">
+        <div className={
+          fullBleed
+            ? "w-full h-full"
+            : `w-full h-full overflow-y-auto flex justify-center scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent ${align === "top" ? "items-start pt-12" : "items-center"}`
+        }>
           {children}
         </div>
       </div>
