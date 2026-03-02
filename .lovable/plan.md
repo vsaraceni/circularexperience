@@ -1,43 +1,70 @@
 
 
-# Corrigir logos: remover processamento destrutivo e mostrar em cores originais
+# Modo Apresentacao Fullscreen
 
-## Problema
-O componente `LogoImage` usa um algoritmo de flood-fill que remove pixels baseado nas cores dos cantos da imagem. Isso esta corrompendo os logos (removendo partes do conteudo). Alem disso, o filtro CSS `grayscale` deixa os logos com aparencia degradada.
+## Resumo
+Adicionar um botao "Apresentar" no Header que abre a pagina em modo de slides fullscreen, usando a Fullscreen API do navegador. Cada secao da landing page se torna um slide individual, navegavel por setas do teclado ou botoes na tela. A landing page continua funcionando normalmente no modo scroll.
 
-## Solucao
-
-### 1. Reescrever `LogoImage` com autocrop nao-destrutivo
-Em vez de flood-fill (que invade o conteudo do logo), usar uma abordagem de **autocrop por bordas**:
-- Detectar linhas/colunas nas bordas que sao compostas apenas por pixels brancos ou quase-brancos (ou transparentes)
-- Recortar o canvas apenas nessas bordas externas
-- Isso remove o espaco em branco ao redor sem tocar no conteudo interno do logo
-
-### 2. Remover filtro `grayscale` do CSS
-- Trocar `filter grayscale hover:grayscale-0` por `opacity-70 hover:opacity-100` para manter um efeito sutil sem destruir as cores
-- Alternativa: remover qualquer filtro e mostrar os logos em cores originais
-
-### 3. Manter tamanhos individuais por logo
-- Manter a estrutura atual com `height` por item
-- Ajustar valores conforme necessario apos ver o resultado do autocrop
-
-## Arquivos afetados
-- `src/components/LogoImage.tsx` -- reescrever algoritmo de processamento (autocrop por bordas em vez de flood-fill)
-- `src/components/landing/SocialProof.tsx` -- remover `grayscale` das classes CSS, usar `opacity-70 hover:opacity-100`
-
-## Detalhes tecnicos
-
-O novo algoritmo de `LogoImage`:
+## Mapeamento de Slides (10 slides)
 
 ```text
-1. Carregar imagem no canvas
-2. Escanear da borda para dentro:
-   - Top: encontrar primeira linha com pixel nao-branco
-   - Bottom: encontrar ultima linha com pixel nao-branco
-   - Left/Right: idem para colunas
-3. Recortar canvas para essa bounding box
-4. Exportar como PNG com transparencia preservada
+Slide 1:  Hero (capa)
+Slide 2:  SocialProof (prova social)
+Slide 3:  Stats (oportunidade historica)
+Slide 4:  About (o que e o Circular Experience + 7 R's)
+Slide 5:  Methodology (3 etapas)
+Slide 6:  Agenda (timeline da oficina)
+Slide 7:  Video (video YouTube)
+Slide 8:  Experts (coordenadores tecnicos)
+Slide 9:  SDGs (ODS)
+Slide 10: CTA (contato)
 ```
 
-Isso preserva 100% do conteudo original do logo, removendo apenas margens em branco.
+## Arquitetura
 
+### Novo componente: `src/components/presentation/PresentationMode.tsx`
+- Componente overlay fullscreen com fundo escuro
+- Renderiza cada secao da landing como um "slide" individual
+- Usa a Fullscreen API (`document.documentElement.requestFullscreen()`)
+- Controla o slide atual via estado interno
+- Escala o conteudo para caber na viewport usando `transform: scale()` com base fixa 1920x1080
+
+### Novo componente: `src/components/presentation/SlideWrapper.tsx`
+- Container que recebe cada secao existente e a renderiza em formato de slide
+- Aplica fundo branco, centraliza conteudo, e garante que o overflow seja oculto
+- Escala o conteudo proporcionalmente ao viewport
+
+### Novo componente: `src/components/presentation/PresentationControls.tsx`
+- Barra de navegacao que aparece no hover (parte inferior da tela)
+- Botoes: anterior, proximo, numero do slide atual, botao de sair
+- Esconde automaticamente apos 3 segundos de inatividade do mouse
+
+### Alteracao: `src/components/landing/Header.tsx`
+- Adicionar botao "Apresentar" (icone de tela cheia) ao lado do botao "Solicitar Proposta"
+- Ao clicar, ativa o componente `PresentationMode`
+
+### Alteracao: `src/pages/Index.tsx`
+- Importar `PresentationMode`
+- Controlar estado `isPresentationMode` via useState
+- Passar callback para Header para ativar/desativar o modo
+
+## Navegacao
+- Setas esquerda/direita do teclado
+- Teclas Space (proximo) e Backspace (anterior)
+- Escape para sair do modo fullscreen
+- Clique nos botoes de navegacao na tela
+- Evento `fullscreenchange` para limpar estado ao sair
+
+## Estilo
+- Fundo preto entre slides
+- Cada slide renderizado com `overflow: hidden` e `border-radius` sutil
+- Transicao suave entre slides (fade ou slide horizontal)
+- Cursor escondido apos 3s de inatividade
+- Controles semi-transparentes que aparecem no hover
+
+## Arquivos afetados
+- Novo: `src/components/presentation/PresentationMode.tsx`
+- Novo: `src/components/presentation/SlideWrapper.tsx`
+- Novo: `src/components/presentation/PresentationControls.tsx`
+- Editado: `src/components/landing/Header.tsx` (botao "Apresentar")
+- Editado: `src/pages/Index.tsx` (estado + overlay)
