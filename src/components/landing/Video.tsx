@@ -19,7 +19,7 @@ const Video = () => {
 
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
-      { threshold: 0.3 }
+      { threshold: 0.1 }
     );
     observer.observe(el);
     return () => observer.unobserve(el);
