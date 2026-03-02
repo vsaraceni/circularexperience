@@ -25,7 +25,7 @@ const slides = [
   { component: MethodologySteps, label: "Metodologia" },
   { component: MethodologyBenefits, label: "Aprendizado" },
   { component: Agenda, label: "Agenda", align: "top" as const },
-  { component: Video, label: "Vídeo" },
+  { component: Video, label: "Vídeo", fullBleed: true },
   { component: Experts, label: "Especialistas" },
   { component: SDGs, label: "ODS" },
   { component: CTA, label: "Contato" },
