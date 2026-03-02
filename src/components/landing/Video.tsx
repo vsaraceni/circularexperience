@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 const videos = [
-  { id: "NgEwR9eBoJI", title: "Circular Experience" },
-  { id: "HgdvD6Zf3TI", title: "Impacto" },
-  { id: "kvQPcB1Tkt4", title: "Reputação" },
-  { id: "Z2QT5dYmxiU", title: "Engajamento" },
-  { id: "xx1et3NmK7c", title: "Resultados" },
+  { id: "NgEwR9eBoJI", title: "O que é o Circular Experience?" },
+  { id: "HgdvD6Zf3TI", title: "Impacto na cadeia produtiva" },
+  { id: "kvQPcB1Tkt4", title: "Reputação e posicionamento ESG" },
+  { id: "Z2QT5dYmxiU", title: "Engajamento de colaboradores" },
+  { id: "xx1et3NmK7c", title: "Resultados mensuráveis" },
 ];
 
 const Video = () => {
