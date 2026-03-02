@@ -1,4 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: (() => void) | undefined;
+  }
+}
 
 const videos = [
   { id: "NgEwR9eBoJI", title: "O que é o Circular Experience?" },
@@ -11,12 +18,36 @@ const videos = [
 const Video = () => {
   const [activeVideo, setActiveVideo] = useState(videos[0].id);
   const [isVisible, setIsVisible] = useState(false);
+  const [apiReady, setApiReady] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const playerRef = useRef<any>(null);
+  const activeVideoRef = useRef(activeVideo);
 
+  // Keep ref in sync
+  activeVideoRef.current = activeVideo;
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    if (window.YT && window.YT.Player) {
+      setApiReady(true);
+      return;
+    }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      prev?.();
+      setApiReady(true);
+    };
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.head.appendChild(tag);
+    }
+  }, []);
+
+  // Intersection observer
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.1 }
@@ -24,6 +55,58 @@ const Video = () => {
     observer.observe(el);
     return () => observer.unobserve(el);
   }, []);
+
+  const onStateChange = useCallback((event: any) => {
+    if (event.data === window.YT.PlayerState.ENDED) {
+      const idx = videos.findIndex((v) => v.id === activeVideoRef.current);
+      if (idx < videos.length - 1) {
+        setActiveVideo(videos[idx + 1].id);
+      }
+    }
+  }, []);
+
+  // Create / recreate player
+  useEffect(() => {
+    if (!apiReady) return;
+
+    if (playerRef.current) {
+      playerRef.current.destroy();
+      playerRef.current = null;
+    }
+
+    const playerVars: any = {
+      autoplay: isVisible ? 1 : 0,
+      rel: 0,
+    };
+    if (activeVideo === videos[0].id) {
+      playerVars.start = 3;
+    }
+
+    playerRef.current = new window.YT.Player("yt-player", {
+      videoId: activeVideo,
+      playerVars,
+      events: {
+        onStateChange,
+      },
+    });
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+    };
+  }, [apiReady, activeVideo, onStateChange]);
+
+  // Play/pause based on visibility
+  useEffect(() => {
+    if (!playerRef.current?.getPlayerState) return;
+    if (isVisible) {
+      playerRef.current.playVideo();
+    } else {
+      playerRef.current.pauseVideo();
+    }
+  }, [isVisible]);
 
   return (
     <section ref={sectionRef} className="py-20 gradient-hero">
@@ -40,13 +123,7 @@ const Video = () => {
         <div className="max-w-4xl mx-auto">
           {/* Player principal */}
           <div className="relative rounded-2xl overflow-hidden shadow-2xl aspect-video bg-background/10">
-            <iframe
-              src={`https://www.youtube.com/embed/${activeVideo}?autoplay=${isVisible ? 1 : 0}${activeVideo === videos[0].id ? '&start=3' : ''}`}
-              title="Circular Experience"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="w-full h-full"
-            />
+            <div id="yt-player" className="w-full h-full" />
           </div>
 
           {/* Thumbnails */}
