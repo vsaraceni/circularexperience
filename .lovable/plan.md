@@ -1,48 +1,43 @@
 
 
-# Corrigir seções altas no modo apresentação (Metodologia e Agenda)
+# Ajustes nos slides Hero e Agenda
 
-## Problema
-As seções "Nossa Metodologia" e "Agenda" possuem conteúdo mais alto que os 1080px do slide, causando corte no modo apresentação.
+## Problema 1: Agenda cortando no topo
+O `SlideWrapper` usa `flex items-center justify-center`, o que centraliza verticalmente. Quando o conteudo da Agenda e maior que 1080px, o flexbox centraliza e corta igualmente em cima e embaixo -- perdendo o topo. Com `overflow-y-auto` o scroll comeca do meio, nao do topo.
 
-## Solução proposta: abordagem mista
+**Solucao**: Adicionar uma prop `align` ao `SlideWrapper` que permite controlar o alinhamento vertical. Para a Agenda, usar `align="top"` com um padding-top, trocando `items-center` por `items-start` e adicionando `pt-8`. O scroll comecara do topo naturalmente.
 
-### 1. Metodologia -- Dividir em 2 slides
-A seção Metodologia tem duas partes distintas (3 etapas + "O que seu time vai aprender"). Faz sentido dividir em dois slides:
-- **Slide 5a**: Título + 3 etapas da metodologia (sem o bloco "O que seu time vai aprender")
-- **Slide 5b**: Bloco "O que seu time vai aprender" (os 6 benefícios)
+## Problema 2: Hero nao ocupa toda a tela do slide
+O Hero tem `min-h-screen` mas esta contido dentro do container de 1920x1080 com `flex items-center justify-center`. Ele nao preenche o slide todo -- fica centralizado com espaco ao redor.
 
-Para isso, criar dois componentes auxiliares:
-- `MethodologySteps` -- renderiza apenas o título e as 3 etapas
-- `MethodologyBenefits` -- renderiza apenas o bloco de benefícios
+**Solucao**: Adicionar uma prop `fullBleed` ao `SlideWrapper` que remove o flex centering e faz o children ocupar 100% do espaco. Para o Hero, usar `fullBleed={true}`. O Hero ja tem `min-h-screen` que dentro do container de 1080px de altura vai preencher tudo.
 
-Esses componentes extraem partes do `Methodology.tsx` existente sem alterar a seção original da landing page.
+## Alteracoes
 
-### 2. Agenda -- Adicionar scroll interno no slide
-A Agenda é uma lista contínua (timeline) que não se divide bem. A melhor abordagem é permitir scroll vertical dentro do slide:
-- Envolver o conteúdo da Agenda em um `ScrollArea` (Radix) dentro do `SlideWrapper`
-- Ou: criar um wrapper condicional no `PresentationMode` que adiciona scroll apenas para slides que precisam
+### `src/components/presentation/SlideWrapper.tsx`
+- Adicionar props opcionais: `align?: "center" | "top"` e `fullBleed?: boolean`
+- Quando `fullBleed=true`: container interno usa `w-full h-full` sem flex centering
+- Quando `align="top"`: trocar `items-center` por `items-start pt-8`
+- Default continua `align="center"` e `fullBleed=false`
 
-A abordagem mais limpa: no `SlideWrapper`, trocar `overflow-hidden` por `overflow-y-auto` com scrollbar estilizada, para que slides altos possam rolar naturalmente.
+### `src/components/presentation/PresentationMode.tsx`
+- Atualizar a definicao dos slides para incluir props extras:
+  - Hero: `{ component: Hero, label: "Capa", fullBleed: true }`
+  - Agenda: `{ component: Agenda, label: "Agenda", align: "top" }`
+- Passar essas props ao `SlideWrapper`
 
-### 3. Implementação
+## Detalhes tecnicos
 
-**Arquivo: `src/components/presentation/slides/MethodologySteps.tsx`** (novo)
-- Componente que renderiza apenas título + 3 etapas da Metodologia
-- Reutiliza os dados e estilos de `Methodology.tsx`
+```text
+SlideWrapper props:
+  children: ReactNode
+  isActive: boolean
+  align?: "center" | "top"    (default: "center")
+  fullBleed?: boolean          (default: false)
 
-**Arquivo: `src/components/presentation/slides/MethodologyBenefits.tsx`** (novo)
-- Componente que renderiza apenas o bloco "O que seu time vai aprender"
+Container interno:
+  fullBleed=true  -> "w-full h-full"
+  align="top"     -> "w-full h-full overflow-y-auto flex items-start pt-8 justify-center ..."
+  align="center"  -> "w-full h-full overflow-y-auto flex items-center justify-center ..." (atual)
+```
 
-**Arquivo: `src/components/presentation/SlideWrapper.tsx`**
-- Trocar `overflow-hidden` por `overflow-y-auto` no container interno do slide, para permitir scroll quando o conteúdo ultrapassa 1080px
-- Adicionar estilos de scrollbar sutis (thin, semi-transparente)
-
-**Arquivo: `src/components/presentation/PresentationMode.tsx`**
-- Substituir o slide de `Methodology` por dois slides: `MethodologySteps` e `MethodologyBenefits`
-- Total de slides passa de 10 para 11
-
-## Resultado esperado
-- Metodologia dividida em 2 slides limpos, sem corte
-- Agenda com scroll suave dentro do slide, permitindo ver todo o conteúdo
-- Landing page original inalterada
