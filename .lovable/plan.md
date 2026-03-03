@@ -1,31 +1,23 @@
 
-# Auto-avanco de videos no carrossel
+# Estrategia 3: Animacao pulsante + texto temporario na barra de controle
 
-## Problema
-Atualmente, quando um video termina, nada acontece. O usuario precisa clicar manualmente na proxima thumbnail.
+## O que sera feito
 
-## Solucao
-Usar a YouTube IFrame Player API para detectar o fim de cada video e avancar automaticamente para o proximo.
+Ao entrar no modo apresentacao, a barra de controle tera:
+1. **Animacao pulsante** nos botoes de seta (esquerda/direita) durante os primeiros 4 segundos
+2. **Texto temporario** "Navegue pelos slides" exibido acima da barra, que desaparece com fade-out apos 4 segundos
+3. **Icones de tecla** (`←` `→`) ao lado do texto para reforcar a navegacao por teclado
 
-### Mudancas em `src/components/landing/Video.tsx`
+## Mudancas tecnicas
 
-1. **Carregar a YouTube IFrame API** via script tag dinamico no `useEffect`
-2. **Substituir o iframe manual por `YT.Player`** - criar o player programaticamente para ter acesso aos eventos
-3. **Escutar o evento `onStateChange`** - quando o estado for `YT.PlayerState.ENDED` (0), avancar para o proximo video na lista
-4. **Logica de avanco circular** - ao terminar o ultimo video (5o), parar (nao volta ao primeiro)
-5. **Manter todas as funcionalidades existentes** - autoplay por visibilidade, start=3 no primeiro video, selecao manual por thumbnails
+### `src/components/presentation/PresentationControls.tsx`
+- Adicionar estado `showHint` (inicia `true`, vira `false` apos 4s via `useEffect`)
+- Quando `showHint` estiver ativo:
+  - Botoes de seta recebem classe `animate-pulse` do Tailwind
+  - Um elemento acima da barra exibe: "Navegue pelos slides  ← →" com `transition-opacity` para fade-out suave
+- Apos 4 segundos, remover a animacao e o texto
 
-### Detalhes tecnicos
-
-- Carregar `https://www.youtube.com/iframe_api` como script externo
-- Usar `window.YT` e `window.onYouTubeIframeAPIReady` para inicializar
-- Criar o player com `new YT.Player(elementId, { events: { onStateChange } })`
-- Passar `playerVars: { autoplay, start }` conforme logica atual
-- Usar `useRef` para manter referencia ao player e destrui-lo/recria-lo ao trocar de video
-- Adicionar tipagem para `window.YT` via declaracao global
-
-### Comportamento esperado
-- Video 1 termina -> Video 2 inicia automaticamente
-- Video 2 termina -> Video 3 inicia automaticamente
-- ...ate o Video 5, que ao terminar simplesmente para
-- Selecao manual por thumbnail continua funcionando normalmente
+### Comportamento
+- O hint aparece apenas na primeira exibicao (ao montar o componente)
+- Nao reaparece ao mover o mouse ou trocar de slide
+- A barra continua funcionando normalmente apos o hint sumir
