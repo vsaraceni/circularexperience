@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Linkedin, Users, TrendingUp, CalendarClock } from "lucide-react";
+import { Phone, MapPin, Linkedin, Users, TrendingUp, CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import LeadForm from "./LeadForm";
 
@@ -56,23 +56,13 @@ const CTA = () => {
               </h3>
               
               <div className="space-y-4">
-                <a href="mailto:vinicius@atinaedu.com.br" className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-primary/10 transition-colors group">
-                  <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
-                    <Mail className="w-5 h-5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">E-mail</p>
-                    <p className="text-sm text-muted-foreground">contato@movimentocircular.io</p>
-                  </div>
-                </a>
-
-                <a href="tel:+5511981272111" className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-secondary/10 transition-colors group">
+                <a href="https://wa.me/5548991076079" className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-secondary/10 transition-colors group">
                   <div className="w-12 h-12 rounded-full gradient-secondary flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
                     <Phone className="w-5 h-5 text-secondary-foreground" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground">Whatsapp</p>
-                    <p className="text-sm text-muted-foreground">+55 11 98127-2111</p>
+                    <p className="text-sm text-muted-foreground">+55 48 99107-6079</p>
                   </div>
                 </a>
 
@@ -81,7 +71,7 @@ const CTA = () => {
                     <Linkedin className="w-5 h-5 text-accent-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">LinkedIn do Diretor Geral</p>
+                    <p className="font-medium text-foreground">LinkedIn do Diretor Executivo</p>
                     <p className="text-sm text-muted-foreground">Vinicius Saraceni</p>
                   </div>
                 </a>
@@ -93,7 +83,7 @@ const CTA = () => {
                 <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-foreground mb-2">Representações regionais</p>
-                  <p className="text-sm text-muted-foreground">São Paulo • Florianópolis • Salvador • Recife</p>
+                  <p className="text-sm text-muted-foreground">São Paulo • Florianópolis • Salvador • Recife • Belo Horizonte</p>
                 </div>
               </div>
             </div>

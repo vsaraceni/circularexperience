@@ -34,7 +34,7 @@ const Footer = () => {
 
           {/* Copyright */}
           <p className="text-sm" style={{ color: "#5F2558", opacity: 0.7 }}>
-            © {new Date().getFullYear()} Circular Experience. Todos os direitos reservados.
+            © {new Date().getFullYear()} Circular Experience é um produto do Movimento Circular. Todos os direitos reservados.
           </p>
         </div>
       </div>
