@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
               </Button>
             )}
             <Button variant="hero" size="lg" onClick={() => scrollToSection("contato")}>
-              Solicitar Proposta
+              Receber mais informações
             </Button>
           </div>
 
@@ -110,7 +110,7 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
                 Especialistas
               </button>
               <Button variant="hero" className="mt-2" onClick={() => scrollToSection("contato")}>
-                Solicitar Proposta
+                Receber mais informações
               </Button>
             </nav>
           </div>

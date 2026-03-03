@@ -1,28 +1,48 @@
-import { Mail, Phone, MapPin, Linkedin } from "lucide-react";
+import { Mail, Phone, MapPin, Linkedin, Users, TrendingUp, CalendarClock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import LeadForm from "./LeadForm";
+
 const CTA = () => {
-  return <section id="contato" className="py-20 bg-muted/50">
+  return (
+    <section id="contato" className="py-20 bg-muted/50">
       <div className="container mx-auto px-4 md:!px-[46px]">
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6">
-            <span className="text-sm font-medium text-primary">Solicite uma proposta</span>
+            <span className="text-sm font-medium text-primary">Receba mais informações</span>
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Leve o <span className="text-gradient-primary">Circular Experience</span> para sua empresa
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Preencha o formulário e nossa equipe entrará em contato para apresentar uma proposta personalizada para sua organização.</p>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Preencha o formulário e nossa equipe entrará em contato com mais informações sobre o programa.
+          </p>
+        </div>
+
+        {/* Social proof compact strip */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10">
+            <Users className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-primary">500+ profissionais capacitados</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/15">
+            <TrendingUp className="w-4 h-4 text-accent" />
+            <span className="text-sm font-semibold text-accent">NPS +98%</span>
+          </div>
+          <Badge className="bg-accent text-accent-foreground px-4 py-2 text-sm font-bold">
+            <CalendarClock className="w-4 h-4 mr-1.5" />
+            Agenda Limitada
+          </Badge>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
           {/* Form Card */}
           <div className="bg-card rounded-3xl p-8 border border-border shadow-xl relative overflow-hidden order-2 lg:order-1">
-            {/* Decorative */}
             <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-primary/10 blur-3xl -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-secondary/10 blur-3xl translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10">
               <h3 className="font-display text-xl font-bold text-foreground mb-6">
-                Solicitar Proposta
+                Receber mais informações
               </h3>
               <LeadForm />
             </div>
@@ -68,7 +88,6 @@ const CTA = () => {
               </div>
             </div>
 
-            {/* Locations */}
             <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl p-6 border border-border">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
@@ -81,6 +100,8 @@ const CTA = () => {
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default CTA;

@@ -44,7 +44,7 @@ const Hero = () => {
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
-              Solicitar Proposta
+              Receber mais informações
             </Button>
             <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("sobre")}>
               Saiba Mais
