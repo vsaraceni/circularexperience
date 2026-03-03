@@ -2,46 +2,42 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, Loader2, Send } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-const brazilianStates = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-];
 
-const leadSchema = z.object({
+const step1Schema = z.object({
   name: z.string().trim().min(3, "Nome deve ter pelo menos 3 caracteres").max(100, "Nome muito longo"),
   email: z.string().trim().email("E-mail inválido").max(255, "E-mail muito longo"),
-  whatsapp: z.string().trim().min(10, "WhatsApp deve ter pelo menos 10 dígitos").max(15, "WhatsApp inválido").regex(/^[\d\s\-\(\)]+$/, "Apenas números são permitidos"),
-  cargo: z.string().trim().min(2, "Cargo deve ter pelo menos 2 caracteres").max(100, "Cargo muito longo"),
-  company: z.string().trim().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").max(100, "Nome da empresa muito longo"),
-  city: z.string().trim().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100, "Cidade muito longa"),
-  state: z.string().min(2, "Selecione um estado"),
 });
 
-type LeadFormData = z.infer<typeof leadSchema>;
+const step2Schema = z.object({
+  cargo: z.string().trim().min(2, "Cargo deve ter pelo menos 2 caracteres").max(100, "Cargo muito longo"),
+  company: z.string().trim().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").max(100, "Nome da empresa muito longo"),
+});
+
+type FormData = {
+  name: string;
+  email: string;
+  cargo: string;
+  company: string;
+};
 
 const LeadForm = () => {
-  const [formData, setFormData] = useState<LeadFormData>({
+  const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
-    whatsapp: "",
     cargo: "",
     company: "",
-    city: "",
-    state: "",
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof LeadFormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [step, setStep] = useState<1 | 2>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleChange = (field: keyof LeadFormData, value: string) => {
+  const handleChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -51,13 +47,27 @@ const LeadForm = () => {
     e.preventDefault();
     setErrors({});
 
-    // Validate form data
-    const result = leadSchema.safeParse(formData);
-    
+    if (step === 1) {
+      const result = step1Schema.safeParse({ name: formData.name, email: formData.email });
+      if (!result.success) {
+        const fieldErrors: Partial<Record<keyof FormData, string>> = {};
+        result.error.errors.forEach(err => {
+          const field = err.path[0] as keyof FormData;
+          fieldErrors[field] = err.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
+      setStep(2);
+      return;
+    }
+
+    // Step 2: validate cargo + company
+    const result = step2Schema.safeParse({ cargo: formData.cargo, company: formData.company });
     if (!result.success) {
-      const fieldErrors: Partial<Record<keyof LeadFormData, string>> = {};
+      const fieldErrors: Partial<Record<keyof FormData, string>> = {};
       result.error.errors.forEach(err => {
-        const field = err.path[0] as keyof LeadFormData;
+        const field = err.path[0] as keyof FormData;
         fieldErrors[field] = err.message;
       });
       setErrors(fieldErrors);
@@ -68,7 +78,7 @@ const LeadForm = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("send-lead-email", {
-        body: result.data,
+        body: formData,
       });
 
       if (error) {
@@ -83,16 +93,8 @@ const LeadForm = () => {
       setIsSuccess(true);
       toast.success("Solicitação enviada com sucesso! Em breve entraremos em contato.");
       
-      // Reset form after success
-      setFormData({
-        name: "",
-        email: "",
-        whatsapp: "",
-        cargo: "",
-        company: "",
-        city: "",
-        state: "",
-      });
+      setFormData({ name: "", email: "", cargo: "", company: "" });
+      setStep(1);
     } catch (err) {
       console.error("Submit error:", err);
       toast.error("Erro ao enviar. Por favor, tente novamente.");
@@ -111,13 +113,13 @@ const LeadForm = () => {
           Solicitação Enviada!
         </h3>
         <p className="text-muted-foreground mb-4">
-          Em breve nossa equipe entrará em contato com uma proposta personalizada.
+          Em breve nossa equipe entrará em contato com mais informações.
         </p>
         <Button 
           variant="outline" 
           onClick={() => setIsSuccess(false)}
         >
-          Fazer nova solicitação
+          Enviar novamente
         </Button>
       </div>
     );
@@ -162,104 +164,46 @@ const LeadForm = () => {
         )}
       </div>
 
-      {/* WhatsApp */}
-      <div className="space-y-2">
-        <Label htmlFor="whatsapp" className="text-foreground">
-          WhatsApp <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="whatsapp"
-          type="tel"
-          placeholder="(11) 99999-9999"
-          value={formData.whatsapp}
-          onChange={(e) => handleChange("whatsapp", e.target.value)}
-          className={errors.whatsapp ? "border-destructive" : ""}
-          maxLength={15}
-        />
-        {errors.whatsapp && (
-          <p className="text-xs text-destructive">{errors.whatsapp}</p>
-        )}
-      </div>
+      {/* Step 2 fields - revealed after step 1 */}
+      {step === 2 && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Cargo */}
+          <div className="space-y-2">
+            <Label htmlFor="cargo" className="text-foreground">
+              Cargo <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="cargo"
+              placeholder="Ex: Gerente de RH, Coord. de Sustentabilidade"
+              value={formData.cargo}
+              onChange={(e) => handleChange("cargo", e.target.value)}
+              className={errors.cargo ? "border-destructive" : ""}
+              maxLength={100}
+            />
+            {errors.cargo && (
+              <p className="text-xs text-destructive">{errors.cargo}</p>
+            )}
+          </div>
 
-      {/* Cargo */}
-      <div className="space-y-2">
-        <Label htmlFor="cargo" className="text-foreground">
-          Cargo <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="cargo"
-          placeholder="Ex: Gerente de RH, Coord. de Sustentabilidade"
-          value={formData.cargo}
-          onChange={(e) => handleChange("cargo", e.target.value)}
-          className={errors.cargo ? "border-destructive" : ""}
-          maxLength={100}
-        />
-        {errors.cargo && (
-          <p className="text-xs text-destructive">{errors.cargo}</p>
-        )}
-      </div>
-
-      {/* Company */}
-      <div className="space-y-2">
-        <Label htmlFor="company" className="text-foreground">
-          Empresa / Organização <span className="text-destructive">*</span>
-        </Label>
-        <Input
-          id="company"
-          placeholder="Nome da sua organização"
-          value={formData.company}
-          onChange={(e) => handleChange("company", e.target.value)}
-          className={errors.company ? "border-destructive" : ""}
-          maxLength={100}
-        />
-        {errors.company && (
-          <p className="text-xs text-destructive">{errors.company}</p>
-        )}
-      </div>
-
-      {/* City and State */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="city" className="text-foreground">
-            Cidade <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="city"
-            placeholder="Sua cidade"
-            value={formData.city}
-            onChange={(e) => handleChange("city", e.target.value)}
-            className={errors.city ? "border-destructive" : ""}
-            maxLength={100}
-          />
-          {errors.city && (
-            <p className="text-xs text-destructive">{errors.city}</p>
-          )}
+          {/* Company */}
+          <div className="space-y-2">
+            <Label htmlFor="company" className="text-foreground">
+              Empresa / Organização <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="company"
+              placeholder="Nome da sua organização"
+              value={formData.company}
+              onChange={(e) => handleChange("company", e.target.value)}
+              className={errors.company ? "border-destructive" : ""}
+              maxLength={100}
+            />
+            {errors.company && (
+              <p className="text-xs text-destructive">{errors.company}</p>
+            )}
+          </div>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="state" className="text-foreground">
-            Estado <span className="text-destructive">*</span>
-          </Label>
-          <Select 
-            value={formData.state} 
-            onValueChange={(value) => handleChange("state", value)}
-          >
-            <SelectTrigger className={errors.state ? "border-destructive" : ""}>
-              <SelectValue placeholder="UF" />
-            </SelectTrigger>
-            <SelectContent>
-              {brazilianStates.map((state) => (
-                <SelectItem key={state} value={state}>
-                  {state}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.state && (
-            <p className="text-xs text-destructive">{errors.state}</p>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Submit Button */}
       <Button 
@@ -277,14 +221,16 @@ const LeadForm = () => {
         ) : (
           <>
             <Send className="w-4 h-4" />
-            Solicitar Proposta
+            {step === 1 ? "Receber mais informações" : "Enviar"}
           </>
         )}
       </Button>
 
-      <p className="text-xs text-muted-foreground text-center mt-4">
-        Ao enviar, você concorda em receber uma proposta comercial do Circular Experience.
-      </p>
+      {step === 1 && (
+        <p className="text-xs text-muted-foreground text-center mt-4">
+          Ao enviar, você concorda em receber informações sobre o Circular Experience.
+        </p>
+      )}
     </form>
   );
 };
