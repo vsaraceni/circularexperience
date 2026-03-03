@@ -1,20 +1,14 @@
 
 
-# Opção A: Timeline compacta
+# Centralizar o slide da Agenda no modo apresentação
 
-Comprimir espaçamentos verticais no `src/components/landing/Agenda.tsx`:
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-| Elemento | Atual | Novo |
-|---|---|---|
-| Padding da seção | `py-20` | `py-12` |
-| Margin do título | `mb-16` | `mb-8` |
-| Subtítulo | `text-lg` | `text-base` |
-| Gap entre items | `mb-8` | `mb-4` |
-| Padding dos cards | `p-6` | `p-4` |
-| Badge margin | `mb-3` | `mb-2` |
-| Título margin | `mb-2` | `mb-1` |
-| Dots | `w-11 h-11` | `w-9 h-9` |
-| Dot icons | `w-5 h-5` | `w-4 h-4` |
+## Alteração
 
-Apenas um arquivo alterado: `src/components/landing/Agenda.tsx`.
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
+
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
