@@ -48,7 +48,7 @@ const SlideWrapper: React.FC<SlideWrapperProps> = ({ children, isActive, align =
         <div className={
           fullBleed
             ? "w-full h-full"
-            : `w-full h-full overflow-y-auto flex justify-center scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent ${align === "top" ? "items-start pt-12" : "items-center"}`
+            : `w-full h-full overflow-y-auto flex justify-center scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent ${align === "top" ? "items-start pt-2" : "items-center"}`
         }>
           {children}
         </div>
