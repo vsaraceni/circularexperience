@@ -144,14 +144,22 @@ export default {
   					transform: 'scale(1)'
   				}
   			},
-  			'pulse-glow': {
-  				'0%, 100%': {
-  					boxShadow: '0 0 20px hsl(307 44% 26% / 0.3)'
-  				},
-  				'50%': {
-  					boxShadow: '0 0 40px hsl(307 44% 26% / 0.5)'
-  				}
-  			},
+			'pulse-glow': {
+				'0%, 100%': {
+					boxShadow: '0 0 20px hsl(307 44% 26% / 0.3)'
+				},
+				'50%': {
+					boxShadow: '0 0 40px hsl(307 44% 26% / 0.5)'
+				}
+			},
+			'glow-accent': {
+				'0%, 100%': {
+					boxShadow: '0 0 20px hsl(45 100% 50% / 0.4), 0 0 40px hsl(35 100% 50% / 0.2)'
+				},
+				'50%': {
+					boxShadow: '0 0 35px hsl(45 100% 50% / 0.6), 0 0 60px hsl(35 100% 50% / 0.35)'
+				}
+			},
   			float: {
   				'0%, 100%': {
   					transform: 'translateY(0)'

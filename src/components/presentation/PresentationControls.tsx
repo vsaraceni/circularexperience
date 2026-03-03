@@ -11,6 +11,8 @@ interface PresentationControlsProps {
   visible: boolean;
 }
 
+type AnimationPhase = "intro" | "settling" | "idle";
+
 const PresentationControls: React.FC<PresentationControlsProps> = ({
   currentSlide,
   totalSlides,
@@ -19,34 +21,87 @@ const PresentationControls: React.FC<PresentationControlsProps> = ({
   onExit,
   visible,
 }) => {
-  const [showHint, setShowHint] = useState(true);
+  const [phase, setPhase] = useState<AnimationPhase>("intro");
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowHint(false), 4000);
-    return () => clearTimeout(timer);
+    const t1 = setTimeout(() => setPhase("settling"), 1500);
+    const t2 = setTimeout(() => setPhase("idle"), 2300);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
 
+  const isAnimating = phase !== "idle";
+  const showHint = phase === "intro" || phase === "settling";
+
+  // During intro: centered, large, glowing
+  // During settling: transition to final position
+  // During idle: normal behavior
+  const wrapperStyle: React.CSSProperties =
+    phase === "intro"
+      ? {
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%) scale(1.5)",
+          transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+          zIndex: 60,
+        }
+      : phase === "settling"
+      ? {
+          position: "fixed",
+          bottom: "24px",
+          left: "50%",
+          top: "auto",
+          transform: "translate(-50%, 0) scale(1)",
+          transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+          zIndex: 60,
+        }
+      : {
+          position: "fixed",
+          bottom: "24px",
+          left: "50%",
+          transform: "translate(-50%, 0) scale(1)",
+          zIndex: 60,
+        };
+
   return (
-    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-col items-center gap-2 transition-opacity duration-300 ${
-      visible ? "opacity-100" : "opacity-0 pointer-events-none"
-    }`}>
+    <div
+      style={wrapperStyle}
+      className={`flex flex-col items-center gap-2 transition-opacity duration-300 ${
+        visible || isAnimating ? "opacity-100" : "opacity-0 pointer-events-none"
+      }`}
+    >
       {/* Hint temporário */}
-      <div className={`text-sm text-foreground/90 bg-background/70 backdrop-blur-md rounded-full px-4 py-1.5 border border-border flex items-center gap-2 transition-opacity duration-700 ${
-        showHint ? "opacity-100" : "opacity-0 pointer-events-none"
-      }`}>
+      <div
+        className={`text-sm text-foreground/90 bg-background/70 backdrop-blur-md rounded-full px-4 py-1.5 border flex items-center gap-2 transition-opacity duration-700 ${
+          isAnimating ? "border-accent" : "border-border"
+        } ${showHint ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+      >
         <span>Navegue pelos slides</span>
-        <kbd className="px-1.5 py-0.5 text-xs rounded border border-border bg-muted font-mono">←</kbd>
-        <kbd className="px-1.5 py-0.5 text-xs rounded border border-border bg-muted font-mono">→</kbd>
+        <kbd className="px-1.5 py-0.5 text-xs rounded border border-accent/50 bg-muted font-mono">
+          ←
+        </kbd>
+        <kbd className="px-1.5 py-0.5 text-xs rounded border border-accent/50 bg-muted font-mono">
+          →
+        </kbd>
       </div>
 
       {/* Barra de controle */}
-      <div className="flex items-center gap-3 bg-background/80 backdrop-blur-md rounded-full px-4 py-2 shadow-lg border border-border">
+      <div
+        className={`flex items-center gap-3 bg-background/80 backdrop-blur-md rounded-full px-4 py-2 shadow-lg border ${
+          isAnimating
+            ? "border-accent animate-[glow-accent_1.5s_ease-in-out_infinite]"
+            : "border-border"
+        }`}
+      >
         <Button
           variant="ghost"
           size="icon"
           onClick={onPrev}
           disabled={currentSlide === 0}
-          className={`rounded-full ${showHint ? "animate-pulse" : ""}`}
+          className="rounded-full"
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -60,7 +115,7 @@ const PresentationControls: React.FC<PresentationControlsProps> = ({
           size="icon"
           onClick={onNext}
           disabled={currentSlide === totalSlides - 1}
-          className={`rounded-full ${showHint ? "animate-pulse" : ""}`}
+          className="rounded-full"
         >
           <ChevronRight className="h-5 w-5" />
         </Button>
