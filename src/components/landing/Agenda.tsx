@@ -35,13 +35,13 @@ const agendaItems = [
 
 const Agenda = () => {
   return (
-    <section id="agenda" className="py-12 bg-background">
+    <section id="agenda" className="py-8 bg-background">
       <div className="container mx-auto px-4 md:!px-[46px]">
-        <div className="text-center mb-8">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
+        <div className="text-center mb-5">
+          <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
             <span className="text-gradient-primary">Agenda</span> da Oficina
           </h2>
-          <p className="text-muted-foreground text-base max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-sm max-w-2xl mx-auto">
             4 horas de imersão prática e transformadora
           </p>
         </div>
@@ -49,25 +49,25 @@ const Agenda = () => {
         <div className="max-w-3xl mx-auto">
           <div className="relative">
             {/* Timeline Line */}
-            <div className="absolute left-[22px] top-8 bottom-8 w-0.5 bg-gradient-to-b from-secondary via-primary to-accent lg:left-1/2 lg:-translate-x-1/2" />
+            <div className="absolute left-[22px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-secondary via-primary to-accent lg:left-1/2 lg:-translate-x-1/2" />
 
             {agendaItems.map((item, index) => (
               <div 
                 key={index}
-                className={`relative flex gap-6 mb-4 ${
+                className={`relative flex gap-6 mb-2 ${
                   index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
                 }`}
               >
                 {/* Timeline Dot */}
-                <div className="absolute left-0 lg:left-1/2 lg:-translate-x-1/2 w-9 h-9 rounded-full gradient-hero flex items-center justify-center shadow-lg z-10">
-                  <item.icon className="w-4 h-4 text-primary-foreground" />
+                <div className="absolute left-0 lg:left-1/2 lg:-translate-x-1/2 w-8 h-8 rounded-full gradient-hero flex items-center justify-center shadow-lg z-10">
+                  <item.icon className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
 
                 {/* Content Card */}
                 <div className={`ml-16 lg:ml-0 lg:w-[calc(50%-40px)] ${
                   index % 2 === 0 ? "lg:mr-auto lg:pr-8" : "lg:ml-auto lg:pl-8"
                 }`}>
-                  <div className="bg-card rounded-xl p-4 border border-border hover:border-primary/30 transition-all hover:shadow-lg">
+                  <div className="bg-card rounded-xl p-3 border border-border hover:border-primary/30 transition-all hover:shadow-lg">
                     {/* Time Badge */}
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 mb-2">
                       <Clock className="w-3.5 h-3.5 text-primary" />
