@@ -24,7 +24,7 @@ const slides = [
   { component: About, label: "Sobre" },
   { component: MethodologySteps, label: "Metodologia" },
   { component: MethodologyBenefits, label: "Aprendizado" },
-  { component: Agenda, label: "Agenda", align: "top" as const },
+  { component: Agenda, label: "Agenda" },
   { component: Video, label: "Vídeo", fullBleed: true },
   { component: Experts, label: "Especialistas" },
   { component: SDGs, label: "ODS" },
@@ -118,7 +118,7 @@ const PresentationMode: React.FC<PresentationModeProps> = ({ onExit }) => {
       {slides.map((slide, index) => {
         const SlideComponent = slide.component;
         return (
-          <SlideWrapper key={index} isActive={index === currentSlide} align={slide.align} fullBleed={slide.fullBleed}>
+          <SlideWrapper key={index} isActive={index === currentSlide} fullBleed={slide.fullBleed}>
             <SlideComponent />
           </SlideWrapper>
         );
