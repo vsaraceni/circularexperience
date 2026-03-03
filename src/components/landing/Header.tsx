@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Menu, X, Presentation } from "lucide-react";
+import { Menu, X, Presentation, Share2 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
+import { toast } from "sonner";
 
 interface HeaderProps {
   onPresent?: () => void;
@@ -17,6 +18,13 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
       element.scrollIntoView({ behavior: "smooth" });
     }
     setIsMenuOpen(false);
+  };
+
+  const copyPresentationLink = () => {
+    const link = `${window.location.origin}/?mode=apresentacao`;
+    navigator.clipboard.writeText(link).then(() => {
+      toast.success("Link da apresentação copiado!");
+    });
   };
 
   return (
@@ -63,9 +71,14 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
           {/* CTA + Present Buttons */}
           <div className="hidden md:flex items-center gap-3">
             {onPresent && (
-              <Button variant="ghost" size="icon" onClick={onPresent} title="Modo Apresentação">
-                <Presentation className="h-5 w-5" />
-              </Button>
+              <>
+                <Button variant="ghost" size="icon" onClick={copyPresentationLink} title="Copiar link da apresentação">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={onPresent} title="Modo Apresentação">
+                  <Presentation className="h-5 w-5" />
+                </Button>
+              </>
             )}
             <Button variant="hero" size="lg" onClick={() => scrollToSection("contato")}>
               Receber mais informações

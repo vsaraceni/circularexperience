@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface PresentationControlsProps {
   currentSlide: number;
@@ -121,6 +122,21 @@ const PresentationControls: React.FC<PresentationControlsProps> = ({
         </Button>
 
         <div className="w-px h-6 bg-border" />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            const link = `${window.location.origin}/?mode=apresentacao`;
+            navigator.clipboard.writeText(link).then(() => {
+              toast.success("Link da apresentação copiado!");
+            });
+          }}
+          className="rounded-full"
+          title="Copiar link da apresentação"
+        >
+          <Link className="h-4 w-4" />
+        </Button>
 
         <Button
           variant="ghost"
