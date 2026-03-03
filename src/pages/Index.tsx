@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import SocialProof from "@/components/landing/SocialProof";
@@ -14,12 +15,21 @@ import Footer from "@/components/landing/Footer";
 import PresentationMode from "@/components/presentation/PresentationMode";
 
 const Index = () => {
-  const [isPresentationMode, setIsPresentationMode] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isPresentationMode, setIsPresentationMode] = useState(
+    searchParams.get("mode") === "apresentacao"
+  );
+
+  const handleExitPresentation = () => {
+    setIsPresentationMode(false);
+    searchParams.delete("mode");
+    setSearchParams(searchParams, { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {isPresentationMode && (
-        <PresentationMode onExit={() => setIsPresentationMode(false)} />
+        <PresentationMode onExit={handleExitPresentation} />
       )}
       <Header onPresent={() => setIsPresentationMode(true)} />
       <main>
