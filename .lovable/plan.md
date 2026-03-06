@@ -1,18 +1,14 @@
 
 
-# Adicionar logo do Movimento Circular no slide 2 (apenas print)
+# Centralizar o slide da Agenda no modo apresentação
 
-## Abordagem
-Overlay do logo no canto superior esquerdo do slide 2 (SocialProof, index 1) diretamente no `PrintablePresentation.tsx`, sem tocar no componente `SocialProof.tsx`.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-## Mudanças
+## Alteração
 
-### 1. Copiar o asset
-Copiar `user-uploads://Movimento-Circular_logotipo_horizontal_5.png` para `src/assets/movimento-circular-logo-horizontal.png`.
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-### 2. `src/pages/PrintablePresentation.tsx`
-- Importar o novo logo
-- No loop de renderização, quando `index === 1`, adicionar um `<img>` com `position: absolute; top: 40px; left: 60px; height: 50px` (tamanho de assinatura corporativa) por cima do slide, sem afetar os demais
-
-O `slide-container` já tem `position: relative`, então o logo absoluto funciona diretamente.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 

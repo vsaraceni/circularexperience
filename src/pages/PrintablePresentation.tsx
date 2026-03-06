@@ -5,6 +5,7 @@ import type { Proposal } from "@/pages/admin/Proposals";
 
 // Slide components
 import Hero from "@/components/landing/Hero";
+import mcLogoHorizontal from "@/assets/movimento-circular-logo-horizontal.png";
 import SocialProof from "@/components/landing/SocialProof";
 import Stats from "@/components/landing/Stats";
 import AboutPrint from "@/components/presentation/slides/AboutPrint";
@@ -105,6 +106,9 @@ const PrintablePresentation = () => {
         const needsCenter = [1, 2, 8].includes(index);
         return (
           <div key={index} className={`slide-container${needsCenter ? ' slide-center-content' : ''}`}>
+            {index === 1 && (
+              <img src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 40, left: 60, height: 50, zIndex: 10, width: 'auto' }} />
+            )}
             <SlideComponent />
           </div>
         );
