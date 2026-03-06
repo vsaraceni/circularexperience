@@ -38,10 +38,10 @@ const Agenda = () => {
     <section id="agenda" className="py-5 bg-background">
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-3">
-          <h2 className="font-display text-xl md:text-2xl font-bold text-foreground mb-1">
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-2">
             <span className="text-gradient-primary">Agenda</span> da Oficina
           </h2>
-          <p className="text-muted-foreground text-xs max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
             4 horas de imersão prática e transformadora
           </p>
         </div>

@@ -40,7 +40,7 @@ const SocialProof = () => {
       <div className="container mx-auto px-4 md:!px-[46px]">
         {/* Headline */}
         <div className="text-center mb-10">
-          <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-6">
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-6">
             Metodologia testada e aprovada por mais de{" "}
             <span className="text-gradient-primary">500 profissionais</span>
           </h2>
