@@ -83,6 +83,10 @@ const PrintablePresentation = () => {
           align-items: center;
           justify-content: center;
         }
+        .slide-container > * {
+          width: 100% !important;
+          min-height: 100%;
+        }
         .slide-container:last-child {
           page-break-after: auto;
           break-after: auto;

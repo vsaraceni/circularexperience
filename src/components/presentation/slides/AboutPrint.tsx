@@ -33,12 +33,12 @@ const AboutPrint = () => {
             gap: 8,
             padding: "6px 16px",
             borderRadius: 999,
-            background: "rgba(34,139,34,0.1)",
+            background: "rgba(95,37,88,0.1)",
             marginBottom: 24,
           }}
         >
-          <Target style={{ width: 18, height: 18, color: "#228B22" }} />
-          <span style={{ fontSize: 16, fontWeight: 600, color: "#228B22" }}>
+          <Target style={{ width: 18, height: 18, color: "#5F2558" }} />
+          <span style={{ fontSize: 16, fontWeight: 600, color: "#5F2558" }}>
             Circular Experience
           </span>
         </div>
@@ -55,7 +55,7 @@ const AboutPrint = () => {
           Capacite seu time para colocar a{" "}
           <span
             style={{
-              background: "linear-gradient(135deg, #228B22, #32CD32)",
+              background: "linear-gradient(135deg, #5F2558, #7B3F74)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -107,11 +107,11 @@ const AboutPrint = () => {
             width: 120,
             height: 120,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #228B22, #32CD32)",
+            background: "linear-gradient(135deg, #5F2558, #7B3F74)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 0 40px rgba(34,139,34,0.3)",
+            boxShadow: "0 0 40px rgba(95,37,88,0.3)",
             zIndex: 10,
           }}
         >
@@ -136,7 +136,7 @@ const AboutPrint = () => {
             position: "absolute",
             inset: 100,
             borderRadius: "50%",
-            border: "2px dashed rgba(34,139,34,0.3)",
+            border: "2px dashed rgba(95,37,88,0.3)",
           }}
         />
 
@@ -166,7 +166,7 @@ const AboutPrint = () => {
                   width: 64,
                   height: 64,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #228B22, #32CD32)",
+                  background: "linear-gradient(135deg, #5F2558, #7B3F74)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
