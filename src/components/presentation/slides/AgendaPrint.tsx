@@ -57,7 +57,7 @@ const AgendaPrint = () => {
         <h2 style={{ fontSize: 40, fontWeight: 700, marginBottom: 8, color: "#1a1a1a" }}>
           <span
             style={{
-              background: "linear-gradient(135deg, #228B22, #32CD32)",
+              background: "linear-gradient(135deg, #5F2558, #7B3F74)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -92,7 +92,7 @@ const AgendaPrint = () => {
             top: 20,
             bottom: 20,
             width: 3,
-            background: "linear-gradient(to bottom, #228B22, #32CD32, #90EE90)",
+            background: "linear-gradient(to bottom, #5F2558, #7B3F74, #C4A0BF)",
             transform: "translateX(-50%)",
           }}
         />
@@ -120,7 +120,7 @@ const AgendaPrint = () => {
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  background: "linear-gradient(135deg, #228B22, #32CD32)",
+                  background: "linear-gradient(135deg, #5F2558, #7B3F74)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -156,12 +156,12 @@ const AgendaPrint = () => {
                       gap: 6,
                       padding: "3px 10px",
                       borderRadius: 999,
-                      background: "rgba(34,139,34,0.1)",
+                      background: "rgba(95,37,88,0.1)",
                       marginBottom: 6,
                     }}
                   >
-                    <Clock style={{ width: 14, height: 14, color: "#228B22" }} />
-                    <span style={{ fontSize: 14, fontWeight: 600, color: "#228B22" }}>
+                    <Clock style={{ width: 14, height: 14, color: "#5F2558" }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#5F2558" }}>
                       {item.time}
                     </span>
                   </div>
