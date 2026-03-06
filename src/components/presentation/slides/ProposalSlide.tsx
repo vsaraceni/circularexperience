@@ -7,7 +7,7 @@ interface ProposalSlideProps {
 }
 
 const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
-  const proposalUrl = `${window.location.origin}/proposta/${proposal.slug}`;
+  const proposalUrl = `${window.location.origin}/apresentacao-print/${proposal.slug}`;
 
   return (
     <div className="w-full h-full flex" style={{ fontFamily: "'Raleway', sans-serif" }}>
