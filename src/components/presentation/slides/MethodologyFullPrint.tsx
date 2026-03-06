@@ -8,7 +8,7 @@ const steps = [
     subtitle: "Palestra dialogada com especialista",
     description: "Conceitos fundamentais, diferenças em relação ao modelo linear e exemplos inspiradores.",
     icon: Lightbulb,
-    color: "#F97316",
+    color: "#1BA39C",
   },
   {
     number: "2",
@@ -16,7 +16,7 @@ const steps = [
     subtitle: "Explorando os 7 R's da circularidade",
     description: "Recusar, Repensar, Reduzir, Reutilizar, Reparar, Regenerar e Reciclar aplicados ao seu negócio.",
     icon: Search,
-    color: "#16A34A",
+    color: "#5F2558",
   },
   {
     number: "3",
@@ -24,7 +24,7 @@ const steps = [
     subtitle: "Experiência mão-na-massa",
     description: "Oficina colaborativa e construção de um plano de ação prático e personalizado.",
     icon: Wrench,
-    color: "#0EA5E9",
+    color: "#E6A817",
   },
 ];
 
@@ -44,7 +44,7 @@ const MethodologyFullPrint = () => {
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <img src={circularExperienceLogo} alt="Circular Experience" style={{ height: 56, margin: "0 auto 12px" }} />
         <h2 style={{ fontSize: 40, fontWeight: 700, marginBottom: 4, color: "#1a1a2e" }}>
-          Nossa <span style={{ color: "#16A34A" }}>Metodologia</span>
+          Nossa <span style={{ color: "#5F2558" }}>Metodologia</span>
         </h2>
         <p style={{ fontSize: 18, color: "#64748b" }}>Uma jornada em 3 etapas para capacitar sua equipe</p>
       </div>
@@ -86,7 +86,7 @@ const MethodologyFullPrint = () => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           {benefits.map((benefit, index) => (
             <div key={index} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: 12, borderRadius: 8, background: "#f1f5f9" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#16A34A", marginTop: 5, flexShrink: 0 }} />
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#5F2558", marginTop: 5, flexShrink: 0 }} />
               <p style={{ fontSize: 13, color: "#1a1a2e", lineHeight: 1.4 }}>{benefit}</p>
             </div>
           ))}
