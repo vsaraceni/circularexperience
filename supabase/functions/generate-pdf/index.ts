@@ -44,10 +44,13 @@ serve(async (req: Request) => {
             waitUntil: "networkidle2",
             timeout: 30000,
           },
+          viewport: {
+            width: 1920,
+            height: 1080,
+          },
           options: {
-            landscape: true,
             printBackground: true,
-            format: "A4",
+            preferCSSPageSize: true,
             margin: {
               top: "0",
               right: "0",

@@ -14,7 +14,6 @@ import Agenda from "@/components/landing/Agenda";
 import Video from "@/components/landing/Video";
 import Experts from "@/components/landing/Experts";
 import SDGs from "@/components/landing/SDGs";
-import CTA from "@/components/landing/CTA";
 import ProposalSlide from "@/components/presentation/slides/ProposalSlide";
 
 declare global {
@@ -26,7 +25,7 @@ declare global {
 const fixedSlides = [
   Hero, SocialProof, Stats, About,
   MethodologySteps, MethodologyBenefits,
-  Agenda, Video, Experts, SDGs, CTA,
+  Agenda, Video, Experts, SDGs,
 ];
 
 const PrintablePresentation = () => {
@@ -50,7 +49,6 @@ const PrintablePresentation = () => {
 
   useEffect(() => {
     if (!loading) {
-      // Signal to Browserless that rendering is complete
       const timer = setTimeout(() => {
         window.__SLIDES_READY = true;
       }, 2000);
@@ -66,7 +64,7 @@ const PrintablePresentation = () => {
     <div className="printable-presentation">
       <style>{`
         @media print {
-          @page { size: A4 landscape; margin: 0; }
+          @page { size: 1920px 1080px; margin: 0; }
           body { margin: 0; padding: 0; }
         }
         .printable-presentation {
