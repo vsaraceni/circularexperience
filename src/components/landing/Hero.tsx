@@ -46,7 +46,7 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
               {printMode ? "Proposta Circular Experience" : "Receber mais informações"}
             </Button>
-            <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("sobre")}>
+            <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("social-proof")}>
               Saiba Mais
             </Button>
           </div>
@@ -60,8 +60,8 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
                 <Clock className="w-5 h-5 text-secondary-foreground" />
               </div>
               <div>
-                <p className="font-bold text-white">4 Horas</p>
-                <p className="text-xs text-white/70">Duração</p>
+                <p className="font-bold text-white">Compacto</p>
+                <p className="text-xs text-white/70">A partir de 2h de duração</p>
               </div>
             </div>
 
