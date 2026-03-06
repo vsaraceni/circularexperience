@@ -1,14 +1,10 @@
+## Ajustes no Hero
 
+### `src/components/landing/Hero.tsx`
 
-# Centralizar o slide da Agenda no modo apresentação
+1. **Badge de duração**: Trocar `"4 Horas"` por `"Compacto"` (linha ~68). Linha de baixo trocar de: "Duração" para: A partir de 2h de duração
+2. **Botão "Saiba Mais"**: Trocar `scrollToSection("sobre")` por `scrollToSection("social-proof")` (linha ~56).
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### `src/components/landing/SocialProof.tsx`
 
-## Alteração
-
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
-
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
-
+3. Adicionar `id="social-proof"` na `<section>` (linha ~41) para que o scroll funcione.
