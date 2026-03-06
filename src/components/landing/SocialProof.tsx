@@ -58,7 +58,7 @@ const SocialProof = () => {
             ))}
             <Badge
               variant="secondary"
-              className="bg-accent/20 text-accent-foreground text-sm px-4 py-1.5 font-bold"
+              className="bg-primary/15 text-primary text-sm px-4 py-1.5 font-bold"
             >
               NPS: +98%
             </Badge>
