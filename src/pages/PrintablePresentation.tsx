@@ -87,17 +87,26 @@ const PrintablePresentation = () => {
           width: 100% !important;
           min-height: 100%;
         }
+        .slide-center-content > * {
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          min-height: 100% !important;
+        }
         .slide-container:last-child {
           page-break-after: auto;
           break-after: auto;
         }
       `}</style>
 
-      {fixedSlides.map((SlideComponent, index) => (
-        <div key={index} className="slide-container">
-          <SlideComponent />
-        </div>
-      ))}
+      {fixedSlides.map((SlideComponent, index) => {
+        const needsCenter = [1, 2, 8].includes(index);
+        return (
+          <div key={index} className={`slide-container${needsCenter ? ' slide-center-content' : ''}`}>
+            <SlideComponent />
+          </div>
+        );
+      })}
 
       {proposal && (
         <div className="slide-container">
