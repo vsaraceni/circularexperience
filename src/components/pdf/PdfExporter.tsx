@@ -17,14 +17,6 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ proposal }) => {
     toast.info("Gerando PDF via servidor... isso pode levar alguns segundos.");
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-pdf", {
-        body: { slug: proposal.slug },
-      });
-
-      if (error) throw error;
-
-      // supabase.functions.invoke returns data as parsed JSON by default,
-      // but for binary we need the raw response
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/generate-pdf`,
@@ -38,7 +30,7 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ proposal }) => {
       );
 
       if (!response.ok) {
-        const errData = await response.json();
+        const errData = await response.json().catch(() => ({ error: "Erro desconhecido" }));
         throw new Error(errData.error || "Erro ao gerar PDF");
       }
 
