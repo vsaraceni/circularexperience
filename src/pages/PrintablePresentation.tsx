@@ -21,8 +21,10 @@ declare global {
   }
 }
 
+const HeroPrint = () => <Hero printMode />;
+
 const fixedSlides = [
-  Hero, SocialProof, Stats, AboutPrint,
+  HeroPrint, SocialProof, Stats, AboutPrint,
   MethodologyFullPrint,
   AgendaPrint, VideoPrint, ExpertsPrint, SDGs,
 ];
