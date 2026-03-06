@@ -1,14 +1,21 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+# Trocar texto do botão na capa (apenas versão impressa)
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+## Abordagem
+Adicionar uma prop opcional `printMode?: boolean` ao componente `Hero`. Quando `true`, o texto do botão muda de "Receber mais informações" para "Proposta Circular Experience". Nenhuma outra alteração.
 
-## Alteração
+## Mudanças
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+### 1. `src/components/landing/Hero.tsx`
+- Adicionar prop `printMode?: boolean` (default `false`)
+- No botão principal, usar `printMode ? "Proposta Circular Experience" : "Receber mais informações"`
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+### 2. `src/pages/PrintablePresentation.tsx`
+- Substituir `Hero` no array `fixedSlides` por um wrapper inline que passa `printMode={true}`
+- Ou renderizar o Hero separadamente antes do map, com a prop
+
+## Arquivos impactados
+- `src/components/landing/Hero.tsx` (1 linha de prop + 1 linha de texto condicional)
+- `src/pages/PrintablePresentation.tsx` (ajuste mínimo na renderização do slide 0)
 
