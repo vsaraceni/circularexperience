@@ -22,7 +22,7 @@ const Hero = () => {
           {/* Badge Metodologia */}
           <div className="mb-6 animate-fade-up">
             <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20">
-              <span className="text-sm font-medium text-white">Metodologia Mão na Massa Circular Experience</span>
+              <span className="text-sm font-medium text-white">Workshop personalizado in-company</span>
             </span>
           </div>
 
