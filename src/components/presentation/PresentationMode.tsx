@@ -5,8 +5,7 @@ import Hero from "@/components/landing/Hero";
 import SocialProof from "@/components/landing/SocialProof";
 import Stats from "@/components/landing/Stats";
 import About from "@/components/landing/About";
-import MethodologySteps from "@/components/presentation/slides/MethodologySteps";
-import MethodologyBenefits from "@/components/presentation/slides/MethodologyBenefits";
+import MethodologyFull from "@/components/presentation/slides/MethodologyFull";
 import Agenda from "@/components/landing/Agenda";
 import Video from "@/components/landing/Video";
 import Experts from "@/components/landing/Experts";
@@ -22,8 +21,7 @@ const slides = [
   { component: SocialProof, label: "Prova Social" },
   { component: Stats, label: "Oportunidade" },
   { component: About, label: "Sobre" },
-  { component: MethodologySteps, label: "Metodologia" },
-  { component: MethodologyBenefits, label: "Aprendizado" },
+  { component: MethodologyFull, label: "Metodologia" },
   { component: Agenda, label: "Agenda" },
   { component: Video, label: "Vídeo", fullBleed: true },
   { component: Experts, label: "Especialistas" },

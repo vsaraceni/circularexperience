@@ -8,8 +8,7 @@ import Hero from "@/components/landing/Hero";
 import SocialProof from "@/components/landing/SocialProof";
 import Stats from "@/components/landing/Stats";
 import About from "@/components/landing/About";
-import MethodologySteps from "@/components/presentation/slides/MethodologyStepsPrint";
-import MethodologyBenefits from "@/components/presentation/slides/MethodologyBenefits";
+import MethodologyFullPrint from "@/components/presentation/slides/MethodologyFullPrint";
 import Agenda from "@/components/landing/Agenda";
 import VideoPrint from "@/components/presentation/slides/VideoPrint";
 import ExpertsPrint from "@/components/presentation/slides/ExpertsPrint";
@@ -24,7 +23,7 @@ declare global {
 
 const fixedSlides = [
   Hero, SocialProof, Stats, About,
-  MethodologySteps, MethodologyBenefits,
+  MethodologyFullPrint,
   Agenda, VideoPrint, ExpertsPrint, SDGs,
 ];
 
