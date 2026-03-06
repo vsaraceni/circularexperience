@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Proposals from "./pages/admin/Proposals";
 import ProposalView from "./pages/ProposalView";
+import PrintablePresentation from "./pages/PrintablePresentation";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/proposta/:slug" element={<ProposalView />} />
+          <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
           <Route
             path="/admin/propostas"
             element={
