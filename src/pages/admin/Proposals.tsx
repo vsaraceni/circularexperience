@@ -24,6 +24,9 @@ export interface Proposal {
   slug: string;
   created_at: string;
   created_by: string;
+  author_name: string;
+  author_phone: string;
+  author_email: string;
 }
 
 const Proposals = () => {
