@@ -1,0 +1,107 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import type { Proposal } from "@/pages/admin/Proposals";
+
+// Slide components
+import Hero from "@/components/landing/Hero";
+import SocialProof from "@/components/landing/SocialProof";
+import Stats from "@/components/landing/Stats";
+import About from "@/components/landing/About";
+import MethodologySteps from "@/components/presentation/slides/MethodologySteps";
+import MethodologyBenefits from "@/components/presentation/slides/MethodologyBenefits";
+import Agenda from "@/components/landing/Agenda";
+import Video from "@/components/landing/Video";
+import Experts from "@/components/landing/Experts";
+import SDGs from "@/components/landing/SDGs";
+import CTA from "@/components/landing/CTA";
+import ProposalSlide from "@/components/presentation/slides/ProposalSlide";
+
+declare global {
+  interface Window {
+    __SLIDES_READY?: boolean;
+  }
+}
+
+const fixedSlides = [
+  Hero, SocialProof, Stats, About,
+  MethodologySteps, MethodologyBenefits,
+  Agenda, Video, Experts, SDGs, CTA,
+];
+
+const PrintablePresentation = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const [proposal, setProposal] = useState<Proposal | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProposal = async () => {
+      if (!slug) return;
+      const { data } = await supabase
+        .from("proposals")
+        .select("*")
+        .eq("slug", slug)
+        .single();
+      setProposal(data as Proposal | null);
+      setLoading(false);
+    };
+    fetchProposal();
+  }, [slug]);
+
+  useEffect(() => {
+    if (!loading) {
+      // Signal to Browserless that rendering is complete
+      const timer = setTimeout(() => {
+        window.__SLIDES_READY = true;
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen text-xl">Carregando...</div>;
+  }
+
+  return (
+    <div className="printable-presentation">
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 0; }
+          body { margin: 0; padding: 0; }
+        }
+        .printable-presentation {
+          width: 1920px;
+          margin: 0;
+          padding: 0;
+          background: white;
+        }
+        .slide-container {
+          width: 1920px;
+          height: 1080px;
+          overflow: hidden;
+          page-break-after: always;
+          break-after: page;
+          position: relative;
+        }
+        .slide-container:last-child {
+          page-break-after: auto;
+          break-after: auto;
+        }
+      `}</style>
+
+      {fixedSlides.map((SlideComponent, index) => (
+        <div key={index} className="slide-container">
+          <SlideComponent />
+        </div>
+      ))}
+
+      {proposal && (
+        <div className="slide-container">
+          <ProposalSlide proposal={proposal} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PrintablePresentation;
