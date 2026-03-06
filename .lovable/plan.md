@@ -1,24 +1,14 @@
 
 
-# Ajustar posição do logo no slide 2
+# Centralizar o slide da Agenda no modo apresentação
 
-## Mudança
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-### `src/pages/PrintablePresentation.tsx` (linha 110)
+## Alteração
 
-Atualizar o style inline do logo:
-- `top: 40` → `top: 20`
-- `left: 60` → remover, usar `right: 20`
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-Também adicionar regras CSS para `.slide-logo-overlay` garantindo que não estoure:
-```css
-.slide-logo-overlay {
-  height: 50px !important;
-  width: auto !important;
-  min-height: 0 !important;
-  display: block !important;
-}
-```
-
-E atualizar `.slide-center-content > *` para `.slide-center-content > *:not(.slide-logo-overlay)`.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
