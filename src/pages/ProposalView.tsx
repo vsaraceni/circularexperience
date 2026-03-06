@@ -165,7 +165,23 @@ const ProposalView = () => {
       })}
 
       {/* Proposal slide — responsive version */}
-      <div id="contato" className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Raleway', sans-serif" }}>
+      <div id="contato" className="min-h-screen flex flex-col md:flex-row relative" style={{ fontFamily: "'Raleway', sans-serif" }}>
+        {/* PDF download button */}
+        <button
+          onClick={generatePdf}
+          disabled={generatingPdf}
+          className="absolute top-4 right-4 z-20 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          style={{
+            background: "hsla(0,0%,0%,0.06)",
+            color: "hsl(0 0% 35%)",
+            cursor: generatingPdf ? "wait" : "pointer",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "hsla(0,0%,0%,0.12)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "hsla(0,0%,0%,0.06)")}
+        >
+          {generatingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+          PDF da proposta
+        </button>
         {/* Sidebar */}
         <div
           className="proposal-sidebar flex flex-col items-center justify-between py-10 px-6 md:py-12 md:px-8 gap-8"
