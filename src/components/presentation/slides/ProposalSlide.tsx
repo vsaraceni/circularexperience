@@ -35,16 +35,16 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         {/* Investment */}
         {proposal.investment && (
           <div
-            className="w-full rounded-2xl p-6 text-center"
+            className="w-full rounded-xl p-4 text-center"
             style={{ background: "hsla(0,0%,100%,0.1)" }}
           >
             <p
-              className="text-xs uppercase tracking-widest mb-3"
+              className="text-xs uppercase tracking-widest mb-2"
               style={{ color: "hsla(0,0%,100%,0.6)" }}
             >
               Investimento
             </p>
-            <p className="text-4xl font-bold text-white">{proposal.investment}</p>
+            <p className="text-2xl font-bold text-white">{proposal.investment}</p>
           </div>
         )}
 
@@ -80,7 +80,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
       >
         {/* Title */}
         <h1
-          className="text-3xl font-bold pb-4 mb-8"
+          className="text-4xl font-bold pb-4 mb-8"
           style={{
             color: "hsl(0 0% 10%)",
             borderBottom: "2px solid hsla(307,44%,26%,0.3)",
@@ -120,8 +120,8 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
             >
               Escopo
             </p>
-            <p
-              className="text-base leading-relaxed whitespace-pre-wrap"
+            <div
+              className="text-lg leading-relaxed proposal-html-content"
               style={{
                 color: "hsl(0 0% 30%)",
                 display: "-webkit-box",
@@ -129,9 +129,8 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden",
               }}
-            >
-              {proposal.scope}
-            </p>
+              dangerouslySetInnerHTML={{ __html: proposal.scope }}
+            />
           </div>
         )}
 
@@ -144,8 +143,8 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
             >
               Considerações
             </p>
-            <p
-              className="text-base leading-relaxed whitespace-pre-wrap"
+            <div
+              className="text-lg leading-relaxed proposal-html-content"
               style={{
                 color: "hsl(0 0% 30%)",
                 display: "-webkit-box",
@@ -153,15 +152,14 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
                 WebkitBoxOrient: "vertical",
                 overflow: "hidden",
               }}
-            >
-              {proposal.considerations}
-            </p>
+              dangerouslySetInnerHTML={{ __html: proposal.considerations }}
+            />
           </div>
         )}
 
         {/* Footer */}
         <div className="mt-auto pt-4">
-          <p className="text-xs" style={{ color: "hsl(0 0% 70%)" }}>
+          <p className="text-sm" style={{ color: "hsl(0 0% 70%)" }}>
             Movimento Circular © {new Date().getFullYear()}
           </p>
         </div>
@@ -183,16 +181,16 @@ const MetaCard: React.FC<{ label: string; value: string; sub?: string }> = ({
     }}
   >
     <p
-      className="text-xs uppercase tracking-wide font-semibold mb-1"
+      className="text-sm uppercase tracking-wide font-semibold mb-1"
       style={{ color: "hsl(0 0% 60%)" }}
     >
       {label}
     </p>
-    <p className="text-lg font-semibold" style={{ color: "hsl(0 0% 15%)" }}>
+    <p className="text-xl font-semibold" style={{ color: "hsl(0 0% 15%)" }}>
       {value}
     </p>
     {sub && (
-      <p className="text-sm mt-0.5" style={{ color: "hsl(0 0% 45%)" }}>
+      <p className="text-base mt-0.5" style={{ color: "hsl(0 0% 45%)" }}>
         {sub}
       </p>
     )}

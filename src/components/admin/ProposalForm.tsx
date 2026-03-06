@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import type { Proposal } from "@/pages/admin/Proposals";
 
 interface ProposalFormProps {
@@ -12,7 +12,6 @@ interface ProposalFormProps {
 }
 
 const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel }) => {
-  const today = new Date().toISOString().split("T")[0];
   const defaultValidity = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -66,7 +65,11 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel 
 
         <div className="space-y-2">
           <Label>Definição do Escopo</Label>
-          <Textarea rows={4} value={form.scope} onChange={(e) => set("scope", e.target.value)} placeholder="Descreva o escopo do projeto..." />
+          <RichTextEditor
+            value={form.scope}
+            onChange={(html) => set("scope", html)}
+            placeholder="Descreva o escopo do projeto..."
+          />
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
@@ -82,7 +85,11 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel 
 
         <div className="space-y-2">
           <Label>Considerações</Label>
-          <Textarea rows={3} value={form.considerations} onChange={(e) => set("considerations", e.target.value)} placeholder="Considerações adicionais..." />
+          <RichTextEditor
+            value={form.considerations}
+            onChange={(html) => set("considerations", html)}
+            placeholder="Considerações adicionais..."
+          />
         </div>
 
         <div className="flex gap-3 pt-4">

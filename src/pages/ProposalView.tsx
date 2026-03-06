@@ -91,7 +91,7 @@ const ProposalView = () => {
             {proposal.scope && (
               <div>
                 <h3 className="font-bold text-foreground mb-2">Escopo</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{proposal.scope}</p>
+                <div className="text-muted-foreground proposal-html-content" dangerouslySetInnerHTML={{ __html: proposal.scope }} />
               </div>
             )}
 
@@ -105,7 +105,7 @@ const ProposalView = () => {
             {proposal.considerations && (
               <div>
                 <h3 className="font-bold text-foreground mb-2">Considerações</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{proposal.considerations}</p>
+                <div className="text-muted-foreground proposal-html-content" dangerouslySetInnerHTML={{ __html: proposal.considerations }} />
               </div>
             )}
 
