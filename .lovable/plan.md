@@ -1,17 +1,14 @@
 
 
-# Adicionar opção de cadastro na página /login
+# Centralizar o slide da Agenda no modo apresentação
 
-Atualmente a página `/login` só tem o formulário de login (email + senha). Não há opção para criar conta nova.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
 ## Alteração
 
-**`src/pages/Login.tsx`:**
-- Adicionar um estado `isSignUp` para alternar entre modo Login e Cadastro
-- No modo Cadastro, mostrar campo extra "Nome completo"
-- Chamar `signUp(email, password, fullName)` em vez de `signIn`
-- Após cadastro, exibir mensagem informando que um email de confirmação foi enviado
-- Adicionar link/botão para alternar entre "Criar conta" e "Já tenho conta"
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-O hook `useAuth` já possui o método `signUp` implementado, então só precisa expor no UI.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
