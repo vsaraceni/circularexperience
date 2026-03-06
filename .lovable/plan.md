@@ -1,14 +1,14 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Adicionar botão "PDF da proposta" no slide final do ProposalView
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### Alteração: `src/pages/ProposalView.tsx`
 
-## Alteração
+1. Reutilizar a mesma lógica de geração de PDF do `PdfExporter` — chamar a edge function `generate-pdf` com o slug, baixar o blob como arquivo.
+2. Adicionar estado `generatingPdf` no componente.
+3. No `div` do slide da proposta (linha 129, `id="contato"`), posicionar um botão absoluto no canto superior direito com ícone `FileDown` + texto "PDF da proposta".
+4. Estilo discreto: `absolute top-4 right-4`, fundo semi-transparente ou ghost, texto pequeno, `z-index` alto para não ser coberto.
+5. Importar `FileDown` e `Loader2` de lucide-react, e `toast` de sonner (já usados no projeto).
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
-
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+Nenhuma alteração em outros arquivos. A lógica é idêntica ao `PdfExporter.tsx` — fetch para a edge function, download do blob.
 
