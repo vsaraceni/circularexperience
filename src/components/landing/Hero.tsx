@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Clock, Users, Award, Hammer } from "lucide-react";
 import heroImage from "@/assets/hero-workshop.jpg";
-const Hero = () => {
+const Hero = ({ printMode = false }: { printMode?: boolean }) => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -44,7 +44,7 @@ const Hero = () => {
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
-              Receber mais informações
+              {printMode ? "Proposta Circular Experience" : "Receber mais informações"}
             </Button>
             <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("sobre")}>
               Saiba Mais
