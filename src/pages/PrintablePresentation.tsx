@@ -22,9 +22,9 @@ declare global {
 }
 
 const fixedSlides = [
-  Hero, SocialProof, Stats, About,
+  Hero, SocialProof, Stats, AboutPrint,
   MethodologyFullPrint,
-  Agenda, VideoPrint, ExpertsPrint, SDGs,
+  AgendaPrint, VideoPrint, ExpertsPrint, SDGs,
 ];
 
 const PrintablePresentation = () => {
