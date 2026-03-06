@@ -48,7 +48,7 @@ const ExpertsPrint = () => {
             className="rounded-2xl overflow-hidden"
             style={{ background: "white", border: "1px solid hsl(256 1.3% 92.9%)" }}
           >
-            <div className="h-44 overflow-hidden">
+            <div className="h-56 overflow-hidden">
               <img
                 src={expert.image}
                 alt={expert.name}
