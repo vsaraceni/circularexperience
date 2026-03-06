@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
+import { FileDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import logoWhite from "@/assets/movimento-circular-logo-white.png";
 import mcLogoHorizontal from "@/assets/movimento-circular-logo-horizontal.png";
 import type { Proposal } from "@/pages/admin/Proposals";
