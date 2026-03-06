@@ -110,9 +110,10 @@ const PrintablePresentation = () => {
 
       {fixedSlides.map((SlideComponent, index) => {
         const needsCenter = [1, 2, 8].includes(index);
+        const showLogo = [1, 2, 3, 4, 5, 7, 8].includes(index);
         return (
           <div key={index} className={`slide-container${needsCenter ? ' slide-center-content' : ''}`}>
-            {index === 1 && (
+            {showLogo && (
               <img className="slide-logo-overlay" src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 20, right: 20, height: 50, zIndex: 10, width: 'auto' }} />
             )}
             <SlideComponent />
