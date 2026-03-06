@@ -1,36 +1,14 @@
 
 
-# Corrigir slides problemáticos na versão PDF
+# Centralizar o slide da Agenda no modo apresentação
 
-## Problema
-O slide **About** (image-18) usa o componente da landing page com classes responsivas, botões interativos ("Solicitar Proposta") e o bloco "A quem se destina?" — tudo isso não cabe/faz sentido nos 1920x1080 do PDF. O conteúdo transborda e o layout fica desalinhado.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-O slide **Agenda** também pode ter sido afetado pelo aumento recente das fontes e padding.
+## Alteração
 
-## Mudanças
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-### 1. Criar `AboutPrint.tsx` (versão print do About)
-Componente com inline styles (como os outros `*Print.tsx`) otimizado para 1920x1080:
-- Layout em 2 colunas: texto à esquerda (objetivo + descrição) e 7 R's à direita (círculo com posicionamento absoluto fixo em pixels)
-- Remover botões ("Solicitar Proposta", "Fale com Nossa Equipe")
-- Remover bloco "A quem se destina?" (não relevante para PDF comercial)
-- Fontes e espaçamentos fixos em pixels
-
-### 2. Criar `AgendaPrint.tsx` (versão print da Agenda)
-Componente com inline styles para garantir que os cards com fontes maiores caibam no slide:
-- Timeline vertical centralizada com 5 items
-- Cards com padding e fontes fixas em pixels
-- Layout alternado esquerda/direita como na landing
-
-### 3. Atualizar `PrintablePresentation.tsx`
-- Substituir `About` por `AboutPrint`
-- Substituir `Agenda` por `AgendaPrint`
-
-## Arquivos impactados
-
-| Arquivo | Ação |
-|---------|------|
-| `src/components/presentation/slides/AboutPrint.tsx` | Criar |
-| `src/components/presentation/slides/AgendaPrint.tsx` | Criar |
-| `src/pages/PrintablePresentation.tsx` | Trocar 2 imports |
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
