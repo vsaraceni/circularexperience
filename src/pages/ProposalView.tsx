@@ -31,6 +31,43 @@ const ProposalView = () => {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+
+  const generatePdf = useCallback(async () => {
+    if (!proposal) return;
+    setGeneratingPdf(true);
+    toast.info("Gerando PDF... isso pode levar alguns segundos.");
+    try {
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/generate-pdf`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: proposal.slug }),
+        }
+      );
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ error: "Erro desconhecido" }));
+        throw new Error(errData.error || "Erro ao gerar PDF");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Circular-Experience-${proposal.company_name.replace(/\s+/g, "-")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("PDF gerado com sucesso!");
+    } catch (err) {
+      console.error("PDF generation error:", err);
+      toast.error("Erro ao gerar PDF. Tente novamente.");
+    } finally {
+      setGeneratingPdf(false);
+    }
+  }, [proposal]);
 
   useEffect(() => {
     const fetchData = async () => {
