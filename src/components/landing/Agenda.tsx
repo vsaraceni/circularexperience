@@ -42,7 +42,7 @@ const Agenda = () => {
             <span className="text-gradient-primary">Agenda</span> da Oficina
           </h2>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
-            4 horas de imersão prática e transformadora
+            Workshop no formato clássico de 4h. Disponível também edição compacta de 2h.
           </p>
         </div>
 
