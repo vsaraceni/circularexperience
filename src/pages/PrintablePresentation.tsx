@@ -80,6 +80,9 @@ const PrintablePresentation = () => {
           page-break-after: always;
           break-after: page;
           position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
         .slide-container:last-child {
           page-break-after: auto;
