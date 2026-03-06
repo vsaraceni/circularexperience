@@ -129,12 +129,10 @@ const ProposalView = () => {
       <div className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Raleway', sans-serif" }}>
         {/* Sidebar */}
         <div
-          className="flex flex-col items-center justify-between py-10 px-6 md:py-12 md:px-8 gap-8"
+          className="proposal-sidebar flex flex-col items-center justify-between py-10 px-6 md:py-12 md:px-8 gap-8"
           style={{
             background: "linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 18%) 100%)",
             minWidth: "280px",
-            width: "100%",
-            maxWidth: "100%",
           }}
         >
           <style>{`
@@ -197,7 +195,7 @@ const ProposalView = () => {
 
         {/* Main area */}
         <div
-          className="flex-1 flex flex-col p-8 md:p-14 proposal-sidebar"
+          className="flex-1 flex flex-col p-8 md:p-14"
           style={{ background: "#FAFAFA" }}
         >
           <h1
