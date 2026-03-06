@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      proposals: {
+        Row: {
+          company_name: string
+          considerations: string | null
+          contact_name: string
+          contact_role: string | null
+          created_at: string | null
+          created_by: string
+          event_date: string | null
+          id: string
+          investment: string | null
+          scope: string | null
+          slug: string
+          title: string
+          valid_until: string | null
+        }
+        Insert: {
+          company_name: string
+          considerations?: string | null
+          contact_name: string
+          contact_role?: string | null
+          created_at?: string | null
+          created_by: string
+          event_date?: string | null
+          id?: string
+          investment?: string | null
+          scope?: string | null
+          slug: string
+          title: string
+          valid_until?: string | null
+        }
+        Update: {
+          company_name?: string
+          considerations?: string | null
+          contact_name?: string
+          contact_role?: string | null
+          created_at?: string | null
+          created_by?: string
+          event_date?: string | null
+          id?: string
+          investment?: string | null
+          scope?: string | null
+          slug?: string
+          title?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
