@@ -86,7 +86,7 @@ const PrintablePresentation = () => {
           align-items: center;
           justify-content: center;
         }
-        .slide-container > * {
+        .slide-container > *:not(.slide-logo-overlay) {
           width: 100% !important;
           min-height: 100%;
         }
@@ -107,7 +107,7 @@ const PrintablePresentation = () => {
         return (
           <div key={index} className={`slide-container${needsCenter ? ' slide-center-content' : ''}`}>
             {index === 1 && (
-              <img src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 40, left: 60, height: 50, zIndex: 10, width: 'auto' }} />
+              <img className="slide-logo-overlay" src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 40, left: 60, height: 50, zIndex: 10, width: 'auto' }} />
             )}
             <SlideComponent />
           </div>
