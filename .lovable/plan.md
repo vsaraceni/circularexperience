@@ -1,14 +1,28 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Diagnóstico
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+No `Hero.tsx`, quando `printMode=true`:
+- Botão "Proposta Circular Experience" → `scrollToSection("contato")`
+- Botão "Saiba Mais" → `scrollToSection("social-proof")`
 
-## Alteração
+No `ProposalView.tsx`:
+- O `SocialProof` já tem `id="social-proof"` internamente, então "Saiba Mais" já funciona.
+- Mas não existe nenhum elemento com `id="contato"` — o slide da proposta final não tem esse id, então o primeiro botão não faz nada.
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+O usuário quer que "Proposta Circular Experience" leve ao slide da proposta no final da página.
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+## Plano
+
+### `src/pages/ProposalView.tsx` — Única alteração
+
+Adicionar `id="contato"` no `div` do slide da proposta (linha 129, o `div` com `min-h-screen flex flex-col md:flex-row`):
+
+```tsx
+<div id="contato" className="min-h-screen flex flex-col md:flex-row" ...>
+```
+
+Isso faz com que o `scrollToSection("contato")` do Hero funcione corretamente, direcionando para o slide da proposta.
+
+Nenhuma alteração no `Hero.tsx` nem em qualquer outro componente.
 
