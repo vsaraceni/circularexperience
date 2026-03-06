@@ -21,23 +21,29 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    if (isSignUp) {
-      const { error } = await signUp(email, password, fullName);
-      if (error) {
-        toast.error(error.message);
+    try {
+      if (isSignUp) {
+        const { error } = await signUp(email, password, fullName);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Conta criada! Verifique seu email para confirmar o cadastro.");
+        }
       } else {
-        toast.success("Conta criada! Verifique seu email para confirmar o cadastro.");
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Login realizado com sucesso!");
+          navigate("/admin/propostas");
+        }
       }
-    } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Login realizado com sucesso!");
-        navigate("/admin/propostas");
-      }
+    } catch (error) {
+      console.error("Auth error:", error);
+      toast.error("Ocorreu um erro inesperado. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
