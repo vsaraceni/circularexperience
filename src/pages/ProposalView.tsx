@@ -126,7 +126,7 @@ const ProposalView = () => {
       })}
 
       {/* Proposal slide — responsive version */}
-      <div className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Raleway', sans-serif" }}>
+      <div id="contato" className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Raleway', sans-serif" }}>
         {/* Sidebar */}
         <div
           className="proposal-sidebar flex flex-col items-center justify-between py-10 px-6 md:py-12 md:px-8 gap-8"
