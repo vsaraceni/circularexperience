@@ -82,20 +82,12 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ proposal }) => {
 
         if (i > 0) pdf.addPage();
 
-        const canvasRatio = canvas.width / canvas.height;
-        const pageRatio = pageWidth / pageHeight;
-        let imgW, imgH, offsetX, offsetY;
-        if (canvasRatio > pageRatio) {
-          imgW = pageWidth;
-          imgH = pageWidth / canvasRatio;
-          offsetX = 0;
-          offsetY = (pageHeight - imgH) / 2;
-        } else {
-          imgH = pageHeight;
-          imgW = pageHeight * canvasRatio;
-          offsetX = (pageWidth - imgW) / 2;
-          offsetY = 0;
-        }
+        // Convert canvas pixels to mm (at 96 DPI: 1px = 25.4/96 mm)
+        const pxToMm = 25.4 / 96;
+        const imgW = (canvas.width / 2) * pxToMm; // divide by scale(2)
+        const imgH = (canvas.height / 2) * pxToMm;
+        const offsetX = (pageWidth - imgW) / 2;
+        const offsetY = (pageHeight - imgH) / 2;
         pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgW, imgH);
 
         root.unmount();
