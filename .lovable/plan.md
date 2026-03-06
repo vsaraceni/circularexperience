@@ -1,21 +1,14 @@
 
 
-# Redirecionar QR Code para a versão completa da apresentação
+# Centralizar o slide da Agenda no modo apresentação
 
-## Problema
-O QR Code no slide da proposta aponta para `/proposta/:slug` (página antiga com layout simples). O usuário quer que aponte para a versão impressa completa com todos os slides.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-## Mudança
+## Alteração
 
-### `src/components/presentation/slides/ProposalSlide.tsx` (linha 10)
-Trocar a URL do QR Code de:
-```ts
-const proposalUrl = `${window.location.origin}/proposta/${proposal.slug}`;
-```
-Para:
-```ts
-const proposalUrl = `${window.location.origin}/apresentacao-print/${proposal.slug}`;
-```
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-Uma única linha alterada. A rota `/apresentacao-print/:slug` já existe e renderiza todos os slides + o slide da proposta.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
