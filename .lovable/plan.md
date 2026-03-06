@@ -1,20 +1,14 @@
 
 
-# Corrigir cores do slide Metodologia no Print
+# Centralizar o slide da Agenda no modo apresentação
 
-## Problema
-O `MethodologyFullPrint.tsx` usa cores erradas: verde (#16A34A) para "Metodologia" e ícones, laranja (#F97316) e azul (#0EA5E9) nos cards. A paleta real do projeto é roxo (#5F2558), teal (hsl 174 72% 40% ≈ #1BA39C), e amarelo/âmbar (hsl 45 100% 50%).
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-## Mudanças em `src/components/presentation/slides/MethodologyFullPrint.tsx`
+## Alteração
 
-| Elemento | Atual | Correto |
-|----------|-------|---------|
-| "Metodologia" no título | `#16A34A` (verde) | `#5F2558` (roxo primary) |
-| Step 1 color (number badge + icon) | `#F97316` (laranja) | `#1BA39C` (teal/secondary) |
-| Step 2 color | `#16A34A` (verde) | `#5F2558` (roxo/primary) |
-| Step 3 color | `#0EA5E9` (azul) | `#E6A817` (âmbar/accent) |
-| Bullet dots nos benefits | `#16A34A` (verde) | `#5F2558` (roxo) |
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-## Arquivo impactado
-- `src/components/presentation/slides/MethodologyFullPrint.tsx`
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
