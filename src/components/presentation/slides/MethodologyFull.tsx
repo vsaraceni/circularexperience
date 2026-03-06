@@ -48,12 +48,12 @@ const getColorClass = (color: string) => {
 
 const MethodologyFull = () => {
   return (
-    <section className="w-full py-6">
+    <section className="w-full py-4">
       <div className="container mx-auto px-4 md:!px-[46px]">
         {/* Header */}
-        <div className="text-center mb-4">
-          <div className="flex justify-center mb-3">
-            <img src={circularExperienceLogo} alt="Circular Experience" className="h-14 w-auto" />
+        <div className="text-center mb-3">
+          <div className="flex justify-center mb-2">
+            <img src={circularExperienceLogo} alt="Circular Experience" className="h-12 w-auto" />
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-1">
             Nossa <span className="text-gradient-primary">Metodologia</span>
@@ -64,14 +64,14 @@ const MethodologyFull = () => {
         </div>
 
         {/* 3 Steps */}
-        <div className="grid lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid lg:grid-cols-3 gap-4 mb-4">
           {steps.map((step, index) => (
             <div key={index} className="relative">
-              <div className={`w-12 h-12 ${getColorClass(step.color)} rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg z-10 relative`}>
+              <div className={`w-10 h-10 ${getColorClass(step.color)} rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg z-10 relative`}>
                 <span className="text-xl font-bold text-primary-foreground">{step.number}</span>
               </div>
-              <div className="bg-card rounded-xl p-4 border border-border h-full">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center mb-3">
+              <div className="bg-card rounded-xl p-3 border border-border h-full">
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center mb-2">
                   <step.icon className="w-5 h-5 text-primary" />
                 </div>
                 <h3 className="font-display text-lg font-bold text-foreground mb-1">{step.title}</h3>
@@ -83,8 +83,8 @@ const MethodologyFull = () => {
         </div>
 
         {/* Benefits */}
-        <div className="bg-card rounded-xl p-5 border border-border">
-          <h3 className="font-display text-xl font-bold text-foreground mb-3 text-center">
+        <div className="bg-card rounded-xl p-4 border border-border">
+          <h3 className="font-display text-xl font-bold text-foreground mb-2 text-center">
             O que seu time vai aprender
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
