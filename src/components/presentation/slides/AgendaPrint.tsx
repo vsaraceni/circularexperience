@@ -67,7 +67,7 @@ const AgendaPrint = () => {
           da Oficina
         </h2>
         <p style={{ fontSize: 18, color: "#888" }}>
-          4 horas de imersão prática e transformadora
+          Workshop no formato clássico de 4h. Disponível também edição compacta de 2h.
         </p>
       </div>
 
