@@ -25,7 +25,7 @@ declare global {
 const fixedSlides = [
   Hero, SocialProof, Stats, About,
   MethodologySteps, MethodologyBenefits,
-  Agenda, Video, Experts, SDGs,
+  Agenda, VideoPrint, ExpertsPrint, SDGs,
 ];
 
 const PrintablePresentation = () => {
