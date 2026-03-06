@@ -1,19 +1,14 @@
 
 
-# Centralizar imagem no centro da página A4
+# Centralizar o slide da Agenda no modo apresentação
+
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
 ## Alteração
 
-**`src/components/pdf/PdfExporter.tsx`**, linhas 85-91 — substituir por:
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-```typescript
-const canvasRatio = canvas.width / canvas.height;
-const imgW = pageWidth * 0.9;
-const imgH = imgW / canvasRatio;
-const offsetX = (pageWidth - imgW) / 2;
-const offsetY = (pageHeight - imgH) / 2;
-pdf.addImage(imgData, "JPEG", offsetX, offsetY, imgW, imgH);
-```
-
-A imagem ocupará 90% da largura (conforme solicitado anteriormente), com altura proporcional, e será centralizada tanto horizontal quanto verticalmente na página A4.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
