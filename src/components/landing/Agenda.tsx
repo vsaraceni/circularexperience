@@ -46,7 +46,7 @@ const Agenda = () => {
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="relative">
             {/* Timeline Line */}
             <div className="absolute left-[22px] top-4 bottom-4 w-0.5 bg-gradient-to-b from-secondary via-primary to-accent lg:left-1/2 lg:-translate-x-1/2" />
@@ -54,7 +54,7 @@ const Agenda = () => {
             {agendaItems.map((item, index) => (
               <div 
                 key={index}
-                className={`relative flex gap-6 mb-1 ${
+                className={`relative flex gap-6 mb-0.5 ${
                   index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
                 }`}
               >
@@ -64,21 +64,21 @@ const Agenda = () => {
                 </div>
 
                 {/* Content Card */}
-                <div className={`ml-16 lg:ml-0 lg:w-[calc(50%-40px)] ${
+                <div className={`ml-16 lg:ml-0 lg:w-[calc(50%-28px)] ${
                   index % 2 === 0 ? "lg:mr-auto lg:pr-8" : "lg:ml-auto lg:pl-8"
                 }`}>
-                  <div className="bg-card rounded-xl p-2.5 border border-border hover:border-primary/30 transition-all hover:shadow-lg">
+                  <div className="bg-card rounded-xl p-4 border border-border hover:border-primary/30 transition-all hover:shadow-lg">
                     {/* Time Badge */}
                     <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 mb-1">
-                      <Clock className="w-3 h-3 text-primary" />
-                      <span className="text-xs font-semibold text-primary">{item.time}</span>
+                      <Clock className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-sm font-semibold text-primary">{item.time}</span>
                     </div>
 
-                    <h3 className="font-display text-base font-bold text-foreground mb-0.5">
+                    <h3 className="font-display text-lg font-bold text-foreground mb-0.5">
                       {item.title}
                     </h3>
 
-                    <p className="text-muted-foreground text-xs leading-relaxed">
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                       {item.description}
                     </p>
                   </div>
