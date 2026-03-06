@@ -20,13 +20,20 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
           background: "linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 18%) 100%)",
         }}
       >
-        {/* Logo */}
-        <div className="flex flex-col items-center">
+        {/* Logo + Proposta Comercial label */}
+        <div className="flex flex-col items-center gap-4">
           <img
             src={logoWhite}
             alt="Movimento Circular"
-            className="h-20 w-auto object-contain"
+            className="w-auto object-contain"
+            style={{ height: "120px" }}
           />
+          <p
+            className="text-sm uppercase tracking-[0.25em] font-light"
+            style={{ color: "hsla(0,0%,100%,0.4)" }}
+          >
+            Proposta Comercial
+          </p>
         </div>
 
         {/* Divider */}
@@ -64,13 +71,8 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
           </p>
         </div>
 
-        {/* Footer label */}
-        <p
-          className="text-xs uppercase tracking-[0.25em] font-light"
-          style={{ color: "hsla(0,0%,100%,0.4)" }}
-        >
-          Proposta Comercial
-        </p>
+        {/* Footer spacer */}
+        <div />
       </div>
 
       {/* Main area */}
@@ -80,8 +82,9 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
       >
         {/* Title */}
         <h1
-          className="text-4xl font-bold pb-4 mb-8"
+          className="font-bold pb-4 mb-8"
           style={{
+            fontSize: "28px",
             color: "hsl(0 0% 10%)",
             borderBottom: "2px solid hsla(307,44%,26%,0.3)",
           }}
@@ -115,14 +118,15 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         {proposal.scope && (
           <div className="mb-6">
             <p
-              className="text-sm uppercase tracking-wide font-bold mb-2"
-              style={{ color: "hsl(307 44% 26%)" }}
+              className="uppercase tracking-wide font-bold mb-2"
+              style={{ fontSize: "16px", color: "hsl(307 44% 26%)" }}
             >
               Escopo
             </p>
             <div
-              className="text-lg leading-relaxed proposal-html-content"
+              className="leading-relaxed proposal-html-content"
               style={{
+                fontSize: "16px",
                 color: "hsl(0 0% 30%)",
                 display: "-webkit-box",
                 WebkitLineClamp: 6,
@@ -138,14 +142,15 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         {proposal.considerations && (
           <div className="mb-6">
             <p
-              className="text-sm uppercase tracking-wide font-bold mb-2"
-              style={{ color: "hsl(307 44% 26%)" }}
+              className="uppercase tracking-wide font-bold mb-2"
+              style={{ fontSize: "16px", color: "hsl(307 44% 26%)" }}
             >
               Considerações
             </p>
             <div
-              className="text-lg leading-relaxed proposal-html-content"
+              className="leading-relaxed proposal-html-content"
               style={{
+                fontSize: "16px",
                 color: "hsl(0 0% 30%)",
                 display: "-webkit-box",
                 WebkitLineClamp: 4,
@@ -181,16 +186,16 @@ const MetaCard: React.FC<{ label: string; value: string; sub?: string }> = ({
     }}
   >
     <p
-      className="text-sm uppercase tracking-wide font-semibold mb-1"
-      style={{ color: "hsl(0 0% 60%)" }}
+      className="uppercase tracking-wide font-bold mb-1"
+      style={{ fontSize: "14px", color: "hsl(0 0% 60%)" }}
     >
       {label}
     </p>
-    <p className="text-xl font-semibold" style={{ color: "hsl(0 0% 15%)" }}>
+    <p className="font-semibold" style={{ fontSize: "18px", color: "hsl(0 0% 15%)" }}>
       {value}
     </p>
     {sub && (
-      <p className="text-base mt-0.5" style={{ color: "hsl(0 0% 45%)" }}>
+      <p className="mt-0.5" style={{ fontSize: "16px", color: "hsl(0 0% 45%)" }}>
         {sub}
       </p>
     )}
