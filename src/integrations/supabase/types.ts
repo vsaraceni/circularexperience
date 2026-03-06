@@ -37,6 +37,9 @@ export type Database = {
       }
       proposals: {
         Row: {
+          author_email: string | null
+          author_name: string | null
+          author_phone: string | null
           company_name: string
           considerations: string | null
           contact_name: string
@@ -52,6 +55,9 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          author_email?: string | null
+          author_name?: string | null
+          author_phone?: string | null
           company_name: string
           considerations?: string | null
           contact_name: string
@@ -67,6 +73,9 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          author_email?: string | null
+          author_name?: string | null
+          author_phone?: string | null
           company_name?: string
           considerations?: string | null
           contact_name?: string

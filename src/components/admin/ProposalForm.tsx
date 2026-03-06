@@ -24,6 +24,9 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel 
     investment: proposal?.investment || "",
     considerations: proposal?.considerations || "",
     valid_until: proposal?.valid_until || defaultValidity,
+    author_name: proposal?.author_name || "",
+    author_phone: proposal?.author_phone || "",
+    author_email: proposal?.author_email || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,6 +93,24 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel 
             onChange={(html) => set("considerations", html)}
             placeholder="Considerações adicionais..."
           />
+        </div>
+
+        <div className="border-t border-border pt-4 mt-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Assinatura</h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Nome do Responsável</Label>
+              <Input value={form.author_name} onChange={(e) => set("author_name", e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input value={form.author_phone} onChange={(e) => set("author_phone", e.target.value)} placeholder="(11) 99999-9999" />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input value={form.author_email} onChange={(e) => set("author_email", e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-3 pt-4">

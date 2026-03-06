@@ -162,8 +162,31 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
           </div>
         )}
 
-        {/* Footer */}
-        <div className="mt-auto pt-4">
+        {/* Divider + Thank you + Signature */}
+        <div className="mt-auto">
+          <div className="h-px w-full mb-5" style={{ background: "hsla(307,44%,26%,0.3)" }} />
+
+          <p
+            className="italic leading-relaxed mb-5"
+            style={{ fontSize: "14px", color: "hsl(0 0% 45%)" }}
+          >
+            Agradecemos desde já a oportunidade desta construção e ficamos à disposição para juntos avançarmos em prol da circularidade.
+          </p>
+
+          {(proposal.author_name || proposal.author_phone || proposal.author_email) && (
+            <div className="mb-4">
+              {proposal.author_name && (
+                <p className="font-bold" style={{ fontSize: "16px", color: "hsl(0 0% 15%)" }}>
+                  {proposal.author_name}
+                </p>
+              )}
+              <div className="flex gap-4 mt-1" style={{ fontSize: "14px", color: "hsl(0 0% 45%)" }}>
+                {proposal.author_phone && <span>{proposal.author_phone}</span>}
+                {proposal.author_email && <span>{proposal.author_email}</span>}
+              </div>
+            </div>
+          )}
+
           <p className="text-sm" style={{ color: "hsl(0 0% 70%)" }}>
             Movimento Circular © {new Date().getFullYear()}
           </p>
