@@ -12,13 +12,13 @@ import logoSemil from "@/assets/partners/semil.png";
 import logoInvestsp from "@/assets/partners/investsp.png";
 
 const partnerLogos = [
-  { src: logoDow, alt: "DOW" },
-  { src: logoScania, alt: "Scania" },
-  { src: logoSebrae, alt: "SEBRAE" },
-  { src: logoCoopercaps, alt: "COOPERCAPS" },
-  { src: logoAvery, alt: "Avery Dennison" },
-  { src: logoSemil, alt: "SEMIL" },
-  { src: logoInvestsp, alt: "InvestSP" },
+  { src: logoDow, alt: "DOW", height: "h-8 md:h-10" },
+  { src: logoScania, alt: "Scania", height: "h-8 md:h-10" },
+  { src: logoSebrae, alt: "SEBRAE", height: "h-10 md:h-14" },
+  { src: logoCoopercaps, alt: "COOPERCAPS", height: "h-10 md:h-14" },
+  { src: logoAvery, alt: "Avery Dennison", height: "h-8 md:h-10" },
+  { src: logoSemil, alt: "SEMIL", height: "h-12 md:h-16" },
+  { src: logoInvestsp, alt: "InvestSP", height: "h-10 md:h-14" },
 ];
 
 const Hero = ({ printMode = false }: { printMode?: boolean }) => {
@@ -130,7 +130,7 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
                     key={i}
                     src={logo.src}
                     alt={logo.alt}
-                    className="h-6 md:h-8 mx-6 md:mx-8 object-contain opacity-60 brightness-0 invert"
+                    className={`${logo.height} mx-6 md:mx-8 object-contain opacity-70 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]`}
                   />
                 ))}
               </div>
