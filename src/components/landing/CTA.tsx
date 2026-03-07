@@ -14,7 +14,7 @@ const CTA = () => {
             Leve o <span className="text-gradient-primary">Circular Experience</span> para sua empresa
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Preencha o formulário e nossa equipe entrará em contato com mais informações sobre o programa.
+            Preencha os campos abaixo e aguarde um dos nossos consultores entrar em contato.
           </p>
         </div>
 
