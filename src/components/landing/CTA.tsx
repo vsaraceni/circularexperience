@@ -8,7 +8,7 @@ const CTA = () => {
       <div className="container mx-auto px-4 md:!px-[46px]">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 mb-6">
-            <span className="text-sm font-medium text-primary">Receba mais informações</span>
+            <span className="text-sm font-medium text-primary">Fale com nossos especialistas</span>
           </div>
           <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
             Leve o <span className="text-gradient-primary">Circular Experience</span> para sua empresa
@@ -41,9 +41,12 @@ const CTA = () => {
             <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full bg-secondary/10 blur-3xl translate-y-1/2 -translate-x-1/2" />
 
             <div className="relative z-10">
-              <h3 className="font-display text-xl font-bold text-foreground mb-6">
-                Receber mais informações
+              <h3 className="font-display text-xl font-bold text-foreground mb-4">
+                Fale com nossos especialistas
               </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Preencha os campos abaixo e aguarde um dos nossos consultores entrar em contato:
+              </p>
               <LeadForm />
             </div>
           </div>
