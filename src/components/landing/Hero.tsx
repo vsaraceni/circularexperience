@@ -116,12 +116,12 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
           {/* Social Proof Marquee */}
           <div className="mt-8 animate-fade-up" style={{ animationDelay: "0.5s" }}>
             <div className="flex items-center justify-center gap-3 mb-4">
-              <p className="text-sm text-white/70 text-center">
-                Confiado por <span className="font-semibold text-white">+500 profissionais</span> de empresas como:
-              </p>
               <Badge className="bg-accent/20 text-accent border-accent/30 text-xs">
                 NPS +98%
               </Badge>
+              <p className="text-sm text-white/70 text-center">
+                Confiado por <span className="font-semibold text-white">+500 profissionais</span> de empresas como:
+              </p>
             </div>
             <div className="overflow-hidden rounded-xl bg-white/10 backdrop-blur-md border border-white/15 py-4 px-2">
               <div className="flex animate-marquee w-max">
