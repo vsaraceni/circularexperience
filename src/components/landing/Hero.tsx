@@ -1,6 +1,26 @@
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Clock, Users, Award, Hammer } from "lucide-react";
 import heroImage from "@/assets/hero-workshop.jpg";
+
+import logoDow from "@/assets/partners/dow.png";
+import logoScania from "@/assets/partners/scania.png";
+import logoSebrae from "@/assets/partners/sebrae.png";
+import logoCoopercaps from "@/assets/partners/coopercaps.png";
+import logoAvery from "@/assets/partners/avery-dennison.png";
+import logoSemil from "@/assets/partners/semil.png";
+import logoInvestsp from "@/assets/partners/investsp.png";
+
+const partnerLogos = [
+  { src: logoDow, alt: "DOW" },
+  { src: logoScania, alt: "Scania" },
+  { src: logoSebrae, alt: "SEBRAE" },
+  { src: logoCoopercaps, alt: "COOPERCAPS" },
+  { src: logoAvery, alt: "Avery Dennison" },
+  { src: logoSemil, alt: "SEMIL" },
+  { src: logoInvestsp, alt: "InvestSP" },
+];
+
 const Hero = ({ printMode = false }: { printMode?: boolean }) => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -89,6 +109,30 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
               <div>
                 <p className="font-bold text-white">100%</p>
                 <p className="text-xs text-white/70">Prático</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Social Proof Marquee */}
+          <div className="mt-8 animate-fade-up" style={{ animationDelay: "0.5s" }}>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <p className="text-sm text-white/70 text-center">
+                Confiado por <span className="font-semibold text-white">+500 profissionais</span> de empresas como:
+              </p>
+              <Badge className="bg-accent/20 text-accent border-accent/30 text-xs">
+                NPS +98%
+              </Badge>
+            </div>
+            <div className="overflow-hidden rounded-xl bg-white/10 backdrop-blur-md border border-white/15 py-4 px-2">
+              <div className="flex animate-marquee w-max">
+                {[...partnerLogos, ...partnerLogos].map((logo, i) => (
+                  <img
+                    key={i}
+                    src={logo.src}
+                    alt={logo.alt}
+                    className="h-6 md:h-8 mx-6 md:mx-8 object-contain opacity-60 brightness-0 invert"
+                  />
+                ))}
               </div>
             </div>
           </div>
