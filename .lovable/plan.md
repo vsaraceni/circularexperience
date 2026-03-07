@@ -1,14 +1,20 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Correção: Logos no Marquee do Hero
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### Problema
+- `brightness-0 invert` elimina cores e detalhes dos logos (vira silhueta branca)
+- `h-6 md:h-8` é pequeno demais — logos como Dow, Scania, Sebrae ficam ilegíveis
 
-## Alteração
+### Solução
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+**`src/components/landing/Hero.tsx`**:
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+1. Remover `brightness-0 invert` dos logos
+2. Aumentar altura para `h-8 md:h-10` (compatível com o que já é usado na seção SocialProof)
+3. Usar alturas individuais por logo (como faz o `SocialProof.tsx`) para equilibrar logos de proporções diferentes
+4. Manter `opacity-70 hover:opacity-100` para harmonizar com o fundo escuro sem destruir as cores
+5. Adicionar `drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]` para dar leve destaque/contraste sobre fundo escuro
+
+O array `partnerLogos` passará a ter altura individual por logo, similar ao padrão já usado em `SocialProof.tsx`.
 
