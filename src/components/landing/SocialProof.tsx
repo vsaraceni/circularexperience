@@ -23,9 +23,9 @@ const partners = [
 ];
 
 const events = [
-  { name: "Fórum Mundial de Economia Circular", logo: wcefLogo, height: "h-10 md:h-14" },
-  { name: "Summit Agenda SP + Verde", logo: agendaVerdeLogo, height: "h-10 md:h-14" },
-  { name: "Semana do Futuro – SEBRAE", logo: semanaFuturoLogo, height: "h-10 md:h-14" },
+  { name: "Fórum Mundial de Economia Circular", logo: wcefLogo, height: "h-14 md:h-18" },
+  { name: "Summit Agenda SP + Verde", logo: agendaVerdeLogo, height: "h-14 md:h-18" },
+  { name: "Semana do Futuro – SEBRAE", logo: semanaFuturoLogo, height: "h-14 md:h-18" },
 ];
 
 const categories = [
@@ -92,19 +92,26 @@ const SocialProof = () => {
           <div className="flex items-center gap-4 mb-6">
             <div className="h-px flex-1 bg-border" />
             <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-              Eventos
+              Presente na programação oficial de
             </span>
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 max-w-3xl mx-auto">
             {events.map((e) => (
-              <LogoImage
+              <div
                 key={e.name}
-                src={e.logo}
-                alt={e.name}
-                className={`${e.height} w-auto object-contain opacity-70 hover:opacity-100 transition-all duration-300`}
-              />
+                className="flex flex-col items-center gap-3 p-6 rounded-xl bg-background/50 backdrop-blur-md border border-border/30 shadow-sm hover:shadow-md transition-all duration-300"
+              >
+                <LogoImage
+                  src={e.logo}
+                  alt={e.name}
+                  className={`${e.height} w-auto object-contain`}
+                />
+                <span className="text-sm font-semibold text-foreground/80 text-center leading-tight">
+                  {e.name}
+                </span>
+              </div>
             ))}
           </div>
         </div>
