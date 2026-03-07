@@ -221,16 +221,11 @@ const LeadForm = () => {
         ) : (
           <>
             <Send className="w-4 h-4" />
-            {step === 1 ? "Receber mais informações" : "Enviar"}
+            Solicitar contato
           </>
         )}
       </Button>
 
-      {step === 1 && (
-        <p className="text-xs text-muted-foreground text-center mt-4">
-          Ao enviar, você concorda em receber informações sobre o Circular Experience.
-        </p>
-      )}
     </form>
   );
 };

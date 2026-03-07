@@ -44,10 +44,7 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
-              {printMode ? "Proposta Circular Experience" : "Receber mais informações"}
-            </Button>
-            <Button variant="heroOutline" size="xl" onClick={() => scrollToSection("social-proof")}>
-              Saiba Mais
+              {printMode ? "Proposta Circular Experience" : "Fale com nossos especialistas →"}
             </Button>
           </div>
 
