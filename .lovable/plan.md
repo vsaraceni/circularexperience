@@ -1,14 +1,20 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Evolução da seção Eventos — Cards Glassmorphism
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### O que será feito
 
-## Alteração
+Transformar a área de Eventos em `SocialProof.tsx`:
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+1. **Título**: Trocar "Eventos" por "Presente na programação oficial de"
+2. **Cards glassmorphism**: Cada evento vira um card com `bg-white/5 backdrop-blur-md border border-white/10 rounded-xl` contendo:
+   - Logo maior (`h-14 md:h-18`)
+   - Nome do evento abaixo em `text-sm font-semibold`
+3. **Layout**: Grid `grid-cols-1 sm:grid-cols-3` com gap adequado, centralizado
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+### Arquivo alterado
+
+**`src/components/landing/SocialProof.tsx`** (linhas 90-110):
+- Substituir o bloco `{/* Eventos */}` pelo novo layout com título descritivo e cards glassmorphism
+- Aumentar alturas dos logos no array `events` para `h-14 md:h-18`
 
