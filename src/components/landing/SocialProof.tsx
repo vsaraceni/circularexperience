@@ -24,7 +24,7 @@ const partners = [
 
 const events = [
   { name: "Fórum Mundial de Economia Circular", logo: wcefLogo, height: "h-14 md:h-18" },
-  { name: "Summit Agenda SP + Verde", logo: agendaVerdeLogo, height: "h-14 md:h-18" },
+  { name: "Pré-COP 30: Summit Agenda SP + Verde", logo: agendaVerdeLogo, height: "h-14 md:h-18" },
   { name: "Semana do Futuro – SEBRAE", logo: semanaFuturoLogo, height: "h-14 md:h-18" },
 ];
 
