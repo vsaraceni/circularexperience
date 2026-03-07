@@ -130,7 +130,7 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
                     key={i}
                     src={logo.src}
                     alt={logo.alt}
-                    className="h-6 md:h-8 mx-6 md:mx-8 object-contain opacity-60 brightness-0 invert"
+                    className={`${logo.height} mx-6 md:mx-8 object-contain opacity-70 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]`}
                   />
                 ))}
               </div>
