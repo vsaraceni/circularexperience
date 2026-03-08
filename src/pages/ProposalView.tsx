@@ -518,7 +518,7 @@ const MetaCard: React.FC<{
     >
       {label}
     </p>
-    <p style={{ fontSize: 14, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
+    <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
       {value}
     </p>
     {sub && (
