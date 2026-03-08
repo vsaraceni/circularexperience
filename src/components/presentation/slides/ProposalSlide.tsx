@@ -12,7 +12,7 @@ const COLORS = {
   ambar: "#F4A736",
   purple: "#5F2558",
   green: "#a8b830",
-  bg: "#e0dbd8",
+  bg: "#ffffff",
   cardBg: "#F0ECEA",
   cardBorder: "#edebe9",
   badgeBg: "#F1F4C5",
@@ -233,7 +233,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
             />
             {proposal.event_date && (
               <MetaCard
-                label="Data do Evento"
+                label="Data da Proposta"
                 value={new Date(proposal.event_date).toLocaleDateString("pt-BR")}
                 borderColor={COLORS.ambar}
               />
