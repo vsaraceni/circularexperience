@@ -122,7 +122,7 @@ const PrintablePresentation = () => {
       })}
 
       {proposal && (
-        <div className="slide-container">
+        <div className="slide-container" style={{ background: '#e0dbd8' }}>
           <ProposalSlide proposal={proposal} />
         </div>
       )}
