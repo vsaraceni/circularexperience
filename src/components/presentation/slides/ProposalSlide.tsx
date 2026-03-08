@@ -160,10 +160,10 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         {/* Main content */}
         <div
           className="flex-1 flex flex-col relative"
-          style={{ padding: "28px 36px 20px 28px" }}
+          style={{ padding: "20px 32px 14px 24px" }}
         >
           {/* Badge */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div
               style={{
                 display: "inline-flex",
