@@ -1,14 +1,24 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Comprimir layout da proposta para caber em 1 página
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### Mudanças
 
-## Alteração
+**1. `ProposalSlide.tsx` (print/PDF 1920x1080)**
+- Reduzir paddings gerais do conteúdo principal (de `28px 36px 20px 28px` para `20px 32px 14px 24px`)
+- Reduzir `mb` (margins) do badge, título, meta cards e footer
+- Reduzir padding dos MetaCards (de `10px 14px` para `7px 12px`) e font sizes dos labels
+- **Escopo e Considerações**: mudar de `flex` (lado a lado) para `flex-col` (empilhados verticalmente), reduzir padding interno dos ContentBlocks
+- Reduzir gap entre os blocos
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+**2. `ProposalView.tsx` (web responsivo)**
+- Mesma mudança: Escopo e Considerações de `flex-col md:flex-row` para sempre `flex-col` (empilhados)
+- Comprimir margens e paddings dos MetaCards e ContentBlocks para consistência visual
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+**3. Componentes internos (MetaCard, ContentBlock) em ambos os arquivos**
+- MetaCard: padding `7px 12px`, label fontSize 7, value fontSize 12
+- ContentBlock: padding `10px 14px`, fontSize 11, label fontSize 11
+
+### Resultado esperado
+Todo o conteúdo da proposta cabe dentro dos 1080px de altura do slide, sem overflow.
 
