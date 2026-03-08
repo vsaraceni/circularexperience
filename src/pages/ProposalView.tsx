@@ -433,7 +433,7 @@ const ProposalView = () => {
             </div>
 
             {/* Scope + Considerations */}
-            <div className="flex flex-col md:flex-row gap-4 mb-5 flex-1">
+            <div className="flex flex-col gap-4 mb-5 flex-1">
               {proposal.scope && (
                 <ContentBlock
                   label="Escopo"
