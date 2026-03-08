@@ -322,12 +322,12 @@ const MetaCard: React.FC<{
   >
     <p
       style={{
-        fontSize: 8,
+        fontSize: 7,
         fontWeight: 700,
         letterSpacing: 1,
         color: "hsl(0 0% 55%)",
         textTransform: "uppercase",
-        marginBottom: 3,
+        marginBottom: 2,
       }}
     >
       {label}
