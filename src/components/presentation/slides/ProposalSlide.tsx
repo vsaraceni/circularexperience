@@ -6,222 +6,384 @@ interface ProposalSlideProps {
   proposal: Proposal;
 }
 
+const COLORS = {
+  teal: "#2FB2C0",
+  goiaba: "#EB626D",
+  ambar: "#F4A736",
+  purple: "#5F2558",
+  green: "#a8b830",
+  bg: "#e0dbd8",
+  cardBg: "#F0ECEA",
+  cardBorder: "#edebe9",
+  badgeBg: "#F1F4C5",
+};
+
 const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
   const proposalUrl = `${window.location.origin}/apresentacao-print/${proposal.slug}`;
 
   return (
-    <div className="w-full h-full flex" style={{ fontFamily: "'Raleway', sans-serif" }}>
-      {/* Sidebar */}
+    <div
+      className="w-full h-full flex items-center justify-center"
+      style={{ background: COLORS.bg, fontFamily: "'Raleway', sans-serif" }}
+    >
+      {/* White container */}
       <div
-        className="flex flex-col items-center justify-between py-12 px-8"
+        className="relative flex overflow-hidden"
         style={{
-          width: "420px",
-          minWidth: "420px",
-          background: "linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 18%) 100%)",
+          width: 1880,
+          height: 1040,
+          borderRadius: 22,
+          background: "#fff",
+          boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
         }}
       >
-        {/* Logo + Proposta Comercial label */}
-        <div className="flex flex-col items-center gap-4">
-          <img
-            src={logoWhite}
-            alt="Movimento Circular"
-            className="w-auto object-contain"
-            style={{ height: "120px" }}
-          />
-          <p
-            className="text-sm uppercase tracking-[0.25em] font-light"
-            style={{ color: "hsla(0,0%,100%,0.4)" }}
-          >
-            Proposta Comercial
-          </p>
-        </div>
-
-        {/* Divider */}
-        <div className="w-16 h-px" style={{ background: "hsla(0,0%,100%,0.2)" }} />
-
-        {/* Investment */}
-        {proposal.investment && (
-          <div
-            className="w-full rounded-xl p-4 text-center"
-            style={{ background: "hsla(0,0%,100%,0.1)" }}
-          >
-            <p
-              className="text-xs uppercase tracking-widest mb-2"
-              style={{ color: "hsla(0,0%,100%,0.6)" }}
-            >
-              Investimento
-            </p>
-            <p className="text-2xl font-bold text-white">{proposal.investment}</p>
-          </div>
-        )}
-
-        {/* Divider */}
-        <div className="w-16 h-px" style={{ background: "hsla(0,0%,100%,0.2)" }} />
-
-        {/* QR Code */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="bg-white rounded-2xl p-3">
-            <QRCodeSVG value={proposalUrl} size={120} />
-          </div>
-          <p
-            className="text-xs text-center leading-snug"
-            style={{ color: "hsla(0,0%,100%,0.5)" }}
-          >
-            Acesse esta proposta online
-          </p>
-        </div>
-
-        {/* Footer spacer */}
-        <div />
-      </div>
-
-      {/* Main area */}
-      <div
-        className="flex-1 flex flex-col p-14"
-        style={{ background: "#FAFAFA" }}
-      >
-        {/* Title */}
-        <h1
-          className="font-bold pb-4 mb-8"
+        {/* Gradient accent bar */}
+        <div
+          className="absolute top-0 left-0 right-0"
           style={{
-            fontSize: "28px",
-            color: "hsl(0 0% 10%)",
-            borderBottom: "2px solid hsla(307,44%,26%,0.3)",
+            height: 3,
+            background: `linear-gradient(90deg, ${COLORS.teal}, ${COLORS.goiaba}, ${COLORS.ambar})`,
+          }}
+        />
+
+        {/* Sidebar */}
+        <div
+          className="relative flex flex-col items-center justify-between overflow-hidden"
+          style={{
+            width: 196,
+            minWidth: 196,
+            margin: 12,
+            borderRadius: 18,
+            background: COLORS.purple,
+            padding: "28px 16px 20px",
           }}
         >
-          {proposal.title}
-        </h1>
-
-        {/* Metadata grid */}
-        <div className="grid grid-cols-2 gap-5 mb-8">
-          <MetaCard label="Empresa" value={proposal.company_name} />
-          <MetaCard
-            label="Contato"
-            value={proposal.contact_name}
-            sub={proposal.contact_role || undefined}
+          {/* Decorative circles */}
+          <div
+            className="absolute"
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.05)",
+              bottom: -30,
+              left: -40,
+            }}
           />
-          {proposal.event_date && (
-            <MetaCard
-              label="Data do Evento"
-              value={new Date(proposal.event_date).toLocaleDateString("pt-BR")}
-            />
-          )}
-          {proposal.valid_until && (
-            <MetaCard
-              label="Validade"
-              value={new Date(proposal.valid_until).toLocaleDateString("pt-BR")}
-            />
-          )}
-        </div>
+          <div
+            className="absolute"
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              background: `${COLORS.teal}1A`,
+              top: 60,
+              right: -20,
+            }}
+          />
 
-        {/* Scope */}
-        {proposal.scope && (
-          <div className="mb-6">
+          {/* Logo */}
+          <div className="flex flex-col items-center gap-2 relative z-10">
+            <img
+              src={logoWhite}
+              alt="Movimento Circular"
+              className="object-contain"
+              style={{ height: 70, width: "auto" }}
+            />
             <p
-              className="uppercase tracking-wide font-bold mb-2"
-              style={{ fontSize: "16px", color: "hsl(307 44% 26%)" }}
-            >
-              Escopo
-            </p>
-            <div
-              className="leading-relaxed proposal-html-content"
               style={{
-                fontSize: "16px",
-                color: "hsl(0 0% 30%)",
-                display: "-webkit-box",
-                WebkitLineClamp: 6,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
+                fontSize: 7.5,
+                fontWeight: 900,
+                letterSpacing: 3,
+                color: "rgba(255,255,255,0.38)",
+                textTransform: "uppercase",
+                textAlign: "center",
               }}
-              dangerouslySetInnerHTML={{ __html: proposal.scope }}
-            />
-          </div>
-        )}
-
-        {/* Considerations */}
-        {proposal.considerations && (
-          <div className="mb-6">
-            <p
-              className="uppercase tracking-wide font-bold mb-2"
-              style={{ fontSize: "16px", color: "hsl(307 44% 26%)" }}
             >
-              Considerações
+              Proposta Comercial
             </p>
-            <div
-              className="leading-relaxed proposal-html-content"
-              style={{
-                fontSize: "16px",
-                color: "hsl(0 0% 30%)",
-                display: "-webkit-box",
-                WebkitLineClamp: 4,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-              dangerouslySetInnerHTML={{ __html: proposal.considerations }}
-            />
           </div>
-        )}
 
-        {/* Divider + Thank you + Signature */}
-        <div className="mt-auto">
-          <div className="h-px w-full mb-5" style={{ background: "hsla(307,44%,26%,0.3)" }} />
+          {/* Divider */}
+          <div style={{ width: 40, height: 1, background: "rgba(255,255,255,0.15)" }} />
 
-          <p
-            className="italic leading-relaxed mb-5"
-            style={{ fontSize: "14px", color: "hsl(0 0% 45%)" }}
-          >
-            Agradecemos desde já a oportunidade desta construção e ficamos à disposição para juntos avançarmos em prol da circularidade.
-          </p>
-
-          {(proposal.author_name || proposal.author_phone || proposal.author_email) && (
-            <div className="mb-4">
-              {proposal.author_name && (
-                <p className="font-bold" style={{ fontSize: "16px", color: "hsl(0 0% 15%)" }}>
-                  {proposal.author_name}
-                </p>
-              )}
-              <div className="flex gap-4 mt-1" style={{ fontSize: "14px", color: "hsl(0 0% 45%)" }}>
-                {proposal.author_phone && <span>{proposal.author_phone}</span>}
-                {proposal.author_email && <span>{proposal.author_email}</span>}
-              </div>
+          {/* Investment */}
+          {proposal.investment && (
+            <div className="text-center relative z-10" style={{ width: "100%" }}>
+              <p
+                style={{
+                  fontSize: 7,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                  color: "rgba(255,255,255,0.5)",
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}
+              >
+                Investimento
+              </p>
+              <p
+                style={{
+                  fontSize: 20,
+                  fontWeight: 900,
+                  color: COLORS.ambar,
+                }}
+              >
+                {proposal.investment}
+              </p>
             </div>
           )}
 
-          <p className="text-sm" style={{ color: "hsl(0 0% 70%)" }}>
-            Movimento Circular © {new Date().getFullYear()}
+          {/* Divider */}
+          <div style={{ width: 40, height: 1, background: "rgba(255,255,255,0.15)" }} />
+
+          {/* QR Code */}
+          <div className="flex flex-col items-center gap-2 relative z-10">
+            <div style={{ background: "#fff", borderRadius: 12, padding: 6 }}>
+              <QRCodeSVG value={proposalUrl} size={80} />
+            </div>
+            <p
+              style={{
+                fontSize: 7,
+                color: "rgba(255,255,255,0.4)",
+                textAlign: "center",
+                lineHeight: 1.3,
+              }}
+            >
+              Acesse esta
+              <br />
+              proposta online
+            </p>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div
+          className="flex-1 flex flex-col relative"
+          style={{ padding: "28px 36px 20px 28px" }}
+        >
+          {/* Badge */}
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: COLORS.badgeBg,
+                borderRadius: 20,
+                padding: "4px 14px",
+              }}
+            >
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: COLORS.teal,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 800,
+                  letterSpacing: 1.5,
+                  color: COLORS.purple,
+                  textTransform: "uppercase",
+                }}
+              >
+                Circular Experience
+              </span>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h1
+            style={{
+              fontSize: 25,
+              fontWeight: 900,
+              color: COLORS.purple,
+              marginBottom: 2,
+              lineHeight: 1.2,
+            }}
+          >
+            {proposal.title}
+          </h1>
+          <p
+            style={{
+              fontSize: 16,
+              fontWeight: 600,
+              color: COLORS.teal,
+              marginBottom: 16,
+            }}
+          >
+            {proposal.company_name}
           </p>
+
+          {/* Meta cards */}
+          <div
+            className="grid gap-3 mb-4"
+            style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}
+          >
+            <MetaCard label="Empresa" value={proposal.company_name} borderColor={COLORS.teal} />
+            <MetaCard
+              label="Contato"
+              value={proposal.contact_name}
+              sub={proposal.contact_role || undefined}
+              borderColor={COLORS.goiaba}
+            />
+            {proposal.event_date && (
+              <MetaCard
+                label="Data do Evento"
+                value={new Date(proposal.event_date).toLocaleDateString("pt-BR")}
+                borderColor={COLORS.ambar}
+              />
+            )}
+            {proposal.valid_until && (
+              <MetaCard
+                label="Validade"
+                value={new Date(proposal.valid_until).toLocaleDateString("pt-BR")}
+                borderColor={COLORS.green}
+              />
+            )}
+          </div>
+
+          {/* Scope + Considerations side by side */}
+          <div className="flex gap-4 mb-4 flex-1" style={{ minHeight: 0 }}>
+            {proposal.scope && (
+              <ContentBlock
+                label="Escopo"
+                html={proposal.scope}
+                accentColor={COLORS.teal}
+              />
+            )}
+            {proposal.considerations && (
+              <ContentBlock
+                label="Considerações"
+                html={proposal.considerations}
+                accentColor={COLORS.goiaba}
+              />
+            )}
+          </div>
+
+          {/* Footer */}
+          <div
+            className="flex items-end justify-between"
+            style={{
+              borderTop: `1px solid ${COLORS.cardBorder}`,
+              paddingTop: 10,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 11,
+                fontStyle: "italic",
+                color: "hsl(0 0% 55%)",
+                maxWidth: "55%",
+                lineHeight: 1.5,
+              }}
+            >
+              Agradecemos desde já a oportunidade desta construção e ficamos à disposição para juntos avançarmos em prol da circularidade.
+            </p>
+
+            <div className="text-right">
+              {proposal.author_name && (
+                <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
+                  {proposal.author_name}
+                </p>
+              )}
+              <div className="flex gap-3 justify-end" style={{ fontSize: 10, color: "hsl(0 0% 50%)" }}>
+                {proposal.author_phone && <span>{proposal.author_phone}</span>}
+                {proposal.author_email && <span>{proposal.author_email}</span>}
+              </div>
+              <p style={{ fontSize: 9, color: "hsl(0 0% 70%)", marginTop: 4 }}>
+                Movimento Circular © {new Date().getFullYear()}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const MetaCard: React.FC<{ label: string; value: string; sub?: string }> = ({
-  label,
-  value,
-  sub,
-}) => (
+const MetaCard: React.FC<{
+  label: string;
+  value: string;
+  sub?: string;
+  borderColor: string;
+}> = ({ label, value, sub, borderColor }) => (
   <div
-    className="rounded-xl p-5"
     style={{
-      background: "hsl(0 0% 96%)",
-      border: "1px solid hsl(0 0% 93%)",
+      background: COLORS.cardBg,
+      borderRadius: 11,
+      borderLeft: `3px solid ${borderColor}`,
+      padding: "10px 14px",
     }}
   >
     <p
-      className="uppercase tracking-wide font-bold mb-1"
-      style={{ fontSize: "14px", color: "hsl(0 0% 60%)" }}
+      style={{
+        fontSize: 8,
+        fontWeight: 700,
+        letterSpacing: 1,
+        color: "hsl(0 0% 55%)",
+        textTransform: "uppercase",
+        marginBottom: 3,
+      }}
     >
       {label}
     </p>
-    <p className="font-semibold" style={{ fontSize: "18px", color: "hsl(0 0% 15%)" }}>
+    <p style={{ fontSize: 13, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
       {value}
     </p>
     {sub && (
-      <p className="mt-0.5" style={{ fontSize: "16px", color: "hsl(0 0% 45%)" }}>
+      <p style={{ fontSize: 11, color: "hsl(0 0% 45%)", marginTop: 1 }}>
         {sub}
       </p>
     )}
+  </div>
+);
+
+const ContentBlock: React.FC<{
+  label: string;
+  html: string;
+  accentColor: string;
+}> = ({ label, html, accentColor }) => (
+  <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
+    <div className="flex items-center gap-2 mb-2">
+      <div
+        style={{
+          width: 3,
+          height: 16,
+          borderRadius: 2,
+          background: accentColor,
+        }}
+      />
+      <p
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: 1,
+          color: accentColor,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </p>
+    </div>
+    <div
+      className="proposal-html-content"
+      style={{
+        background: COLORS.cardBg,
+        borderRadius: 11,
+        padding: "12px 16px",
+        fontSize: 12,
+        lineHeight: 1.6,
+        color: "hsl(0 0% 30%)",
+        flex: 1,
+        overflow: "hidden",
+      }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
   </div>
 );
 
