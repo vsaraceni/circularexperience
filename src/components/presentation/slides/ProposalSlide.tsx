@@ -248,7 +248,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
           </div>
 
           {/* Scope + Considerations side by side */}
-          <div className="flex gap-4 mb-4 flex-1" style={{ minHeight: 0 }}>
+          <div className="flex flex-col gap-3 mb-3 flex-1" style={{ minHeight: 0 }}>
             {proposal.scope && (
               <ContentBlock
                 label="Escopo"
