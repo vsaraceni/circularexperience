@@ -546,7 +546,7 @@ const ContentBlock: React.FC<{
       />
       <p
         style={{
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: 800,
           letterSpacing: 1,
           color: accentColor,
