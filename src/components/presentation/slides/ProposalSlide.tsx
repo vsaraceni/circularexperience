@@ -349,11 +349,11 @@ const ContentBlock: React.FC<{
   accentColor: string;
 }> = ({ label, html, accentColor }) => (
   <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-    <div className="flex items-center gap-2 mb-2">
+    <div className="flex items-center gap-2 mb-1">
       <div
         style={{
           width: 3,
-          height: 16,
+          height: 14,
           borderRadius: 2,
           background: accentColor,
         }}
