@@ -114,7 +114,7 @@ const PrintablePresentation = () => {
         return (
           <div key={index} className={`slide-container${needsCenter ? ' slide-center-content' : ''}`}>
             {showLogo && (
-              <img className="slide-logo-overlay" src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 20, right: 20, height: 50, zIndex: 10, width: 'auto' }} />
+              <img className="slide-logo-overlay" src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 20, right: 20, height: 50, zIndex: 50, width: 'auto' }} />
             )}
             <SlideComponent />
           </div>
