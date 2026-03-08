@@ -418,7 +418,7 @@ const ProposalView = () => {
               />
               {proposal.event_date && (
                 <MetaCard
-                  label="Data do Evento"
+                  label="Data da Proposta"
                   value={new Date(proposal.event_date).toLocaleDateString("pt-BR")}
                   borderColor={COLORS.ambar}
                 />
