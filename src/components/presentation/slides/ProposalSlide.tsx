@@ -213,7 +213,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
               fontSize: 16,
               fontWeight: 600,
               color: COLORS.teal,
-              marginBottom: 16,
+              marginBottom: 10,
             }}
           >
             {proposal.company_name}
