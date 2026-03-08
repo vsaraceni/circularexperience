@@ -228,11 +228,18 @@ const ProposalView = () => {
           />
 
           {/* Sidebar */}
+          <style>{`
+            @media (min-width: 768px) {
+              .proposal-new-sidebar {
+                width: 220px !important;
+                min-width: 220px !important;
+                max-width: 220px !important;
+              }
+            }
+          `}</style>
           <div
-            className="relative flex flex-col items-center justify-between overflow-hidden"
+            className="proposal-new-sidebar relative flex flex-col items-center justify-between overflow-hidden"
             style={{
-              width: "100%",
-              minWidth: 0,
               margin: 12,
               borderRadius: 18,
               background: COLORS.purple,
@@ -240,16 +247,6 @@ const ProposalView = () => {
               gap: 20,
             }}
           >
-            <style>{`
-              @media (min-width: 768px) {
-                .proposal-new-sidebar {
-                  width: 220px !important;
-                  min-width: 220px !important;
-                  max-width: 220px !important;
-                }
-              }
-            `}</style>
-            <div className="proposal-new-sidebar" style={{ display: "contents" }} />
 
             {/* Decorative circles */}
             <div
