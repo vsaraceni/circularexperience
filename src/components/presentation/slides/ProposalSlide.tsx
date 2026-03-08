@@ -317,7 +317,7 @@ const MetaCard: React.FC<{
       background: COLORS.cardBg,
       borderRadius: 11,
       borderLeft: `3px solid ${borderColor}`,
-      padding: "10px 14px",
+      padding: "7px 12px",
     }}
   >
     <p
