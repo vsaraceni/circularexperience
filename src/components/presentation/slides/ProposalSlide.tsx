@@ -172,9 +172,9 @@ const ContentBlock: React.FC<{
   accentColor: string;
 }> = ({ label, html, accentColor }) => (
   <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-    <div className="flex items-center gap-2 mb-1">
-      <div style={{ width: 3, height: 16, borderRadius: 2, background: accentColor }} />
-      <p style={{ fontSize: 14, fontWeight: 800, letterSpacing: 1, color: accentColor, textTransform: "uppercase" }}>
+    <div className="flex items-center gap-2 mb-2">
+      <div style={{ width: 4, height: 20, borderRadius: 2, background: accentColor }} />
+      <p style={{ fontSize: 18, fontWeight: 800, letterSpacing: 1, color: accentColor, textTransform: "uppercase" }}>
         {label}
       </p>
     </div>
@@ -182,9 +182,9 @@ const ContentBlock: React.FC<{
       className="proposal-html-content"
       style={{
         background: COLORS.cardBg,
-        borderRadius: 11,
-        padding: "12px 18px",
-        fontSize: 15,
+        borderRadius: 12,
+        padding: "14px 22px",
+        fontSize: 19,
         lineHeight: 1.6,
         color: "hsl(0 0% 30%)",
         flex: 1,
