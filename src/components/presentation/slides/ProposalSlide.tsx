@@ -221,7 +221,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
 
           {/* Meta cards */}
           <div
-            className="grid gap-3 mb-4"
+            className="grid gap-2 mb-3"
             style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}
           >
             <MetaCard label="Empresa" value={proposal.company_name} borderColor={COLORS.teal} />
