@@ -157,12 +157,12 @@ const MetaCard: React.FC<{
   sub?: string;
   borderColor: string;
 }> = ({ label, value, sub, borderColor }) => (
-  <div style={{ background: COLORS.cardBg, borderRadius: 11, borderLeft: `3px solid ${borderColor}`, padding: "8px 14px" }}>
-    <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "hsl(0 0% 55%)", textTransform: "uppercase", marginBottom: 2 }}>
+  <div style={{ background: COLORS.cardBg, borderRadius: 12, borderLeft: `4px solid ${borderColor}`, padding: "10px 16px" }}>
+    <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: "hsl(0 0% 55%)", textTransform: "uppercase", marginBottom: 3 }}>
       {label}
     </p>
-    <p style={{ fontSize: 15, fontWeight: 700, color: "hsl(0 0% 15%)" }}>{value}</p>
-    {sub && <p style={{ fontSize: 13, color: "hsl(0 0% 45%)", marginTop: 1 }}>{sub}</p>}
+    <p style={{ fontSize: 19, fontWeight: 700, color: "hsl(0 0% 15%)" }}>{value}</p>
+    {sub && <p style={{ fontSize: 16, color: "hsl(0 0% 45%)", marginTop: 2 }}>{sub}</p>}
   </div>
 );
 
