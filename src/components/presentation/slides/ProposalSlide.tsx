@@ -12,7 +12,7 @@ const COLORS = {
   ambar: "#F4A736",
   purple: "#5F2558",
   green: "#a8b830",
-  bg: "#e0dbd8",
+  bg: "#ffffff",
   cardBg: "#F0ECEA",
   cardBorder: "#edebe9",
   badgeBg: "#F1F4C5",
