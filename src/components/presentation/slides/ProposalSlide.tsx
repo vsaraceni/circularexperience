@@ -90,27 +90,27 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         </div>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col relative" style={{ padding: "22px 36px 16px 28px" }}>
+        <div className="flex-1 flex flex-col relative" style={{ padding: "28px 44px 20px 36px" }}>
           {/* Badge */}
-          <div className="flex items-center gap-2 mb-2">
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: COLORS.badgeBg, borderRadius: 20, padding: "4px 14px" }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: COLORS.teal }} />
-              <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.5, color: COLORS.purple, textTransform: "uppercase" }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: COLORS.badgeBg, borderRadius: 20, padding: "6px 18px" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS.teal }} />
+              <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: 1.5, color: COLORS.purple, textTransform: "uppercase" }}>
                 Circular Experience
               </span>
             </div>
           </div>
 
           {/* Title */}
-          <h1 style={{ fontSize: 32, fontWeight: 900, color: COLORS.purple, marginBottom: 2, lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 42, fontWeight: 900, color: COLORS.purple, marginBottom: 4, lineHeight: 1.2 }}>
             {proposal.title}
           </h1>
-          <p style={{ fontSize: 20, fontWeight: 600, color: COLORS.teal, marginBottom: 14 }}>
+          <p style={{ fontSize: 26, fontWeight: 600, color: COLORS.teal, marginBottom: 18 }}>
             {proposal.company_name}
           </p>
 
           {/* Meta cards */}
-          <div className="grid gap-2 mb-4" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+          <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
             <MetaCard label="Empresa" value={proposal.company_name} borderColor={COLORS.teal} />
             <MetaCard label="Contato" value={proposal.contact_name} sub={proposal.contact_role || undefined} borderColor={COLORS.goiaba} />
             {proposal.event_date && (
@@ -122,25 +122,25 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
           </div>
 
           {/* Scope + Considerations */}
-          <div className="flex flex-col gap-3 mb-3 flex-1" style={{ minHeight: 0 }}>
+          <div className="flex flex-col gap-4 mb-4 flex-1" style={{ minHeight: 0 }}>
             {proposal.scope && <ContentBlock label="Escopo" html={proposal.scope} accentColor={COLORS.teal} />}
             {proposal.considerations && <ContentBlock label="Considerações" html={proposal.considerations} accentColor={COLORS.goiaba} />}
           </div>
 
           {/* Footer */}
-          <div className="flex items-end justify-between" style={{ borderTop: `1px solid ${COLORS.cardBorder}`, paddingTop: 12 }}>
-            <p style={{ fontSize: 14, fontStyle: "italic", color: "hsl(0 0% 55%)", maxWidth: "55%", lineHeight: 1.5 }}>
+          <div className="flex items-end justify-between" style={{ borderTop: `1px solid ${COLORS.cardBorder}`, paddingTop: 14 }}>
+            <p style={{ fontSize: 18, fontStyle: "italic", color: "hsl(0 0% 55%)", maxWidth: "55%", lineHeight: 1.5 }}>
               Agradecemos desde já a oportunidade desta construção e ficamos à disposição para juntos avançarmos em prol da circularidade.
             </p>
             <div className="text-right">
               {proposal.author_name && (
-                <p style={{ fontSize: 16, fontWeight: 700, color: "hsl(0 0% 15%)" }}>{proposal.author_name}</p>
+                <p style={{ fontSize: 20, fontWeight: 700, color: "hsl(0 0% 15%)" }}>{proposal.author_name}</p>
               )}
-              <div className="flex gap-3 justify-end" style={{ fontSize: 13, color: "hsl(0 0% 50%)" }}>
+              <div className="flex gap-3 justify-end" style={{ fontSize: 17, color: "hsl(0 0% 50%)" }}>
                 {proposal.author_phone && <span>{proposal.author_phone}</span>}
                 {proposal.author_email && <span>{proposal.author_email}</span>}
               </div>
-              <p style={{ fontSize: 11, color: "hsl(0 0% 70%)", marginTop: 4 }}>
+              <p style={{ fontSize: 14, color: "hsl(0 0% 70%)", marginTop: 4 }}>
                 Movimento Circular © {new Date().getFullYear()}
               </p>
             </div>
