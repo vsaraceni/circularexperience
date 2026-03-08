@@ -561,8 +561,8 @@ const ContentBlock: React.FC<{
       style={{
         background: COLORS.cardBg,
         borderRadius: 11,
-        padding: "14px 18px",
-        fontSize: 13,
+        padding: "10px 14px",
+        fontSize: 11,
         lineHeight: 1.6,
         color: "hsl(0 0% 30%)",
         flex: 1,
