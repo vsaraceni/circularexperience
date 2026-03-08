@@ -160,10 +160,10 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         {/* Main content */}
         <div
           className="flex-1 flex flex-col relative"
-          style={{ padding: "28px 36px 20px 28px" }}
+          style={{ padding: "20px 32px 14px 24px" }}
         >
           {/* Badge */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div
               style={{
                 display: "inline-flex",
@@ -202,7 +202,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
               fontSize: 25,
               fontWeight: 900,
               color: COLORS.purple,
-              marginBottom: 2,
+              marginBottom: 1,
               lineHeight: 1.2,
             }}
           >
@@ -213,7 +213,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
               fontSize: 16,
               fontWeight: 600,
               color: COLORS.teal,
-              marginBottom: 16,
+              marginBottom: 10,
             }}
           >
             {proposal.company_name}
@@ -221,7 +221,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
 
           {/* Meta cards */}
           <div
-            className="grid gap-3 mb-4"
+            className="grid gap-2 mb-3"
             style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}
           >
             <MetaCard label="Empresa" value={proposal.company_name} borderColor={COLORS.teal} />
@@ -248,7 +248,7 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
           </div>
 
           {/* Scope + Considerations side by side */}
-          <div className="flex gap-4 mb-4 flex-1" style={{ minHeight: 0 }}>
+          <div className="flex flex-col gap-3 mb-3 flex-1" style={{ minHeight: 0 }}>
             {proposal.scope && (
               <ContentBlock
                 label="Escopo"
@@ -317,22 +317,22 @@ const MetaCard: React.FC<{
       background: COLORS.cardBg,
       borderRadius: 11,
       borderLeft: `3px solid ${borderColor}`,
-      padding: "10px 14px",
+      padding: "7px 12px",
     }}
   >
     <p
       style={{
-        fontSize: 8,
+        fontSize: 7,
         fontWeight: 700,
         letterSpacing: 1,
         color: "hsl(0 0% 55%)",
         textTransform: "uppercase",
-        marginBottom: 3,
+        marginBottom: 2,
       }}
     >
       {label}
     </p>
-    <p style={{ fontSize: 13, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
+    <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
       {value}
     </p>
     {sub && (
@@ -349,18 +349,18 @@ const ContentBlock: React.FC<{
   accentColor: string;
 }> = ({ label, html, accentColor }) => (
   <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-    <div className="flex items-center gap-2 mb-2">
+    <div className="flex items-center gap-2 mb-1">
       <div
         style={{
           width: 3,
-          height: 16,
+          height: 14,
           borderRadius: 2,
           background: accentColor,
         }}
       />
       <p
         style={{
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: 800,
           letterSpacing: 1,
           color: accentColor,
@@ -375,8 +375,8 @@ const ContentBlock: React.FC<{
       style={{
         background: COLORS.cardBg,
         borderRadius: 11,
-        padding: "12px 16px",
-        fontSize: 12,
+        padding: "10px 14px",
+        fontSize: 11,
         lineHeight: 1.6,
         color: "hsl(0 0% 30%)",
         flex: 1,

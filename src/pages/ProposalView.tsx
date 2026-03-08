@@ -433,7 +433,7 @@ const ProposalView = () => {
             </div>
 
             {/* Scope + Considerations */}
-            <div className="flex flex-col md:flex-row gap-4 mb-5 flex-1">
+            <div className="flex flex-col gap-4 mb-5 flex-1">
               {proposal.scope && (
                 <ContentBlock
                   label="Escopo"
@@ -503,22 +503,22 @@ const MetaCard: React.FC<{
       background: COLORS.cardBg,
       borderRadius: 11,
       borderLeft: `3px solid ${borderColor}`,
-      padding: "10px 14px",
+      padding: "7px 12px",
     }}
   >
     <p
       style={{
-        fontSize: 9,
+        fontSize: 7,
         fontWeight: 700,
         letterSpacing: 1,
         color: "hsl(0 0% 55%)",
         textTransform: "uppercase",
-        marginBottom: 3,
+        marginBottom: 2,
       }}
     >
       {label}
     </p>
-    <p style={{ fontSize: 14, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
+    <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(0 0% 15%)" }}>
       {value}
     </p>
     {sub && (
@@ -546,7 +546,7 @@ const ContentBlock: React.FC<{
       />
       <p
         style={{
-          fontSize: 13,
+          fontSize: 11,
           fontWeight: 800,
           letterSpacing: 1,
           color: accentColor,
@@ -561,8 +561,8 @@ const ContentBlock: React.FC<{
       style={{
         background: COLORS.cardBg,
         borderRadius: 11,
-        padding: "14px 18px",
-        fontSize: 13,
+        padding: "10px 14px",
+        fontSize: 11,
         lineHeight: 1.6,
         color: "hsl(0 0% 30%)",
         flex: 1,
