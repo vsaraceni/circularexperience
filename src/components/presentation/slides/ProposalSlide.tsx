@@ -43,47 +43,47 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
         <div
           className="relative flex flex-col items-center justify-between overflow-hidden"
           style={{
-            width: 220,
-            minWidth: 220,
+            width: 280,
+            minWidth: 280,
             margin: 12,
             borderRadius: 18,
             background: COLORS.purple,
-            padding: "28px 18px 20px",
+            padding: "32px 22px 24px",
           }}
         >
           <div className="absolute" style={{ width: 120, height: 120, borderRadius: "50%", background: "rgba(255,255,255,0.05)", bottom: -30, left: -40 }} />
           <div className="absolute" style={{ width: 80, height: 80, borderRadius: "50%", background: `${COLORS.teal}1A`, top: 60, right: -20 }} />
 
           {/* Logo */}
-          <div className="flex flex-col items-center gap-2 relative z-10">
-            <img src={logoWhite} alt="Movimento Circular" className="object-contain" style={{ height: 70, width: "auto" }} />
-            <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: 3, color: "rgba(255,255,255,0.38)", textTransform: "uppercase", textAlign: "center" }}>
+          <div className="flex flex-col items-center gap-3 relative z-10">
+            <img src={logoWhite} alt="Movimento Circular" className="object-contain" style={{ height: 105, width: "auto" }} />
+            <p style={{ fontSize: 13, fontWeight: 900, letterSpacing: 3, color: "rgba(255,255,255,0.38)", textTransform: "uppercase", textAlign: "center" }}>
               Proposta Comercial
             </p>
           </div>
 
-          <div style={{ width: 40, height: 1, background: "rgba(255,255,255,0.15)" }} />
+          <div style={{ width: 50, height: 1, background: "rgba(255,255,255,0.15)" }} />
 
           {/* Investment */}
           {proposal.investment && (
             <div className="text-center relative z-10" style={{ width: "100%" }}>
-              <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 4 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: 2, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 6 }}>
                 Investimento
               </p>
-              <p style={{ fontSize: 24, fontWeight: 900, color: COLORS.ambar }}>
+              <p style={{ fontSize: 32, fontWeight: 900, color: COLORS.ambar }}>
                 {proposal.investment}
               </p>
             </div>
           )}
 
-          <div style={{ width: 40, height: 1, background: "rgba(255,255,255,0.15)" }} />
+          <div style={{ width: 50, height: 1, background: "rgba(255,255,255,0.15)" }} />
 
           {/* QR Code */}
-          <div className="flex flex-col items-center gap-2 relative z-10">
-            <div style={{ background: "#fff", borderRadius: 12, padding: 8 }}>
-              <QRCodeSVG value={proposalUrl} size={90} />
+          <div className="flex flex-col items-center gap-3 relative z-10">
+            <div style={{ background: "#fff", borderRadius: 14, padding: 10 }}>
+              <QRCodeSVG value={proposalUrl} size={110} />
             </div>
-            <p style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.3 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.3 }}>
               Acesse esta<br />proposta online
             </p>
           </div>
