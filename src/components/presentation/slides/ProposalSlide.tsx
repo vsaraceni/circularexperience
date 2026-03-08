@@ -30,11 +30,9 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
       <div
         className="relative flex overflow-hidden"
         style={{
-          width: 1880,
-          height: 1040,
-          borderRadius: 22,
+          width: 1920,
+          height: 1080,
           background: "#fff",
-          boxShadow: "0 8px 40px rgba(0,0,0,0.08)",
         }}
       >
         {/* Gradient accent bar */}
