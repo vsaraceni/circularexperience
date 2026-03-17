@@ -10,6 +10,7 @@ import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import LeadList, { type Lead } from "@/components/admin/LeadList";
 import ProfileEditor from "@/components/admin/ProfileEditor";
+import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
@@ -192,6 +193,7 @@ const Proposals = () => {
           </div>
           <div className="flex items-center gap-2">
             {user && <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />}
+            <EmailTemplateEditor />
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Site
             </Button>

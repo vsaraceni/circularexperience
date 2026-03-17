@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_templates: {
+        Row: {
+          body_html: string
+          from_email: string
+          from_name: string
+          id: string
+          reply_to: string | null
+          slug: string
+          subject: string
+          updated_at: string | null
+        }
+        Insert: {
+          body_html?: string
+          from_email?: string
+          from_name?: string
+          id?: string
+          reply_to?: string | null
+          slug: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Update: {
+          body_html?: string
+          from_email?: string
+          from_name?: string
+          id?: string
+          reply_to?: string | null
+          slug?: string
+          subject?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           cargo: string | null
