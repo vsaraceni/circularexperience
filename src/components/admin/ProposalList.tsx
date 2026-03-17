@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, ExternalLink, Copy, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import { Edit, Trash2, ExternalLink, Copy, CheckCircle, XCircle, RotateCcw, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { Proposal } from "@/pages/admin/Proposals";
 import PdfExporter from "@/components/pdf/PdfExporter";
@@ -15,6 +15,7 @@ interface ProposalListProps {
 }
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  rascunho: { label: "Rascunho", variant: "outline" },
   enviada: { label: "Enviada", variant: "default" },
   fechada: { label: "Fechada", variant: "secondary" },
   perdida: { label: "Perdida", variant: "destructive" },
@@ -35,6 +36,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
 
   if (proposals.length === 0) {
     const emptyMessages: Record<string, string> = {
+      rascunho: "Nenhum rascunho de proposta.",
       enviada: "Nenhuma proposta enviada.",
       fechada: "Nenhuma proposta fechada ainda.",
       perdida: "Nenhuma proposta perdida.",
@@ -49,8 +51,8 @@ const ProposalList: React.FC<ProposalListProps> = ({
   return (
     <div className="space-y-3">
       {proposals.map((p) => {
-        const status = (p as any).status || "enviada";
-        const config = statusConfig[status] || statusConfig.enviada;
+        const status = (p as any).status || "rascunho";
+        const config = statusConfig[status] || statusConfig.rascunho;
 
         return (
           <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
@@ -68,6 +70,13 @@ const ProposalList: React.FC<ProposalListProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
+              {/* Rascunho → Enviada */}
+              {showStatusActions && onStatusChange && status === "rascunho" && (
+                <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "enviada")} title="Marcar como Enviada">
+                  <Send className="h-4 w-4 text-blue-600" />
+                </Button>
+              )}
+              {/* Enviada → Fechada / Perdida */}
               {showStatusActions && onStatusChange && status === "enviada" && (
                 <>
                   <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "fechada")} title="Marcar como Fechada">
@@ -78,6 +87,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
                   </Button>
                 </>
               )}
+              {/* Fechada/Perdida → Enviada */}
               {showStatusActions && onStatusChange && (status === "fechada" || status === "perdida") && (
                 <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "enviada")} title="Reverter para Enviada">
                   <RotateCcw className="h-4 w-4" />
