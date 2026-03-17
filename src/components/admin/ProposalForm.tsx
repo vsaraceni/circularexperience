@@ -22,7 +22,7 @@ interface ProposalFormProps {
   };
 }
 
-const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel, prefill }) => {
+const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel, prefill, authorDefaults }) => {
   const defaultValidity = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -35,9 +35,9 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
     investment: proposal?.investment || "",
     considerations: proposal?.considerations || "",
     valid_until: proposal?.valid_until || defaultValidity,
-    author_name: proposal?.author_name || "",
-    author_phone: proposal?.author_phone || "",
-    author_email: proposal?.author_email || "",
+    author_name: proposal?.author_name || authorDefaults?.author_name || "",
+    author_phone: proposal?.author_phone || authorDefaults?.author_phone || "",
+    author_email: proposal?.author_email || authorDefaults?.author_email || "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
