@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      leads: {
+        Row: {
+          cargo: string | null
+          company: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          cargo?: string | null
+          company?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          cargo?: string | null
+          company?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -49,8 +79,10 @@ export type Database = {
           event_date: string | null
           id: string
           investment: string | null
+          lead_id: string | null
           scope: string | null
           slug: string
+          status: string
           title: string
           valid_until: string | null
         }
@@ -67,8 +99,10 @@ export type Database = {
           event_date?: string | null
           id?: string
           investment?: string | null
+          lead_id?: string | null
           scope?: string | null
           slug: string
+          status?: string
           title: string
           valid_until?: string | null
         }
@@ -85,12 +119,22 @@ export type Database = {
           event_date?: string | null
           id?: string
           investment?: string | null
+          lead_id?: string | null
           scope?: string | null
           slug?: string
+          status?: string
           title?: string
           valid_until?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
