@@ -10,6 +10,7 @@ import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import LeadList, { type Lead } from "@/components/admin/LeadList";
 import ProfileEditor from "@/components/admin/ProfileEditor";
+import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 

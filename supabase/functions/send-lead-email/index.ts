@@ -49,11 +49,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (insertError) {
       console.error("Error saving lead:", insertError);
-      // Don't block email send if lead save fails
     }
 
     const resend = new Resend(resendApiKey);
 
+    // --- Internal notification email (existing) ---
     const optionalFields = [
       leadData.whatsapp ? `<p><strong>WhatsApp:</strong> <a href="https://wa.me/55${leadData.whatsapp.replace(/\D/g, '')}">${leadData.whatsapp}</a></p>` : "",
       leadData.city || leadData.state ? `<p><strong>Cidade/Estado:</strong> ${leadData.city || ""}${leadData.city && leadData.state ? " - " : ""}${leadData.state || ""}</p>` : "",
@@ -86,7 +86,47 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Lead email sent successfully:", emailResponse);
+    console.log("Internal notification sent:", emailResponse);
+
+    // --- Welcome email to lead (from template) ---
+    try {
+      const { data: template } = await supabaseAdmin
+        .from("email_templates")
+        .select("subject, body_html, from_name, from_email, reply_to")
+        .eq("slug", "lead-welcome")
+        .single();
+
+      if (template) {
+        const replacePlaceholders = (text: string) =>
+          text
+            .replace(/\{\{name\}\}/g, leadData.name)
+            .replace(/\{\{email\}\}/g, leadData.email)
+            .replace(/\{\{company\}\}/g, leadData.company)
+            .replace(/\{\{cargo\}\}/g, leadData.cargo);
+
+        const welcomeSubject = replacePlaceholders(template.subject);
+        const welcomeBody = replacePlaceholders(template.body_html);
+        const fromField = `${template.from_name} <${template.from_email}>`;
+
+        const sendOptions: any = {
+          from: fromField,
+          to: [leadData.email],
+          subject: welcomeSubject,
+          html: welcomeBody,
+        };
+
+        if (template.reply_to) {
+          sendOptions.reply_to = template.reply_to;
+        }
+
+        const welcomeResponse = await resend.emails.send(sendOptions);
+        console.log("Welcome email sent to lead:", welcomeResponse);
+      } else {
+        console.warn("No lead-welcome template found, skipping welcome email");
+      }
+    } catch (welcomeErr) {
+      console.error("Error sending welcome email (non-blocking):", welcomeErr);
+    }
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,
