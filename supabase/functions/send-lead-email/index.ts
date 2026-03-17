@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,12 +29,30 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("RESEND_API_KEY não configurada");
     }
 
-    const resend = new Resend(resendApiKey);
     const leadData: LeadData = await req.json();
 
     if (!leadData.name || !leadData.email || !leadData.cargo || !leadData.company) {
       throw new Error("Campos obrigatórios faltando");
     }
+
+    // Save lead to database
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { error: insertError } = await supabaseAdmin.from("leads").insert({
+      name: leadData.name,
+      email: leadData.email,
+      cargo: leadData.cargo,
+      company: leadData.company,
+    });
+
+    if (insertError) {
+      console.error("Error saving lead:", insertError);
+      // Don't block email send if lead save fails
+    }
+
+    const resend = new Resend(resendApiKey);
 
     const optionalFields = [
       leadData.whatsapp ? `<p><strong>WhatsApp:</strong> <a href="https://wa.me/55${leadData.whatsapp.replace(/\D/g, '')}">${leadData.whatsapp}</a></p>` : "",

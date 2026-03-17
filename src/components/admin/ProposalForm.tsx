@@ -7,19 +7,25 @@ import type { Proposal } from "@/pages/admin/Proposals";
 
 interface ProposalFormProps {
   proposal?: Proposal | null;
-  onSave: (data: Partial<Proposal>) => void;
+  onSave: (data: Partial<Proposal> & { lead_id?: string }) => void;
   onCancel: () => void;
+  prefill?: {
+    company_name?: string;
+    contact_name?: string;
+    contact_role?: string;
+    lead_id?: string;
+  };
 }
 
-const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel }) => {
+const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel, prefill }) => {
   const defaultValidity = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
 
   const [form, setForm] = useState({
-    company_name: proposal?.company_name || "",
-    contact_name: proposal?.contact_name || "",
-    contact_role: proposal?.contact_role || "",
+    company_name: proposal?.company_name || prefill?.company_name || "",
+    contact_name: proposal?.contact_name || prefill?.contact_name || "",
+    contact_role: proposal?.contact_role || prefill?.contact_role || "",
     event_date: proposal?.event_date || "",
-    title: proposal?.title || "",
+    title: proposal?.title || (prefill?.company_name ? `Proposta — ${prefill.company_name}` : ""),
     scope: proposal?.scope || "",
     investment: proposal?.investment || "",
     considerations: proposal?.considerations || "",
@@ -31,7 +37,11 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+    const data: any = { ...form };
+    if (prefill?.lead_id && !proposal) {
+      data.lead_id = prefill.lead_id;
+    }
+    onSave(data);
   };
 
   const set = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
