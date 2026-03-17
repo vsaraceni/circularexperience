@@ -15,6 +15,11 @@ interface ProposalFormProps {
     contact_role?: string;
     lead_id?: string;
   };
+  authorDefaults?: {
+    author_name: string;
+    author_email: string;
+    author_phone: string;
+  };
 }
 
 const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel, prefill }) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import LeadList, { type Lead } from "@/components/admin/LeadList";
+import ProfileEditor from "@/components/admin/ProfileEditor";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
@@ -33,6 +34,12 @@ export interface Proposal {
   lead_id?: string;
 }
 
+interface AuthorDefaults {
+  author_name: string;
+  author_email: string;
+  author_phone: string;
+}
+
 const Proposals = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +50,24 @@ const Proposals = () => {
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("leads");
+  const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
+
+  const fetchProfile = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, email, cargo, phone")
+      .eq("id", user.id)
+      .single();
+
+    if (data) {
+      setAuthorDefaults({
+        author_name: data.full_name || "",
+        author_email: data.email || "",
+        author_phone: (data as any).phone || "",
+      });
+    }
+  }, [user]);
 
   const fetchLeads = async () => {
     const { data, error } = await supabase
@@ -72,8 +97,8 @@ const Proposals = () => {
   };
 
   useEffect(() => {
-    Promise.all([fetchLeads(), fetchProposals()]).then(() => setLoading(false));
-  }, []);
+    Promise.all([fetchLeads(), fetchProposals(), fetchProfile()]).then(() => setLoading(false));
+  }, [fetchProfile]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
@@ -116,7 +141,7 @@ const Proposals = () => {
     setShowForm(false);
     setPrefill(undefined);
     await Promise.all([fetchProposals(), fetchLeads()]);
-    if (!editing) setActiveTab("propostas");
+    if (!editing) setActiveTab("rascunhos");
   };
 
   const handleDelete = async (id: string) => {
@@ -137,7 +162,8 @@ const Proposals = () => {
     if (error) {
       toast.error("Erro ao atualizar status");
     } else {
-      toast.success(`Proposta marcada como ${status}`);
+      const labels: Record<string, string> = { rascunho: "rascunho", enviada: "enviada", fechada: "fechada", perdida: "perdida" };
+      toast.success(`Proposta marcada como ${labels[status] || status}`);
       fetchProposals();
     }
   };
@@ -154,7 +180,7 @@ const Proposals = () => {
   };
 
   const proposalsByStatus = (status: string) =>
-    proposals.filter((p) => (p.status || "enviada") === status);
+    proposals.filter((p) => (p.status || "rascunho") === status);
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,6 +191,7 @@ const Proposals = () => {
             <span className="text-lg font-bold text-foreground">CRM</span>
           </div>
           <div className="flex items-center gap-2">
+            {user && <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />}
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Site
             </Button>
@@ -182,6 +209,7 @@ const Proposals = () => {
             onSave={handleSave}
             onCancel={() => { setShowForm(false); setEditing(null); setPrefill(undefined); }}
             prefill={prefill}
+            authorDefaults={!editing ? authorDefaults : undefined}
           />
         ) : (
           <>
@@ -198,12 +226,15 @@ const Proposals = () => {
               </div>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full grid grid-cols-4">
+                <TabsList className="w-full grid grid-cols-5">
                   <TabsTrigger value="leads">
                     Leads {leads.length > 0 && `(${leads.length})`}
                   </TabsTrigger>
-                  <TabsTrigger value="propostas">
-                    Propostas {proposalsByStatus("enviada").length > 0 && `(${proposalsByStatus("enviada").length})`}
+                  <TabsTrigger value="rascunhos">
+                    Rascunhos {proposalsByStatus("rascunho").length > 0 && `(${proposalsByStatus("rascunho").length})`}
+                  </TabsTrigger>
+                  <TabsTrigger value="enviadas">
+                    Enviadas {proposalsByStatus("enviada").length > 0 && `(${proposalsByStatus("enviada").length})`}
                   </TabsTrigger>
                   <TabsTrigger value="fechadas">
                     Fechadas {proposalsByStatus("fechada").length > 0 && `(${proposalsByStatus("fechada").length})`}
@@ -217,7 +248,17 @@ const Proposals = () => {
                   <LeadList leads={leads} onGenerateProposal={handleGenerateProposal} />
                 </TabsContent>
 
-                <TabsContent value="propostas">
+                <TabsContent value="rascunhos">
+                  <ProposalList
+                    proposals={proposalsByStatus("rascunho")}
+                    onEdit={(p) => setEditing(p)}
+                    onDelete={handleDelete}
+                    onStatusChange={handleStatusChange}
+                    statusFilter="rascunho"
+                  />
+                </TabsContent>
+
+                <TabsContent value="enviadas">
                   <ProposalList
                     proposals={proposalsByStatus("enviada")}
                     onEdit={(p) => setEditing(p)}
