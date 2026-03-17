@@ -1,0 +1,1 @@
+ALTER TABLE public.email_templates ALTER COLUMN from_email SET DEFAULT 'contato@lovable.movimentocircular.io';
