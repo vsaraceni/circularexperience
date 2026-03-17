@@ -193,6 +193,7 @@ const Proposals = () => {
           </div>
           <div className="flex items-center gap-2">
             {user && <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />}
+            <EmailTemplateEditor />
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Site
             </Button>
