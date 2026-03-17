@@ -1,23 +1,14 @@
 
 
-## Plano: Atualizar domínio do remetente para o verificado
+# Centralizar o slide da Agenda no modo apresentação
 
-Atualizar o campo `from_email` do template `lead-welcome` na tabela `email_templates` para usar o domínio verificado `lovable.movimentocircular.io`.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-### Alteração
+## Alteração
 
-Usar o insert tool para executar:
-```sql
-UPDATE public.email_templates
-SET from_email = 'contato@lovable.movimentocircular.io'
-WHERE slug = 'lead-welcome';
-```
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-Também atualizar o default da coluna na tabela via migração para que futuros templates usem o domínio correto:
-```sql
-ALTER TABLE public.email_templates
-  ALTER COLUMN from_email SET DEFAULT 'contato@lovable.movimentocircular.io';
-```
-
-Nenhuma alteração de código necessária — a edge function já lê o `from_email` do banco.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
