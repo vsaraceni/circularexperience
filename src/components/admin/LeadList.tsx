@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Mail, Building2, Briefcase, Calendar, Tag, User } from "lucide-react";
+import { FileText, Mail, Building2, Briefcase, Calendar, Tag, User, Phone } from "lucide-react";
 
 export interface Lead {
   id: string;
@@ -7,6 +7,7 @@ export interface Lead {
   email: string;
   cargo: string;
   company: string;
+  telefone: string;
   status: string;
   created_at: string;
   origem: string;
@@ -46,6 +47,12 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal }) => {
                 <Mail className="h-3.5 w-3.5" />
                 {lead.email}
               </span>
+              {lead.telefone && (
+                <span className="flex items-center gap-1">
+                  <Phone className="h-3.5 w-3.5" />
+                  {lead.telefone}
+                </span>
+              )}
               {lead.cargo && (
                 <span className="flex items-center gap-1">
                   <Briefcase className="h-3.5 w-3.5" />

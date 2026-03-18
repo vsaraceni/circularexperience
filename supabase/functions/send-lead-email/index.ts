@@ -13,6 +13,7 @@ interface LeadData {
   email: string;
   cargo: string;
   company: string;
+  telefone?: string;
   whatsapp?: string;
   city?: string;
   state?: string;
@@ -45,6 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
       email: leadData.email,
       cargo: leadData.cargo,
       company: leadData.company,
+      telefone: leadData.telefone || "",
       origem: "LP",
     });
 
@@ -56,6 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // --- Internal notification email (existing) ---
     const optionalFields = [
+      leadData.telefone ? `<p><strong>Telefone:</strong> ${leadData.telefone}</p>` : "",
       leadData.whatsapp ? `<p><strong>WhatsApp:</strong> <a href="https://wa.me/55${leadData.whatsapp.replace(/\D/g, '')}">${leadData.whatsapp}</a></p>` : "",
       leadData.city || leadData.state ? `<p><strong>Cidade/Estado:</strong> ${leadData.city || ""}${leadData.city && leadData.state ? " - " : ""}${leadData.state || ""}</p>` : "",
     ].filter(Boolean).join("\n");

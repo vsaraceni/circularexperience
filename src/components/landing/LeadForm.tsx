@@ -15,6 +15,7 @@ const step1Schema = z.object({
 const step2Schema = z.object({
   cargo: z.string().trim().min(2, "Cargo deve ter pelo menos 2 caracteres").max(100, "Cargo muito longo"),
   company: z.string().trim().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").max(100, "Nome da empresa muito longo"),
+  telefone: z.string().trim().min(8, "Telefone deve ter pelo menos 8 caracteres").max(20, "Telefone muito longo"),
 });
 
 type FormData = {
@@ -22,6 +23,7 @@ type FormData = {
   email: string;
   cargo: string;
   company: string;
+  telefone: string;
 };
 
 const LeadForm = () => {
@@ -30,6 +32,7 @@ const LeadForm = () => {
     email: "",
     cargo: "",
     company: "",
+    telefone: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [step, setStep] = useState<1 | 2>(1);
@@ -63,7 +66,7 @@ const LeadForm = () => {
     }
 
     // Step 2: validate cargo + company
-    const result = step2Schema.safeParse({ cargo: formData.cargo, company: formData.company });
+    const result = step2Schema.safeParse({ cargo: formData.cargo, company: formData.company, telefone: formData.telefone });
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof FormData, string>> = {};
       result.error.errors.forEach(err => {
@@ -93,7 +96,7 @@ const LeadForm = () => {
       setIsSuccess(true);
       toast.success("Solicitação enviada com sucesso! Em breve entraremos em contato.");
       
-      setFormData({ name: "", email: "", cargo: "", company: "" });
+      setFormData({ name: "", email: "", cargo: "", company: "", telefone: "" });
       setStep(1);
     } catch (err) {
       console.error("Submit error:", err);
@@ -200,6 +203,25 @@ const LeadForm = () => {
             />
             {errors.company && (
               <p className="text-xs text-destructive">{errors.company}</p>
+            )}
+          </div>
+
+          {/* Telefone */}
+          <div className="space-y-2">
+            <Label htmlFor="telefone" className="text-foreground">
+              Telefone <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="telefone"
+              type="tel"
+              placeholder="(11) 99999-9999"
+              value={formData.telefone}
+              onChange={(e) => handleChange("telefone", e.target.value)}
+              className={errors.telefone ? "border-destructive" : ""}
+              maxLength={20}
+            />
+            {errors.telefone && (
+              <p className="text-xs text-destructive">{errors.telefone}</p>
             )}
           </div>
         </div>
