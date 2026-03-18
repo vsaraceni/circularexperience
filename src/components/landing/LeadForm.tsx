@@ -66,7 +66,7 @@ const LeadForm = () => {
     }
 
     // Step 2: validate cargo + company
-    const result = step2Schema.safeParse({ cargo: formData.cargo, company: formData.company });
+    const result = step2Schema.safeParse({ cargo: formData.cargo, company: formData.company, telefone: formData.telefone });
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof FormData, string>> = {};
       result.error.errors.forEach(err => {
