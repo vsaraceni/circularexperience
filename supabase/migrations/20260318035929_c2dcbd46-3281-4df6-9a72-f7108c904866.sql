@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN welcome_sent_at timestamptz DEFAULT NULL;

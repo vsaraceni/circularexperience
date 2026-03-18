@@ -59,6 +59,7 @@ export type Database = {
           status: string
           telefone: string | null
           welcome_sent: boolean
+          welcome_sent_at: string | null
         }
         Insert: {
           cargo?: string | null
@@ -71,6 +72,7 @@ export type Database = {
           status?: string
           telefone?: string | null
           welcome_sent?: boolean
+          welcome_sent_at?: string | null
         }
         Update: {
           cargo?: string | null
@@ -83,6 +85,7 @@ export type Database = {
           status?: string
           telefone?: string | null
           welcome_sent?: boolean
+          welcome_sent_at?: string | null
         }
         Relationships: []
       }
