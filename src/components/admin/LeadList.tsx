@@ -128,6 +128,12 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
                       : "Welcome enviado"}
                   </Badge>
                 )}
+                {lead.mensagem && lead.mensagem.trim() !== "" && (
+                  <Badge variant="outline" className="text-xs shrink-0 gap-1 border-amber-500/50 text-amber-600">
+                    <MessageSquare className="h-3 w-3" />
+                    Mensagem
+                  </Badge>
+                )}
               </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">

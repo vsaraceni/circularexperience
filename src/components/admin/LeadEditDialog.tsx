@@ -101,6 +101,10 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
             <Label htmlFor="edit-origem">Origem</Label>
             <Input id="edit-origem" value={form.origem} onChange={(e) => setForm({ ...form, origem: e.target.value })} />
           </div>
+          <div>
+            <Label htmlFor="edit-mensagem">Mensagem</Label>
+            <Textarea id="edit-mensagem" value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} rows={4} />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
