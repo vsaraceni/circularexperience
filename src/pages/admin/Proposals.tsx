@@ -74,7 +74,7 @@ const Proposals = () => {
     const { data, error } = await supabase
       .from("leads")
       .select("*")
-      .neq("status", "converted")
+      .not("status", "in", '("converted","archived")')
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -247,7 +247,7 @@ const Proposals = () => {
                 </TabsList>
 
                 <TabsContent value="leads">
-                  <LeadList leads={leads} onGenerateProposal={handleGenerateProposal} onLeadUpdated={fetchLeads} />
+                  <LeadList leads={leads} onGenerateProposal={handleGenerateProposal} onLeadUpdated={fetchLeads} authorDefaults={authorDefaults} />
                 </TabsContent>
 
                 <TabsContent value="rascunhos">

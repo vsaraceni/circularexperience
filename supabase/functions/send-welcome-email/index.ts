@@ -14,6 +14,9 @@ interface WelcomeData {
   email: string;
   company: string;
   cargo: string;
+  sender_name?: string;
+  sender_email?: string;
+  sender_phone?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -73,7 +76,10 @@ const handler = async (req: Request): Promise<Response> => {
         .replace(/\{\{name\}\}/g, data.name)
         .replace(/\{\{email\}\}/g, data.email)
         .replace(/\{\{company\}\}/g, data.company || "")
-        .replace(/\{\{cargo\}\}/g, data.cargo || "");
+        .replace(/\{\{cargo\}\}/g, data.cargo || "")
+        .replace(/\{\{sender_name\}\}/g, data.sender_name || "")
+        .replace(/\{\{sender_email\}\}/g, data.sender_email || "")
+        .replace(/\{\{sender_phone\}\}/g, data.sender_phone || "");
 
     const subject = replacePlaceholders(template.subject);
     const body = replacePlaceholders(template.body_html);
@@ -90,6 +96,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (template.reply_to) {
       sendOptions.reply_to = template.reply_to;
+    }
+
+    // CC the logged-in admin
+    if (data.sender_email) {
+      sendOptions.cc = [data.sender_email];
     }
 
     const emailResponse = await resend.emails.send(sendOptions);
