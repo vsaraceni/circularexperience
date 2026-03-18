@@ -83,7 +83,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const subject = replacePlaceholders(template.subject);
     const body = replacePlaceholders(template.body_html);
-    const fromField = `${template.from_name} <${template.from_email}>`;
+    const fromName = replacePlaceholders(template.from_name);
+    const fromEmail = replacePlaceholders(template.from_email);
+    const fromField = `${fromName} <${fromEmail}>`;
 
     const resend = new Resend(resendApiKey);
 
