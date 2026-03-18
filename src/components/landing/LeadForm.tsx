@@ -15,6 +15,7 @@ const step1Schema = z.object({
 const step2Schema = z.object({
   cargo: z.string().trim().min(2, "Cargo deve ter pelo menos 2 caracteres").max(100, "Cargo muito longo"),
   company: z.string().trim().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").max(100, "Nome da empresa muito longo"),
+  telefone: z.string().trim().min(8, "Telefone deve ter pelo menos 8 caracteres").max(20, "Telefone muito longo"),
 });
 
 type FormData = {
@@ -22,6 +23,7 @@ type FormData = {
   email: string;
   cargo: string;
   company: string;
+  telefone: string;
 };
 
 const LeadForm = () => {
