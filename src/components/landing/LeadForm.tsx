@@ -205,6 +205,25 @@ const LeadForm = () => {
               <p className="text-xs text-destructive">{errors.company}</p>
             )}
           </div>
+
+          {/* Telefone */}
+          <div className="space-y-2">
+            <Label htmlFor="telefone" className="text-foreground">
+              Telefone <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="telefone"
+              type="tel"
+              placeholder="(11) 99999-9999"
+              value={formData.telefone}
+              onChange={(e) => handleChange("telefone", e.target.value)}
+              className={errors.telefone ? "border-destructive" : ""}
+              maxLength={20}
+            />
+            {errors.telefone && (
+              <p className="text-xs text-destructive">{errors.telefone}</p>
+            )}
+          </div>
         </div>
       )}
 

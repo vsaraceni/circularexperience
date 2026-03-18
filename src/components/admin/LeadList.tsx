@@ -7,6 +7,7 @@ export interface Lead {
   email: string;
   cargo: string;
   company: string;
+  telefone: string;
   status: string;
   created_at: string;
   origem: string;
