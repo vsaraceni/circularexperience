@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +26,8 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
     origem: "",
   });
 
-  const handleOpen = (isOpen: boolean) => {
-    if (isOpen && lead) {
+  useEffect(() => {
+    if (lead && open) {
       setForm({
         name: lead.name || "",
         email: lead.email || "",
@@ -37,8 +37,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
         origem: lead.origem || "",
       });
     }
-    onOpenChange(isOpen);
-  };
+  }, [lead, open]);
 
   const handleSave = async () => {
     if (!lead) return;
@@ -68,7 +67,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar Lead</DialogTitle>
