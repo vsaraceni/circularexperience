@@ -46,6 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
       email: leadData.email,
       cargo: leadData.cargo,
       company: leadData.company,
+      telefone: leadData.telefone || "",
       origem: "LP",
     });
 
