@@ -15,11 +15,17 @@ import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
-const VARIABLES = [
-  { key: "{{name}}", label: "Nome" },
-  { key: "{{email}}", label: "Email" },
+const VARIABLES_LEAD = [
+  { key: "{{name}}", label: "Nome do lead" },
+  { key: "{{email}}", label: "Email do lead" },
   { key: "{{company}}", label: "Empresa" },
   { key: "{{cargo}}", label: "Cargo" },
+];
+
+const VARIABLES_SIGNATURE = [
+  { key: "{{sender_name}}", label: "Nome do admin" },
+  { key: "{{sender_email}}", label: "Email do admin" },
+  { key: "{{sender_phone}}", label: "Telefone do admin" },
 ];
 
 const EmailTemplateEditor = () => {
