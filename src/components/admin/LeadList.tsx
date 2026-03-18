@@ -25,6 +25,7 @@ export interface Lead {
   created_at: string;
   origem: string;
   welcome_sent: boolean;
+  welcome_sent_at?: string | null;
 }
 
 interface AuthorDefaults {
@@ -121,7 +122,9 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
                 {lead.welcome_sent && (
                   <Badge variant="outline" className="text-xs shrink-0 gap-1">
                     <CheckCircle className="h-3 w-3" />
-                    Welcome enviado
+                    {lead.welcome_sent_at
+                      ? `Welcome enviado em ${new Date(lead.welcome_sent_at).toLocaleDateString("pt-BR")}`
+                      : "Welcome enviado"}
                   </Badge>
                 )}
               </div>

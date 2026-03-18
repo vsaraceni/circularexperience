@@ -1,19 +1,14 @@
 
 
-## Plano: Adicionar data de envio do welcome email
+# Centralizar o slide da Agenda no modo apresentação
 
-Registrar a data/hora do envio do e-mail de boas-vindas e exibi-la no badge do CRM.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-### 1. Migração: nova coluna `welcome_sent_at`
-- Adicionar coluna `welcome_sent_at timestamptz` na tabela `leads` (nullable, default null).
+## Alteração
 
-### 2. Edge Function `send-welcome-email`
-- Além de `welcome_sent: true`, gravar `welcome_sent_at: new Date().toISOString()` no update do lead.
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-### 3. UI `LeadList.tsx`
-- Atualizar interface `Lead` com `welcome_sent_at?: string`.
-- No badge "Welcome enviado", mostrar a data formatada: `Welcome enviado em DD/MM/AAAA`.
-
-### 4. Tipos
-- O arquivo `types.ts` será atualizado automaticamente após a migração.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 

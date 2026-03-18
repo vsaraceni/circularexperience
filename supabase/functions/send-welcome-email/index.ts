@@ -99,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (data.lead_id) {
       await supabaseAdmin
         .from("leads")
-        .update({ welcome_sent: true })
+        .update({ welcome_sent: true, welcome_sent_at: new Date().toISOString() })
         .eq("id", data.lead_id);
     }
 
