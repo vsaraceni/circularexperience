@@ -25,6 +25,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
     company: "",
     telefone: "",
     origem: "",
+    mensagem: "",
   });
 
   useEffect(() => {
