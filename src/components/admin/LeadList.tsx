@@ -200,21 +200,19 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
                 </AlertDialogContent>
               </AlertDialog>
 
-              {!lead.welcome_sent && (
-                <Button
-                  onClick={() => handleSendWelcome(lead)}
-                  size="sm"
-                  variant="outline"
-                  disabled={sendingWelcome === lead.id}
-                >
-                  {sendingWelcome === lead.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-1" />
-                  )}
-                  Boas-Vindas
-                </Button>
-              )}
+              <Button
+                onClick={() => handleSendWelcome(lead)}
+                size="sm"
+                variant="outline"
+                disabled={sendingWelcome === lead.id}
+              >
+                {sendingWelcome === lead.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-1" />
+                )}
+                {lead.welcome_sent ? "Reenviar" : "Boas-Vindas"}
+              </Button>
               <Button
                 onClick={() => onGenerateProposal(lead)}
                 size="sm"

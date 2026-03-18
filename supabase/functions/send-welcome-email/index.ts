@@ -40,22 +40,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("email and name are required");
     }
 
-    // Check if welcome was already sent
-    if (data.lead_id) {
-      const { data: lead } = await supabaseAdmin
-        .from("leads")
-        .select("welcome_sent")
-        .eq("id", data.lead_id)
-        .single();
-
-      if (lead?.welcome_sent) {
-        return new Response(
-          JSON.stringify({ success: true, skipped: true, message: "Welcome already sent" }),
-          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-    }
-
     // Fetch template
     const { data: template } = await supabaseAdmin
       .from("email_templates")
