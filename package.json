@@ -47,7 +47,6 @@
     "@tiptap/extension-underline": "^3.20.1",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
-    "@vitejs/plugin-react": "^6.0.1",
     "@vitejs/plugin-react-swc": "3.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
