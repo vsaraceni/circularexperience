@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileText, Mail, Building2, Briefcase, Calendar, Tag, User, Phone,
-  Send, CheckCircle, Loader2, Pencil, Archive,
+  Send, CheckCircle, Loader2, Pencil, Archive, MessageSquare,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -26,6 +26,7 @@ export interface Lead {
   origem: string;
   welcome_sent: boolean;
   welcome_sent_at?: string | null;
+  mensagem?: string | null;
 }
 
 interface AuthorDefaults {
@@ -125,6 +126,12 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
                     {lead.welcome_sent_at
                       ? `Welcome enviado em ${new Date(lead.welcome_sent_at).toLocaleDateString("pt-BR")}`
                       : "Welcome enviado"}
+                  </Badge>
+                )}
+                {lead.mensagem && lead.mensagem.trim() !== "" && (
+                  <Badge variant="outline" className="text-xs shrink-0 gap-1 border-accent text-accent-foreground">
+                    <MessageSquare className="h-3 w-3" />
+                    Mensagem
                   </Badge>
                 )}
               </div>

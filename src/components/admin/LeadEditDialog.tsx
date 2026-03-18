@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -24,6 +25,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
     company: "",
     telefone: "",
     origem: "",
+    mensagem: "",
   });
 
   useEffect(() => {
@@ -35,6 +37,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
         company: lead.company || "",
         telefone: lead.telefone || "",
         origem: lead.origem || "",
+        mensagem: lead.mensagem || "",
       });
     }
   }, [lead, open]);
@@ -52,6 +55,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           company: form.company,
           telefone: form.telefone,
           origem: form.origem,
+          mensagem: form.mensagem,
         })
         .eq("id", lead.id);
 
@@ -96,6 +100,10 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           <div>
             <Label htmlFor="edit-origem">Origem</Label>
             <Input id="edit-origem" value={form.origem} onChange={(e) => setForm({ ...form, origem: e.target.value })} />
+          </div>
+          <div>
+            <Label htmlFor="edit-mensagem">Mensagem</Label>
+            <Textarea id="edit-mensagem" value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} rows={4} />
           </div>
         </div>
         <DialogFooter>
