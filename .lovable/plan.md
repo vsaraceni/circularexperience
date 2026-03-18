@@ -1,14 +1,18 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Plano: Exibir campo "mensagem" no CRM
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### 1. Interface `Lead` (LeadList.tsx)
+- Adicionar `mensagem?: string | null` à interface `Lead`.
 
-## Alteração
+### 2. Badge indicativo na lista (LeadList.tsx)
+- Quando `lead.mensagem` tiver texto (não vazio/null), exibir um badge "Mensagem" com ícone `MessageSquare` na linha de badges do card, indicando visualmente que há uma mensagem a ser lida.
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+### 3. Formulário de edição (LeadEditDialog.tsx)
+- Adicionar campo `mensagem` ao estado do form e ao `useEffect` que carrega os dados.
+- Exibir um `Textarea` (read-write) com label "Mensagem" no dialog de edição.
+- Incluir `mensagem` no `update` do Supabase ao salvar.
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+### Nenhuma migração necessária
+O campo `mensagem` já existe na tabela `leads` (text, nullable, default `''`).
 
