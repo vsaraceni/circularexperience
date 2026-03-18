@@ -55,6 +55,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           company: form.company,
           telefone: form.telefone,
           origem: form.origem,
+          mensagem: form.mensagem,
         })
         .eq("id", lead.id);
 
