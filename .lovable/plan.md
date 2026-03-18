@@ -1,14 +1,16 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Plano: Adicionar campo "origem" à tabela leads
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### Alterações
 
-## Alteração
+1. **Migração SQL** — Adicionar coluna `origem` à tabela `leads`:
+```sql
+ALTER TABLE public.leads ADD COLUMN origem text NOT NULL DEFAULT 'LP';
+```
+Todos os leads existentes receberão `'LP'` automaticamente.
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+2. **Edge Function `send-lead-email/index.ts`** — Incluir `origem: 'LP'` no insert do lead (explícito).
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+3. **Frontend `LeadList.tsx`** — Exibir o campo origem na listagem de leads no CRM.
 
