@@ -1,14 +1,15 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Plano: Adicionar modo HTML ao editor de email
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+Adicionar um toggle "Visual / HTML" no `RichTextEditor.tsx` que alterna entre o editor Tiptap (WYSIWYG) e um `<textarea>` com o código HTML bruto.
 
-## Alteração
+### Mudança única: `src/components/admin/RichTextEditor.tsx`
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+- Adicionar estado `htmlMode` (boolean, default `false`).
+- Na toolbar, adicionar botão `</>` HTML à direita que alterna o modo.
+- Quando `htmlMode = true`: esconder toolbar de formatação e o `EditorContent`, mostrar `<textarea>` com o HTML bruto. O `onChange` dispara no `onChange` do textarea.
+- Quando volta para modo visual: sincronizar o conteúdo editado no textarea de volta para o editor Tiptap via `editor.commands.setContent(rawHtml)`.
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+Nenhuma outra mudança necessária — o componente já é usado no `EmailTemplateEditor`.
 
