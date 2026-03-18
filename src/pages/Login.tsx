@@ -53,7 +53,7 @@ const Login = () => {
     setIsGoogleLoading(true);
     try {
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/admin/propostas`,
       });
       if (error) {
         toast.error("Erro ao entrar com Google. Tente novamente.");
