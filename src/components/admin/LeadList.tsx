@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Mail, Building2, Briefcase, Calendar } from "lucide-react";
+import { FileText, Mail, Building2, Briefcase, Calendar, Tag } from "lucide-react";
 
 export interface Lead {
   id: string;
