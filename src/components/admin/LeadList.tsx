@@ -53,6 +53,7 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal }) => {
                   {lead.telefone}
                 </span>
               )}
+              {lead.cargo && (
                 <span className="flex items-center gap-1">
                   <Briefcase className="h-3.5 w-3.5" />
                   {lead.cargo}
