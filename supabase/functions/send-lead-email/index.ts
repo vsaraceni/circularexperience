@@ -45,6 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
       email: leadData.email,
       cargo: leadData.cargo,
       company: leadData.company,
+      origem: "LP",
     });
 
     if (insertError) {

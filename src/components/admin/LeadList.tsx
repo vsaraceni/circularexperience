@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { FileText, Mail, Building2, Briefcase, Calendar } from "lucide-react";
+import { FileText, Mail, Building2, Briefcase, Calendar, Tag } from "lucide-react";
 
 export interface Lead {
   id: string;
@@ -9,6 +9,7 @@ export interface Lead {
   company: string;
   status: string;
   created_at: string;
+  origem: string;
 }
 
 interface LeadListProps {
@@ -56,6 +57,10 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal }) => {
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
                 {new Date(lead.created_at).toLocaleDateString("pt-BR")}
+              </span>
+              <span className="flex items-center gap-1">
+                <Tag className="h-3.5 w-3.5" />
+                {lead.origem}
               </span>
             </div>
           </div>
