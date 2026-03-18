@@ -96,7 +96,7 @@ const LeadForm = () => {
       setIsSuccess(true);
       toast.success("Solicitação enviada com sucesso! Em breve entraremos em contato.");
       
-      setFormData({ name: "", email: "", cargo: "", company: "" });
+      setFormData({ name: "", email: "", cargo: "", company: "", telefone: "" });
       setStep(1);
     } catch (err) {
       console.error("Submit error:", err);
