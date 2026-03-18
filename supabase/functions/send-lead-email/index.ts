@@ -13,6 +13,7 @@ interface LeadData {
   email: string;
   cargo: string;
   company: string;
+  telefone?: string;
   whatsapp?: string;
   city?: string;
   state?: string;
