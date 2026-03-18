@@ -135,10 +135,15 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
                   {lead.email}
                 </span>
                 {lead.telefone && (
-                  <span className="flex items-center gap-1">
+                  <a
+                    href={`https://wa.me/${lead.telefone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 hover:text-primary transition-colors"
+                  >
                     <Phone className="h-3.5 w-3.5" />
                     {lead.telefone}
-                  </span>
+                  </a>
                 )}
                 {lead.cargo && (
                   <span className="flex items-center gap-1">
