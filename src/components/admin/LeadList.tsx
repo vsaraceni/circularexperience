@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   FileText, Mail, Building2, Briefcase, Calendar, Tag, User, Phone,
-  Send, CheckCircle, Loader2, Pencil, Archive,
+  Send, CheckCircle, Loader2, Pencil, Archive, MessageSquare,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
