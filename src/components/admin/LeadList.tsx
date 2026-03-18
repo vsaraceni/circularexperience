@@ -38,7 +38,12 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal }) => {
           className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4"
         >
           <div className="min-w-0 flex-1 space-y-1">
-            <h3 className="font-semibold text-foreground truncate">{lead.company || "Sem empresa"}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-foreground truncate">{lead.company || "Sem empresa"}</h3>
+              <Badge variant={lead.status === "new" ? "default" : "secondary"} className="text-xs shrink-0">
+                {lead.status === "new" ? "Novo" : lead.status}
+              </Badge>
+            </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />
