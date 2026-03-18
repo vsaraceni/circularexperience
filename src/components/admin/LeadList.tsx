@@ -25,6 +25,7 @@ export interface Lead {
   created_at: string;
   origem: string;
   welcome_sent: boolean;
+  welcome_sent_at?: string | null;
 }
 
 interface AuthorDefaults {
