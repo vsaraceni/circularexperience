@@ -58,6 +58,10 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal }) => {
                 <Calendar className="h-3.5 w-3.5" />
                 {new Date(lead.created_at).toLocaleDateString("pt-BR")}
               </span>
+              <span className="flex items-center gap-1">
+                <Tag className="h-3.5 w-3.5" />
+                {lead.origem}
+              </span>
             </div>
           </div>
           <Button
