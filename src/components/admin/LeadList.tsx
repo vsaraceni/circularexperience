@@ -129,7 +129,7 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
                   </Badge>
                 )}
                 {lead.mensagem && lead.mensagem.trim() !== "" && (
-                  <Badge variant="outline" className="text-xs shrink-0 gap-1 border-amber-500/50 text-amber-600">
+                  <Badge variant="outline" className="text-xs shrink-0 gap-1 border-accent text-accent-foreground">
                     <MessageSquare className="h-3 w-3" />
                     Mensagem
                   </Badge>
