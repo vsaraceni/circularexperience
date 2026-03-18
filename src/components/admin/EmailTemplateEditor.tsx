@@ -15,11 +15,17 @@ import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
-const VARIABLES = [
-  { key: "{{name}}", label: "Nome" },
-  { key: "{{email}}", label: "Email" },
+const VARIABLES_LEAD = [
+  { key: "{{name}}", label: "Nome do lead" },
+  { key: "{{email}}", label: "Email do lead" },
   { key: "{{company}}", label: "Empresa" },
   { key: "{{cargo}}", label: "Cargo" },
+];
+
+const VARIABLES_SIGNATURE = [
+  { key: "{{sender_name}}", label: "Nome do admin" },
+  { key: "{{sender_email}}", label: "Email do admin" },
+  { key: "{{sender_phone}}", label: "Telefone do admin" },
 ];
 
 const EmailTemplateEditor = () => {
@@ -156,9 +162,9 @@ const EmailTemplateEditor = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Variáveis disponíveis (copie e cole no assunto ou corpo):</Label>
+              <Label className="text-xs text-muted-foreground">Variáveis do Lead (copie e cole no assunto ou corpo):</Label>
               <div className="flex flex-wrap gap-2">
-                {VARIABLES.map((v) => (
+                {VARIABLES_LEAD.map((v) => (
                   <Badge
                     key={v.key}
                     variant="secondary"
@@ -172,6 +178,29 @@ const EmailTemplateEditor = () => {
                   </Badge>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Variáveis de Assinatura (dados do admin logado que enviou):</Label>
+              <div className="flex flex-wrap gap-2">
+                {VARIABLES_SIGNATURE.map((v) => (
+                  <Badge
+                    key={v.key}
+                    variant="outline"
+                    className="cursor-pointer select-all font-mono text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(v.key);
+                      toast.info(`${v.key} copiado!`);
+                    }}
+                  >
+                    {v.key} — {v.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+              <strong>CC automático:</strong> O e-mail de boas-vindas é enviado automaticamente com cópia (CC) para o admin logado que clicou em "Boas-Vindas".
             </div>
 
             <Button onClick={handleSave} disabled={saving} className="w-full">
