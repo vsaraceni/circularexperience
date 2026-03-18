@@ -74,7 +74,7 @@ const Proposals = () => {
     const { data, error } = await supabase
       .from("leads")
       .select("*")
-      .eq("status", "new")
+      .neq("status", "converted")
       .order("created_at", { ascending: false });
 
     if (error) {

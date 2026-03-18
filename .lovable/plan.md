@@ -1,30 +1,14 @@
 
 
-## Problem
+# Centralizar o slide da Agenda no modo apresentação
 
-The Leads tab in the CRM only shows leads with `status = 'new'`. External leads likely have a different status value (or no status set), so they are filtered out.
+O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
 
-## Solution
+## Alteração
 
-Remove the `.eq("status", "new")` filter from the `fetchLeads` query in `Proposals.tsx` so ALL leads are displayed. Then add a visual indicator for the lead status so the user can distinguish between new, converted, and other statuses.
+**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
+- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
+- Para: `{ component: Agenda, label: "Agenda" }`
 
-### Changes
-
-1. **`src/pages/admin/Proposals.tsx`** -- In `fetchLeads`, remove the `.eq("status", "new")` filter so all leads are fetched regardless of status. Optionally exclude only `converted` leads if the user prefers not to see those.
-
-2. **`src/components/admin/LeadList.tsx`** -- Add a badge or visual tag showing the lead's `status` value (e.g., "new", "contacted", etc.) so leads from different sources/statuses are distinguishable.
-
-### Technical Detail
-
-Current query:
-```typescript
-supabase.from("leads").select("*").eq("status", "new").order(...)
-```
-
-Updated query (show all non-converted leads):
-```typescript
-supabase.from("leads").select("*").neq("status", "converted").order(...)
-```
-
-This ensures external leads with any status other than "converted" will appear in the tab.
+Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
 
