@@ -26,8 +26,8 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
     origem: "",
   });
 
-  const handleOpen = (isOpen: boolean) => {
-    if (isOpen && lead) {
+  useEffect(() => {
+    if (lead && open) {
       setForm({
         name: lead.name || "",
         email: lead.email || "",
@@ -37,8 +37,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
         origem: lead.origem || "",
       });
     }
-    onOpenChange(isOpen);
-  };
+  }, [lead, open]);
 
   const handleSave = async () => {
     if (!lead) return;
