@@ -9,6 +9,7 @@ export interface Lead {
   company: string;
   status: string;
   created_at: string;
+  origem: string;
 }
 
 interface LeadListProps {
