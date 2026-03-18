@@ -32,6 +32,7 @@ const LeadForm = () => {
     email: "",
     cargo: "",
     company: "",
+    telefone: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [step, setStep] = useState<1 | 2>(1);
