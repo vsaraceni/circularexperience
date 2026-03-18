@@ -55,9 +55,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    const firstName = data.name.split(" ")[0];
+
     const replacePlaceholders = (text: string) =>
       text
-        .replace(/\{\{name\}\}/g, data.name)
+        .replace(/\{\{name\}\}/g, firstName)
+        .replace(/\{\{full_name\}\}/g, data.name)
         .replace(/\{\{email\}\}/g, data.email)
         .replace(/\{\{company\}\}/g, data.company || "")
         .replace(/\{\{cargo\}\}/g, data.cargo || "")

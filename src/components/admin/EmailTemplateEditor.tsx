@@ -16,7 +16,8 @@ import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
 const VARIABLES_LEAD = [
-  { key: "{{name}}", label: "Nome do lead" },
+  { key: "{{name}}", label: "Primeiro nome" },
+  { key: "{{full_name}}", label: "Nome completo" },
   { key: "{{email}}", label: "Email do lead" },
   { key: "{{company}}", label: "Empresa" },
   { key: "{{cargo}}", label: "Cargo" },
