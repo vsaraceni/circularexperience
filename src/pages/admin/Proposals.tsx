@@ -247,7 +247,7 @@ const Proposals = () => {
                 </TabsList>
 
                 <TabsContent value="leads">
-                  <LeadList leads={leads} onGenerateProposal={handleGenerateProposal} />
+                  <LeadList leads={leads} onGenerateProposal={handleGenerateProposal} onLeadUpdated={fetchLeads} />
                 </TabsContent>
 
                 <TabsContent value="rascunhos">
