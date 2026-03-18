@@ -37,6 +37,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
         company: lead.company || "",
         telefone: lead.telefone || "",
         origem: lead.origem || "",
+        mensagem: lead.mensagem || "",
       });
     }
   }, [lead, open]);
