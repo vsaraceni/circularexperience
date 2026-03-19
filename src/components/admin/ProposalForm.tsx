@@ -1,9 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Copy } from "lucide-react";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import { supabase } from "@/integrations/supabase/client";
 import type { Proposal } from "@/pages/admin/Proposals";
+
+interface RecentProposal {
+  id: string;
+  title: string;
+  company_name: string;
+  scope: string | null;
+  considerations: string | null;
+}
+
+interface ImportButtonProps {
+  field: "scope" | "considerations";
+  proposals: RecentProposal[];
+  onSelect: (value: string) => void;
+}
+
+const ImportButton: React.FC<ImportButtonProps> = ({ field, proposals, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const filtered = proposals.filter((p) => (field === "scope" ? p.scope : p.considerations));
+
+  if (filtered.length === 0) return null;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1 text-muted-foreground">
+          <Copy className="h-3 w-3" />
+          Importar
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-2" align="start">
+        <p className="text-xs font-medium text-muted-foreground mb-2">Últimas propostas</p>
+        <div className="space-y-1">
+          {filtered.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
+              onClick={() => {
+                onSelect((field === "scope" ? p.scope : p.considerations) || "");
+                setOpen(false);
+              }}
+            >
+              <span className="font-medium block truncate">{p.title}</span>
+              <span className="text-xs text-muted-foreground truncate block">{p.company_name}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 interface ProposalFormProps {
   proposal?: Proposal | null;
@@ -25,6 +79,8 @@ interface ProposalFormProps {
 const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel, prefill, authorDefaults }) => {
   const defaultValidity = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
 
+  const [recentProposals, setRecentProposals] = useState<RecentProposal[]>([]);
+
   const [form, setForm] = useState({
     company_name: proposal?.company_name || prefill?.company_name || "",
     contact_name: proposal?.contact_name || prefill?.contact_name || "",
@@ -39,6 +95,17 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
     author_phone: proposal?.author_phone || authorDefaults?.author_phone || "",
     author_email: proposal?.author_email || authorDefaults?.author_email || "",
   });
+
+  useEffect(() => {
+    supabase
+      .from("proposals")
+      .select("id, title, company_name, scope, considerations")
+      .order("created_at", { ascending: false })
+      .limit(5)
+      .then(({ data }) => {
+        if (data) setRecentProposals(data);
+      });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +149,10 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         </div>
 
         <div className="space-y-2">
-          <Label>Definição do Escopo</Label>
+          <div className="flex items-center gap-2">
+            <Label>Definição do Escopo</Label>
+            <ImportButton field="scope" proposals={recentProposals} onSelect={(v) => set("scope", v)} />
+          </div>
           <RichTextEditor
             value={form.scope}
             onChange={(html) => set("scope", html)}
@@ -102,7 +172,10 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         </div>
 
         <div className="space-y-2">
-          <Label>Considerações</Label>
+          <div className="flex items-center gap-2">
+            <Label>Considerações</Label>
+            <ImportButton field="considerations" proposals={recentProposals} onSelect={(v) => set("considerations", v)} />
+          </div>
           <RichTextEditor
             value={form.considerations}
             onChange={(html) => set("considerations", html)}
