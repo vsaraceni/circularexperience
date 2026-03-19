@@ -138,7 +138,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
             <Input value={form.contact_role} onChange={(e) => set("contact_role", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Data do Evento</Label>
+            <Label>Data da Proposta</Label>
             <Input type="date" value={form.event_date} onChange={(e) => set("event_date", e.target.value)} />
           </div>
         </div>
