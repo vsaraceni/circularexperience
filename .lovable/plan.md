@@ -1,23 +1,30 @@
 
 
-## Plano: Dropdown para reutilizar Escopo/Considerações de propostas anteriores
+## Diagnóstico
 
-### Impacto
-- **Apenas 1 arquivo editado**: `src/components/admin/ProposalForm.tsx`
-- **Sem migração de banco** — usa dados já disponíveis na tabela `proposals`
-- **Risco baixo** — não altera nenhum fluxo existente, apenas adiciona um botão auxiliar
+O problema está no `RichTextEditor.tsx`. O `useEffect` que sincroniza o `value` (prop) com o editor Tiptap tem um array de dependências vazio (`[]`), ou seja, só roda na montagem inicial. Quando o botão "Importar" atualiza o estado `form.scope` ou `form.considerations`, o componente recebe o novo `value` mas o editor Tiptap ignora a mudança.
 
-### O que será feito
+## Correção
 
-1. **Buscar as 5 últimas propostas** ao montar o formulário (query Supabase: `select id, title, company_name, scope, considerations from proposals order by created_at desc limit 5`).
+**Arquivo:** `src/components/admin/RichTextEditor.tsx`
 
-2. **Adicionar um botão "Importar de proposta anterior"** ao lado do label de cada campo (Escopo e Considerações). Ao clicar, abre um Popover/dropdown listando as 5 propostas (exibindo título + empresa).
+Adicionar `value` ao array de dependências do `useEffect` (linha 60), para que quando o valor externo mudar, o conteúdo do editor seja atualizado:
 
-3. **Ao selecionar uma proposta**, o conteúdo do campo correspondente (`scope` ou `considerations`) é copiado para o campo atual, substituindo o que havia.
+```tsx
+// De:
+useEffect(() => {
+  if (editor && value !== editor.getHTML()) {
+    editor.commands.setContent(value || "");
+  }
+}, []);
 
-### Detalhes técnicos
-- Componente auxiliar inline (ou extraído) usando `Popover` + lista simples
-- `useEffect` com query ao Supabase no mount do `ProposalForm`
-- Estado `recentProposals` armazena as 5 últimas
-- Cada campo (escopo/considerações) terá seu próprio botão de importação
+// Para:
+useEffect(() => {
+  if (editor && value !== editor.getHTML()) {
+    editor.commands.setContent(value || "");
+  }
+}, [value, editor]);
+```
+
+**Impacto:** 1 linha alterada, sem efeitos colaterais — a comparação `value !== editor.getHTML()` já previne loops infinitos.
 
