@@ -57,7 +57,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeh
     if (editor && value !== editor.getHTML()) {
       editor.commands.setContent(value || "");
     }
-  }, []);
+  }, [value, editor]);
 
   const toggleHtmlMode = () => {
     if (htmlMode) {
