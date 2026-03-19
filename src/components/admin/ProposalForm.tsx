@@ -85,7 +85,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
     company_name: proposal?.company_name || prefill?.company_name || "",
     contact_name: proposal?.contact_name || prefill?.contact_name || "",
     contact_role: proposal?.contact_role || prefill?.contact_role || "",
-    event_date: proposal?.event_date || "",
+    event_date: proposal?.event_date || new Date().toISOString().split("T")[0],
     title: proposal?.title || (prefill?.company_name ? `Proposta — ${prefill.company_name}` : ""),
     scope: proposal?.scope || "",
     investment: proposal?.investment || "",
@@ -138,7 +138,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
             <Input value={form.contact_role} onChange={(e) => set("contact_role", e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>Data do Evento</Label>
+            <Label>Data da Proposta</Label>
             <Input type="date" value={form.event_date} onChange={(e) => set("event_date", e.target.value)} />
           </div>
         </div>
