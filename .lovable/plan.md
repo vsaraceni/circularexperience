@@ -1,14 +1,23 @@
 
 
-# Centralizar o slide da Agenda no modo apresentação
+## Plano: Dropdown para reutilizar Escopo/Considerações de propostas anteriores
 
-O slide da Agenda está configurado com `align: "top"` em `PresentationMode.tsx` (linha 27), o que faz o conteúdo alinhar ao topo e corta o título. A solução é remover essa configuração para que use o alinhamento padrão `"center"`.
+### Impacto
+- **Apenas 1 arquivo editado**: `src/components/admin/ProposalForm.tsx`
+- **Sem migração de banco** — usa dados já disponíveis na tabela `proposals`
+- **Risco baixo** — não altera nenhum fluxo existente, apenas adiciona um botão auxiliar
 
-## Alteração
+### O que será feito
 
-**`src/components/presentation/PresentationMode.tsx` (linha 27)**:
-- De: `{ component: Agenda, label: "Agenda", align: "top" as const }`
-- Para: `{ component: Agenda, label: "Agenda" }`
+1. **Buscar as 5 últimas propostas** ao montar o formulário (query Supabase: `select id, title, company_name, scope, considerations from proposals order by created_at desc limit 5`).
 
-Isso fará o SlideWrapper usar `items-center` (padrão) em vez de `items-start pt-2`, centralizando verticalmente o conteúdo da Agenda.
+2. **Adicionar um botão "Importar de proposta anterior"** ao lado do label de cada campo (Escopo e Considerações). Ao clicar, abre um Popover/dropdown listando as 5 propostas (exibindo título + empresa).
+
+3. **Ao selecionar uma proposta**, o conteúdo do campo correspondente (`scope` ou `considerations`) é copiado para o campo atual, substituindo o que havia.
+
+### Detalhes técnicos
+- Componente auxiliar inline (ou extraído) usando `Popover` + lista simples
+- `useEffect` com query ao Supabase no mount do `ProposalForm`
+- Estado `recentProposals` armazena as 5 últimas
+- Cada campo (escopo/considerações) terá seu próprio botão de importação
 
