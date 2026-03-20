@@ -21,7 +21,7 @@ const partnerLogos = [
   { src: logoInvestsp, alt: "InvestSP", height: "h-10 md:h-14" },
 ];
 
-const Hero = ({ printMode = false }: { printMode?: boolean }) => {
+const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; proposalTitle?: string }) => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -64,7 +64,7 @@ const Hero = ({ printMode = false }: { printMode?: boolean }) => {
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
-              {printMode ? "Proposta Circular Experience" : "Fale com nossos especialistas →"}
+              {printMode ? (proposalTitle || "Proposta Circular Experience") : "Fale com nossos especialistas →"}
             </Button>
           </div>
 

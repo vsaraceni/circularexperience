@@ -19,10 +19,8 @@ import VideoPrint from "@/components/presentation/slides/VideoPrint";
 import ExpertsPrint from "@/components/presentation/slides/ExpertsPrint";
 import SDGs from "@/components/landing/SDGs";
 
-const HeroPrint = () => <Hero printMode />;
-
 const fixedSlides = [
-  HeroPrint, SocialProof, Stats, AboutPrint,
+  null, SocialProof, Stats, AboutPrint,
   MethodologyFullPrint, AgendaPrint, VideoPrint, ExpertsPrint, SDGs,
 ];
 
@@ -171,7 +169,7 @@ const ProposalView = () => {
                 style={{ position: 'absolute', top: '1.8%', right: '1%', zIndex: 10, width: 'auto' }}
               />
             )}
-            <SlideComponent />
+            {SlideComponent ? <SlideComponent /> : <Hero printMode proposalTitle={proposal?.title} />}
           </div>
         );
       })}
