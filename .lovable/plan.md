@@ -1,13 +1,14 @@
 
 
-## Plano: Renomear "Data do Evento" → "Data da Proposta" e preencher com hoje
+## Plano: Link de busca LinkedIn no nome do lead
 
-**Arquivo:** `src/components/admin/ProposalForm.tsx`
+**Arquivo:** `src/components/admin/LeadList.tsx`
 
-### Alterações
+Transformar o nome do lead (atualmente um `<span>`) em um link `<a>` que abre uma busca no LinkedIn combinando nome + empresa:
 
-1. Renomear o label "Data do Evento" para "Data da Proposta"
-2. Inicializar `event_date` com a data de hoje (`new Date().toISOString().split("T")[0]`) quando não houver valor existente (proposta nova)
+```
+https://www.linkedin.com/search/results/all/?keywords={nome}+{empresa}
+```
 
-Impacto mínimo — 2 linhas alteradas no mesmo arquivo.
+O link abrirá em nova aba (`target="_blank"`).
 
