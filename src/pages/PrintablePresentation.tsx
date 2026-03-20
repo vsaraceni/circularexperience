@@ -114,7 +114,7 @@ const PrintablePresentation = () => {
             {showLogo && (
               <img className="slide-logo-overlay" src={mcLogoHorizontal} alt="Movimento Circular" style={{ position: 'absolute', top: 20, right: 20, height: 50, zIndex: 50, width: 'auto' }} />
             )}
-            <SlideComponent />
+            {SlideComponent ? <SlideComponent /> : <Hero printMode proposalTitle={proposal?.title} />}
           </div>
         );
       })}

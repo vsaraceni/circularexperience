@@ -64,7 +64,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
-              {printMode ? "Proposta Circular Experience" : "Fale com nossos especialistas →"}
+              {printMode ? (proposalTitle || "Proposta Circular Experience") : "Fale com nossos especialistas →"}
             </Button>
           </div>
 

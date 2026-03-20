@@ -169,7 +169,7 @@ const ProposalView = () => {
                 style={{ position: 'absolute', top: '1.8%', right: '1%', zIndex: 10, width: 'auto' }}
               />
             )}
-            <SlideComponent />
+            {SlideComponent ? <SlideComponent /> : <Hero printMode proposalTitle={proposal?.title} />}
           </div>
         );
       })}
