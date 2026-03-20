@@ -19,10 +19,8 @@ import VideoPrint from "@/components/presentation/slides/VideoPrint";
 import ExpertsPrint from "@/components/presentation/slides/ExpertsPrint";
 import SDGs from "@/components/landing/SDGs";
 
-const HeroPrint = () => <Hero printMode />;
-
 const fixedSlides = [
-  HeroPrint, SocialProof, Stats, AboutPrint,
+  null, SocialProof, Stats, AboutPrint,
   MethodologyFullPrint, AgendaPrint, VideoPrint, ExpertsPrint, SDGs,
 ];
 
