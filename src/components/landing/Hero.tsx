@@ -21,7 +21,7 @@ const partnerLogos = [
   { src: logoInvestsp, alt: "InvestSP", height: "h-10 md:h-14" },
 ];
 
-const Hero = ({ printMode = false }: { printMode?: boolean }) => {
+const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; proposalTitle?: string }) => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
