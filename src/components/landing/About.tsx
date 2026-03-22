@@ -118,7 +118,7 @@ const About = () => {
               </p>
             </div>
             <Button variant="accent" size="lg" onClick={scrollToContact}>
-              Fale com Nossa Equipe
+              Fale com nossos especialistas →
             </Button>
           </div>
         </div>
