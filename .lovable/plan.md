@@ -1,18 +1,14 @@
 
 
-## Plano: Mostrar nome da proposta no botão CTA do Hero (versão print)
+## Plano: Header CTA Ghost com scroll suave
 
-Atualmente o botão roxo do Hero em `printMode` exibe o texto fixo "Proposta Circular Experience". O objetivo é substituí-lo pelo `title` da proposta (ex: "Proposta — Empresa X").
+**Arquivo:** `src/components/landing/Header.tsx`
 
-### Alterações
+### Alteração
 
-**1. `src/components/landing/Hero.tsx`**
-- Adicionar prop opcional `proposalTitle?: string`
-- No texto do botão em `printMode`, usar `proposalTitle` se disponível, senão manter fallback "Proposta Circular Experience"
+Trocar o botão "Receber mais informações" de `variant="hero"` para `variant="ghost"` com borda sutil, mantendo o `onClick={() => scrollToSection("contato")}`.
 
-**2. `src/pages/PrintablePresentation.tsx`**
-- Alterar `HeroPrint` de componente fixo (no array) para renderização inline que passa `proposalTitle={proposal?.title}`
+Estilo: ghost com borda (`border border-primary/30 text-primary hover:bg-primary/10`), tamanho reduzido de `size="lg"` para `size="default"` para não competir com o Hero.
 
-**3. `src/pages/ProposalView.tsx`**
-- Mesma alteração: passar `proposalTitle={proposal?.title}` ao `Hero` em printMode
+Mesma alteração no botão mobile.
 
