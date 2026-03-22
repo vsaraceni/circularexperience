@@ -1,14 +1,31 @@
 
 
-## Plano: Header CTA Ghost com scroll suave
+## FAQ Upgrade v2 — Plano de Implementação
 
-**Arquivo:** `src/components/landing/Header.tsx`
+### O que será feito
 
-### Alteração
+1. **Novo componente `FAQSection.tsx`** com:
+   - 8 perguntas/respostas em acordeão (Radix Accordion já existente)
+   - Primeiro item aberto por padrão (`defaultValue="item-0"`)
+   - Item aberto com `bg-primary/5` e `border-l-3 border-primary`
+   - **Bloco de fechamento CTA** pós-FAQ: fundo roxo (`bg-primary`), título "Ainda tem dúvidas?", botão teal com scroll suave para `#contato`
 
-Trocar o botão "Receber mais informações" de `variant="hero"` para `variant="ghost"` com borda sutil, mantendo o `onClick={() => scrollToSection("contato")}`.
+2. **`Index.tsx`** — inserir `<FAQSection />` entre `<CTA />` e `</main>` (antes do Footer)
 
-Estilo: ghost com borda (`border border-primary/30 text-primary hover:bg-primary/10`), tamanho reduzido de `size="lg"` para `size="default"` para não competir com o Hero.
+3. **`index.html`** — adicionar `<script type="application/ld+json">` com schema FAQPage (8 Q&As)
 
-Mesma alteração no botão mobile.
+### Arquivos impactados
+
+| Arquivo | Ação |
+|---------|------|
+| `src/components/landing/FAQSection.tsx` | Criar |
+| `src/pages/Index.tsx` | 1 import + 1 linha |
+| `index.html` | JSON-LD no `<head>` |
+
+### Detalhes técnicos
+
+- Usa `Accordion` de `@/components/ui/accordion.tsx` (já existe)
+- Cores mapeadas para variáveis Tailwind existentes (sem hex hardcoded)
+- Scroll suave via `document.getElementById("contato").scrollIntoView()`
+- JSON-LD estático direto no HTML (zero dependências extras)
 
