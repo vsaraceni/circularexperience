@@ -10,6 +10,7 @@ import Experts from "@/components/landing/Experts";
 import SDGs from "@/components/landing/SDGs";
 import Video from "@/components/landing/Video";
 import CTA from "@/components/landing/CTA";
+import FAQSection from "@/components/landing/FAQSection";
 import Footer from "@/components/landing/Footer";
 import PresentationMode from "@/components/presentation/PresentationMode";
 
@@ -41,6 +42,7 @@ const Index = () => {
         <Video />
         <SDGs />
         <CTA />
+        <FAQSection />
       </main>
       <Footer />
     </div>
