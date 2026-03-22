@@ -42,6 +42,7 @@ const Index = () => {
         <Video />
         <SDGs />
         <CTA />
+        <FAQSection />
       </main>
       <Footer />
     </div>
