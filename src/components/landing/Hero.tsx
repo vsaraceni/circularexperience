@@ -87,7 +87,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
                 <Users className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <p className="font-bold text-white">Até 40</p>
+                <p className="font-bold text-white">Até 30</p>
                 <p className="text-xs text-white/70">Colaboradores por edição</p>
               </div>
             </div>
