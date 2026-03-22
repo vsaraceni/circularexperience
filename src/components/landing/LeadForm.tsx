@@ -243,7 +243,7 @@ const LeadForm = () => {
         ) : (
           <>
             <Send className="w-4 h-4" />
-            Solicitar contato
+            Quero levar o Circular Experience para minha empresa
           </>
         )}
       </Button>
