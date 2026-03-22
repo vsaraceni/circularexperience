@@ -50,14 +50,14 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 animate-fade-up" style={{
           animationDelay: "0.1s"
         }}>
-            Abra as portas da sua organização para a{" "}
-            <span className="text-accent font-extrabold">Economia Circular</span>
+            E se a Semana do Meio Ambiente da sua empresa virasse uma{" "}
+            <span className="text-accent font-extrabold">experiência que o time nunca esquece?</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-white/80 mb-8 leading-relaxed animate-fade-up" style={{
           animationDelay: "0.2s"
-        }}>Uma experiência imersiva e prática que capacita seu time a aplicar os princípios da circularidade, gerando valor e inovação para sua organização.</p>
+        }}>Uma experiência prática e imersiva que transforma a pauta ambiental em ação real — hands-on, com o seu time.</p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-up" style={{

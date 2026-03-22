@@ -3,9 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import SocialProof from "@/components/landing/SocialProof";
-import Stats from "@/components/landing/Stats";
 import About from "@/components/landing/About";
-import Methodology from "@/components/landing/Methodology";
 import Agenda from "@/components/landing/Agenda";
 import Experts from "@/components/landing/Experts";
 import SDGs from "@/components/landing/SDGs";
@@ -35,12 +33,10 @@ const Index = () => {
       <main>
         <Hero />
         <SocialProof />
-        <Stats />
         <About />
-        <Methodology />
+        <Experts />
         <Agenda />
         <Video />
-        <Experts />
         <SDGs />
         <CTA />
       </main>
