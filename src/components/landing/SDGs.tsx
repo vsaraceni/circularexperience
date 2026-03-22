@@ -75,6 +75,22 @@ const SDGs = () => {
             </div>
           ))}
         </div>
+
+        {/* Micro-CTA - Mudança 10 */}
+        <div className="mt-10 max-w-2xl mx-auto bg-[hsl(68,50%,85%)] border-l-4 border-accent rounded-xl p-6">
+          <p className="text-foreground text-sm mb-3">
+            Precisa justificar o investimento internamente? Solicite nosso material de alinhamento com os ODS.
+          </p>
+          <button
+            onClick={() => {
+              const el = document.getElementById("contato");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="text-sm font-bold text-primary hover:underline"
+          >
+            Quero o material →
+          </button>
+        </div>
       </div>
     </section>
   );

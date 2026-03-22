@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Target, Lightbulb, Recycle, RefreshCw, Droplets, Wrench, TreeDeciduous, Hand } from "lucide-react";
+import { Target, Lightbulb, Recycle, RefreshCw, Droplets, Wrench, TreeDeciduous, Hand, Clock, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const sevenRs = [
   { icon: Hand, label: "Recusar" },
@@ -105,6 +106,43 @@ const About = () => {
             </div>
           </div>
         </div>
+
+        {/* Format Cards - Mudança 6 */}
+        <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="relative bg-card rounded-xl p-6 border border-primary/30 hover:shadow-lg transition-all">
+            <Badge className="absolute -top-3 left-6 bg-secondary text-secondary-foreground text-xs font-bold">
+              Formato mais popular
+            </Badge>
+            <div className="flex items-center gap-3 mb-3 mt-2">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-bold text-foreground">Workshop 2h</h3>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Ideal para eventos corporativos e programações mais curtas
+            </p>
+          </div>
+
+          <div className="relative bg-card rounded-xl p-6 border border-primary/30 hover:shadow-lg transition-all">
+            <Badge className="absolute -top-3 left-6 bg-accent text-accent-foreground text-xs font-bold">
+              Maior impacto
+            </Badge>
+            <div className="flex items-center gap-3 mb-3 mt-2">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Star className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-display text-xl font-bold text-foreground">Workshop 4h</h3>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Experiência completa com Canvas de Intenções Estratégicas incluso
+            </p>
+          </div>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Até 30 colaboradores por edição · Certificado incluso · 100% prático
+        </p>
 
         {/* Target Audience */}
         <div className="mt-16 p-8 rounded-2xl gradient-hero">
