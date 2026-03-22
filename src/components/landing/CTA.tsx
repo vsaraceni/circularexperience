@@ -1,5 +1,6 @@
-import { Phone, MapPin, Linkedin, Users, TrendingUp, CalendarClock } from "lucide-react";
+import { Phone, MapPin, Linkedin, Users, TrendingUp, CalendarClock, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import perfilEdson from "@/assets/perfil-edson.jpg";
 import LeadForm from "./LeadForm";
 
 const CTA = () => {
