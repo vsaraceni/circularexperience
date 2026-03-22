@@ -18,11 +18,11 @@ const Testimonial = () => {
 
           {/* Testimonial quote */}
           <blockquote className="font-display text-2xl md:text-3xl lg:text-4xl font-bold text-primary-foreground mb-6 leading-snug">
-            "Foi a atividade mais marcante que já fizemos aqui."
+            "A vivência gerou muitas ideias para colocarmos em prática já!"
           </blockquote>
 
           <p className="text-primary-foreground/70 text-lg mb-10">
-            — Participante de workshop in-company
+            — Natasha K., Participante do Workshop Circular Experience
           </p>
 
           {/* Social proof badges */}
