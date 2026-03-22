@@ -80,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
                 </Button>
               </>
             )}
-            <Button variant="hero" size="lg" onClick={() => scrollToSection("contato")}>
+            <Button variant="ghost" className="border border-primary/30 text-primary hover:bg-primary/10" onClick={() => scrollToSection("contato")}>
               Receber mais informações
             </Button>
           </div>
@@ -122,7 +122,7 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
               >
                 Especialistas
               </button>
-              <Button variant="hero" className="mt-2" onClick={() => scrollToSection("contato")}>
+              <Button variant="ghost" className="mt-2 border border-primary/30 text-primary hover:bg-primary/10" onClick={() => scrollToSection("contato")}>
                 Receber mais informações
               </Button>
             </nav>
