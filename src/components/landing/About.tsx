@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Target, Lightbulb, Recycle, RefreshCw, Droplets, Wrench, TreeDeciduous, Hand } from "lucide-react";
+import { Target, Lightbulb, Recycle, RefreshCw, Droplets, Wrench, TreeDeciduous, Hand, Clock, Star } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const sevenRs = [
   { icon: Hand, label: "Recusar" },
