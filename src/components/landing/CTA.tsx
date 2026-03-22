@@ -52,9 +52,34 @@ const CTA = () => {
             </div>
           </div>
 
-          {/* Contact Info */}
-          <div className="order-1 lg:order-2">
-            <div className="bg-card rounded-3xl p-8 border border-border mb-6">
+          {/* Contact Info + Social Proof */}
+          <div className="order-1 lg:order-2 space-y-6">
+            {/* Social proof block - Mudança 11 */}
+            <div className="bg-muted rounded-2xl p-5 border border-border">
+              <div className="flex items-start gap-4 mb-4">
+                <img
+                  src={perfilEdson}
+                  alt="Prof. Dr. Edson Grandisoli"
+                  className="w-10 h-10 rounded-full object-cover object-top flex-shrink-0"
+                />
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  "Já capacitamos times de mais de 30 empresas. Seu consultor responde em até 24h."
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  500+ profissionais
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  NPS +98%
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-accent/20 text-xs font-semibold text-accent">
+                  Agenda limitada
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-card rounded-3xl p-8 border border-border">
               <h3 className="font-display text-xl font-bold text-foreground mb-6">
                 Fale Conosco
               </h3>
