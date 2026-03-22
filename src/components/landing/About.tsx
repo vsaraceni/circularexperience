@@ -35,26 +35,27 @@ const About = () => {
               em prática
             </h2>
 
-            <div className="space-y-4 text-muted-foreground mb-8">
-              <p className="text-lg leading-relaxed">
-                <strong className="text-foreground">Objetivo:</strong> Juntos com seu time, construiremos estratégias 
-                viáveis para evitar que materiais se tornem resíduos, promovendo a utilização eficiente 
-                e prolongada dos recursos na sua operação.
-              </p>
-              <p className="leading-relaxed">
-                Esta atividade colaborativa incentivará os colaboradores a desenvolver soluções 
-                criativas e práticas, aplicáveis diretamente em seus negócios, para minimizar 
-                o desperdício e maximizar a circularidade.
-              </p>
-              <p className="leading-relaxed">
-                Criaremos um espaço de reflexão prática sobre a Economia Circular, explorando 
-                como os <strong className="text-foreground">7 R's</strong> podem ser transformados 
-                em oportunidades concretas para ações mais sustentáveis e circulares.
-              </p>
-            </div>
+            <ul className="space-y-4 text-muted-foreground mb-8">
+              <li className="flex items-start gap-3">
+                <span className="mt-1 text-secondary flex-shrink-0">✓</span>
+                <span className="text-lg leading-relaxed">Construa estratégias para evitar que materiais virem resíduos</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 text-secondary flex-shrink-0">✓</span>
+                <span className="text-lg leading-relaxed">Desenvolva soluções criativas aplicáveis diretamente ao seu negócio</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 text-secondary flex-shrink-0">✓</span>
+                <span className="text-lg leading-relaxed">Explore os <strong className="text-foreground">7 R's</strong> da circularidade com dinâmicas mão na massa</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 text-secondary flex-shrink-0">✓</span>
+                <span className="text-lg leading-relaxed">Crie um plano de ação personalizado para a sua organização</span>
+              </li>
+            </ul>
 
             <Button variant="hero" size="lg" onClick={scrollToContact}>
-              Solicitar Proposta
+              Fale com nossos especialistas →
             </Button>
           </div>
 
