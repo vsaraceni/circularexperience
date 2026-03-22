@@ -35,12 +35,10 @@ const Index = () => {
       <main>
         <Hero />
         <SocialProof />
-        <Stats />
         <About />
-        <Methodology />
+        <Experts />
         <Agenda />
         <Video />
-        <Experts />
         <SDGs />
         <CTA />
       </main>
