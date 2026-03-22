@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ onPresent }) => {
               </>
             )}
             <Button variant="ghost" className="border border-primary/30 text-primary hover:bg-primary/10" onClick={() => scrollToSection("contato")}>
-              Receber mais informações
+              Fale com nossos especialistas
             </Button>
           </div>
 
