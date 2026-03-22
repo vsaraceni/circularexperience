@@ -4,6 +4,7 @@ import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import SocialProof from "@/components/landing/SocialProof";
 import About from "@/components/landing/About";
+import Testimonial from "@/components/landing/Testimonial";
 import Agenda from "@/components/landing/Agenda";
 import Experts from "@/components/landing/Experts";
 import SDGs from "@/components/landing/SDGs";
