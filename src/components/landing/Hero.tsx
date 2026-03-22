@@ -97,8 +97,8 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
                 <Award className="w-5 h-5 text-accent-foreground" />
               </div>
               <div>
-                <p className="font-bold text-white">Gratuito</p>
-                <p className="text-xs text-white/70">Certificado</p>
+                <p className="font-bold text-white">Certificado</p>
+                <p className="text-xs text-white/70">Incluso</p>
               </div>
             </div>
 
