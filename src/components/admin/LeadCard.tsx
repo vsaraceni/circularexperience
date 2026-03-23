@@ -92,10 +92,11 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
               key={a.action}
               size="sm"
               variant="ghost"
-              className="h-6 px-2 text-[10px] gap-1"
+              disabled={a.disabled}
+              className={`h-6 px-2 text-[10px] gap-1 ${a.disabled ? "opacity-50" : ""}`}
               onClick={(e) => {
                 e.stopPropagation();
-                onQuickAction(lead, a.action);
+                if (!a.disabled) onQuickAction(lead, a.action);
               }}
             >
               {a.icon}
