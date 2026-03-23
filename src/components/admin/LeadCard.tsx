@@ -11,11 +11,17 @@ interface LeadCardProps {
   onQuickAction: (lead: Lead, action: string) => void;
 }
 
-const STAGE_ACTIONS: Record<string, { icon: React.ReactNode; label: string; action: string }[]> = {
-  novo: [
-    { icon: <Send className="h-3 w-3" />, label: "Welcome", action: "send_welcome" },
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-  ],
+const getStageActions = (lead: Lead): { icon: React.ReactNode; label: string; action: string; disabled?: boolean }[] => {
+  const base: Record<string, { icon: React.ReactNode; label: string; action: string; disabled?: boolean }[]> = {
+    novo: [
+      {
+        icon: lead.welcome_sent ? <CheckCircle className="h-3 w-3" /> : <Send className="h-3 w-3" />,
+        label: lead.welcome_sent ? "Enviado ✓" : "Welcome",
+        action: "send_welcome",
+        disabled: lead.welcome_sent,
+      },
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+    ],
   boas_vindas: [
     { icon: <Linkedin className="h-3 w-3" />, label: "LinkedIn", action: "linkedin" },
     { icon: <MessageSquare className="h-3 w-3" />, label: "WhatsApp", action: "whatsapp" },
