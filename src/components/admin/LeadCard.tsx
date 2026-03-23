@@ -11,31 +11,39 @@ interface LeadCardProps {
   onQuickAction: (lead: Lead, action: string) => void;
 }
 
-const STAGE_ACTIONS: Record<string, { icon: React.ReactNode; label: string; action: string }[]> = {
-  novo: [
-    { icon: <Send className="h-3 w-3" />, label: "Welcome", action: "send_welcome" },
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-  ],
-  boas_vindas: [
-    { icon: <Linkedin className="h-3 w-3" />, label: "LinkedIn", action: "linkedin" },
-    { icon: <MessageSquare className="h-3 w-3" />, label: "WhatsApp", action: "whatsapp" },
-  ],
-  em_contato: [
-    { icon: <Phone className="h-3 w-3" />, label: "Agendar", action: "schedule_call" },
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-  ],
-  call_agendada: [
-    { icon: <CheckCircle className="h-3 w-3" />, label: "Call Feita", action: "call_done" },
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-  ],
-  proposta: [
-    { icon: <Send className="h-3 w-3" />, label: "Nutrir", action: "nurture" },
-    { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
-  ],
-  nutricao: [
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-    { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
-  ],
+const getStageActions = (lead: Lead): { icon: React.ReactNode; label: string; action: string; disabled?: boolean }[] => {
+  const base: Record<string, { icon: React.ReactNode; label: string; action: string; disabled?: boolean }[]> = {
+    novo: [
+      {
+        icon: lead.welcome_sent ? <CheckCircle className="h-3 w-3" /> : <Send className="h-3 w-3" />,
+        label: lead.welcome_sent ? "Enviado ✓" : "Welcome",
+        action: "send_welcome",
+        disabled: lead.welcome_sent,
+      },
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+    ],
+    boas_vindas: [
+      { icon: <Linkedin className="h-3 w-3" />, label: "LinkedIn", action: "linkedin" },
+      { icon: <MessageSquare className="h-3 w-3" />, label: "WhatsApp", action: "whatsapp" },
+    ],
+    em_contato: [
+      { icon: <Phone className="h-3 w-3" />, label: "Agendar", action: "schedule_call" },
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+    ],
+    call_agendada: [
+      { icon: <CheckCircle className="h-3 w-3" />, label: "Call Feita", action: "call_done" },
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+    ],
+    proposta: [
+      { icon: <Send className="h-3 w-3" />, label: "Nutrir", action: "nurture" },
+      { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
+    ],
+    nutricao: [
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+      { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
+    ],
+  };
+  return base[lead.kanban_stage] || [];
 };
 
 const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }) => {
@@ -48,7 +56,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
     opacity: isDragging ? 0.3 : 1,
   };
 
-  const actions = STAGE_ACTIONS[lead.kanban_stage] || [];
+  const actions = getStageActions(lead);
 
   return (
     <div
@@ -84,10 +92,11 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
               key={a.action}
               size="sm"
               variant="ghost"
-              className="h-6 px-2 text-[10px] gap-1"
+              disabled={a.disabled}
+              className={`h-6 px-2 text-[10px] gap-1 ${a.disabled ? "opacity-50" : ""}`}
               onClick={(e) => {
                 e.stopPropagation();
-                onQuickAction(lead, a.action);
+                if (!a.disabled) onQuickAction(lead, a.action);
               }}
             >
               {a.icon}
