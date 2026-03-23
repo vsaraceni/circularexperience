@@ -30,7 +30,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
       });
     }
   };
-  return <section className="relative min-h-screen flex items-center overflow-hidden pt-28 md:pt-32 pb-16 md:pb-20">
+  return <section className="relative min-h-[85vh] flex items-center overflow-hidden pt-20 md:pt-24 pb-10 md:pb-14">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img src={heroImage} alt="Economia Circular" className="w-full h-full object-cover" />
