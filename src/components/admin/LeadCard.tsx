@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 
-import { Building2, User, FileText, Send, Linkedin, MessageSquare, Phone, CheckCircle } from "lucide-react";
+import { Building2, User, FileText, Send, Linkedin, Copy, Phone, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import UrgencyBadge from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
@@ -24,7 +24,7 @@ const getStageActions = (lead: Lead): { icon: React.ReactNode; label: string; ac
     ],
     boas_vindas: [
       { icon: <Linkedin className="h-3 w-3" />, label: "LinkedIn", action: "linkedin" },
-      { icon: <MessageSquare className="h-3 w-3" />, label: "WhatsApp", action: "whatsapp" },
+      { icon: <Copy className="h-3 w-3" />, label: "Copiar Zap", action: "copy_whatsapp" },
     ],
     em_contato: [
       { icon: <Phone className="h-3 w-3" />, label: "Agendar", action: "schedule_call" },
