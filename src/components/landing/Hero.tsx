@@ -114,7 +114,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
           </div>
 
           {/* Social Proof Marquee */}
-          <div className="mt-8 animate-fade-up" style={{ animationDelay: "0.5s" }}>
+          <div className="mt-6 animate-fade-up" style={{ animationDelay: "0.5s" }}>
             <div className="flex items-center justify-center gap-3 mb-4">
               <Badge className="bg-accent/20 text-accent border-accent/30 text-xs">
                 NPS +98%
