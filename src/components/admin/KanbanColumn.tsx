@@ -1,5 +1,4 @@
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import LeadCard from "./LeadCard";
 import type { Lead } from "./LeadList";
 
