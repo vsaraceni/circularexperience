@@ -41,17 +41,27 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { error: insertError } = await supabaseAdmin.from("leads").insert({
+    const now = new Date().toISOString();
+    const { data: insertedLead, error: insertError } = await supabaseAdmin.from("leads").insert({
       name: leadData.name,
       email: leadData.email,
       cargo: leadData.cargo,
       company: leadData.company,
       telefone: leadData.telefone || "",
       origem: "LP",
-    });
+      last_activity_at: now,
+      stage_updated_at: now,
+    }).select("id").single();
 
     if (insertError) {
       console.error("Error saving lead:", insertError);
+    } else if (insertedLead) {
+      // Register initial activity
+      await supabaseAdmin.from("lead_activities").insert({
+        lead_id: insertedLead.id,
+        activity_type: "lead_recebido",
+        content: `Lead recebido via Landing Page — ${leadData.company}`,
+      });
     }
 
     const resend = new Resend(resendApiKey);
