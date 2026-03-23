@@ -111,9 +111,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const now = new Date().toISOString();
 
     switch (action) {
-      case "send_welcome":
+      case "send_welcome": {
+        // Re-check from DB to prevent race condition between users
+        const { data: freshLead } = await supabase.from("leads").select("welcome_sent").eq("id", lead.id).single();
+        if (freshLead?.welcome_sent) {
+          toast.info("E-mail de boas-vindas já foi enviado para este lead.");
+          onLeadUpdated();
+          return;
+        }
         onSendWelcome(lead);
         break;
+      }
       case "generate_proposal":
         onGenerateProposal(lead);
         break;
