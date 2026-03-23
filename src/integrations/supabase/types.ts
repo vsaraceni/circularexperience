@@ -47,50 +47,130 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_activities: {
+        Row: {
+          activity_type: string
+          content: string | null
+          created_at: string | null
+          id: string
+          lead_id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
+          assigned_at: string | null
+          assigned_to: string | null
           cargo: string | null
           company: string | null
           created_at: string | null
           email: string
           id: string
+          kanban_stage: string
+          last_activity_at: string | null
+          linkedin_added: boolean | null
+          lost_notes: string | null
+          lost_reason: string | null
           mensagem: string | null
           name: string
           origem: string
+          stage_updated_at: string | null
           status: string
           telefone: string | null
           welcome_sent: boolean
           welcome_sent_at: string | null
+          whatsapp_sent: boolean | null
         }
         Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
           cargo?: string | null
           company?: string | null
           created_at?: string | null
           email: string
           id?: string
+          kanban_stage?: string
+          last_activity_at?: string | null
+          linkedin_added?: boolean | null
+          lost_notes?: string | null
+          lost_reason?: string | null
           mensagem?: string | null
           name: string
           origem?: string
+          stage_updated_at?: string | null
           status?: string
           telefone?: string | null
           welcome_sent?: boolean
           welcome_sent_at?: string | null
+          whatsapp_sent?: boolean | null
         }
         Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
           cargo?: string | null
           company?: string | null
           created_at?: string | null
           email?: string
           id?: string
+          kanban_stage?: string
+          last_activity_at?: string | null
+          linkedin_added?: boolean | null
+          lost_notes?: string | null
+          lost_reason?: string | null
           mensagem?: string | null
           name?: string
           origem?: string
+          stage_updated_at?: string | null
           status?: string
           telefone?: string | null
           welcome_sent?: boolean
           welcome_sent_at?: string | null
+          whatsapp_sent?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
