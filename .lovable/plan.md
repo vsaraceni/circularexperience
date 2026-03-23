@@ -1,31 +1,20 @@
 
 
-## FAQ Upgrade v2 — Plano de Implementação
+## Hero — Redução de altura e fonte
 
-### O que será feito
+**Arquivo**: `src/components/landing/Hero.tsx`
 
-1. **Novo componente `FAQSection.tsx`** com:
-   - 8 perguntas/respostas em acordeão (Radix Accordion já existente)
-   - Primeiro item aberto por padrão (`defaultValue="item-0"`)
-   - Item aberto com `bg-primary/5` e `border-l-3 border-primary`
-   - **Bloco de fechamento CTA** pós-FAQ: fundo roxo (`bg-primary`), título "Ainda tem dúvidas?", botão teal com scroll suave para `#contato`
+### Mudanças
 
-2. **`Index.tsx`** — inserir `<FAQSection />` entre `<CTA />` e `</main>` (antes do Footer)
+1. **Altura do container** (linha 33): `min-h-screen` → `min-h-[85vh]`
+2. **Paddings verticais** (linha 33): `pt-28 md:pt-32 pb-16 md:pb-20` → `pt-20 md:pt-24 pb-10 md:pb-14`
+3. **Fonte da headline** (linha 50): `text-4xl md:text-5xl lg:text-6xl` → `text-3xl md:text-4xl lg:text-5xl`
+4. **Espaçamentos internos**:
+   - Badge `mb-6` → `mb-4` (linha 43)
+   - Headline `mb-6` → `mb-4` (linha 50)
+   - Subheadline `mb-8` → `mb-6` (linha 58)
+   - CTAs `mb-12` → `mb-8` (linha 63)
+   - Social proof `mt-8` → `mt-6` (linha ~107)
 
-3. **`index.html`** — adicionar `<script type="application/ld+json">` com schema FAQPage (8 Q&As)
-
-### Arquivos impactados
-
-| Arquivo | Ação |
-|---------|------|
-| `src/components/landing/FAQSection.tsx` | Criar |
-| `src/pages/Index.tsx` | 1 import + 1 linha |
-| `index.html` | JSON-LD no `<head>` |
-
-### Detalhes técnicos
-
-- Usa `Accordion` de `@/components/ui/accordion.tsx` (já existe)
-- Cores mapeadas para variáveis Tailwind existentes (sem hex hardcoded)
-- Scroll suave via `document.getElementById("contato").scrollIntoView()`
-- JSON-LD estático direto no HTML (zero dependências extras)
+Apenas classes CSS alteradas, 1 arquivo tocado.
 
