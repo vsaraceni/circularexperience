@@ -1,5 +1,4 @@
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import LeadCard from "./LeadCard";
 import type { Lead } from "./LeadList";
 
@@ -37,7 +36,6 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, onOpenDrawer,
           isOver ? "bg-primary/5 border-primary/30" : "bg-muted/30"
         }`}
       >
-        <SortableContext items={leads.map((l) => l.id)} strategy={verticalListSortingStrategy}>
           {leads.map((lead) => (
             <LeadCard
               key={lead.id}
@@ -46,7 +44,6 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, onOpenDrawer,
               onQuickAction={onQuickAction}
             />
           ))}
-        </SortableContext>
 
         {leads.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-8 opacity-60">
