@@ -133,9 +133,34 @@ const Proposals = () => {
     } else {
       const slug = `prop-${crypto.randomUUID().slice(0, 8)}`;
       const insertData: any = { ...saveData, slug, created_by: user!.id };
-      if (leadId) {
-        insertData.lead_id = leadId;
+
+      // Auto-create lead if none provided
+      let finalLeadId = leadId;
+      if (!finalLeadId) {
+        const { data: newLead, error: leadError } = await supabase
+          .from("leads")
+          .insert({
+            name: saveData.contact_name || "",
+            email: `manual-${slug}@noemail.com`,
+            company: saveData.company_name || "",
+            cargo: saveData.contact_role || "",
+            origem: "manual",
+            status: "converted",
+            kanban_stage: "proposta",
+            stage_updated_at: new Date().toISOString(),
+            last_activity_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+        if (!leadError && newLead) {
+          finalLeadId = newLead.id;
+        }
       }
+
+      if (finalLeadId) {
+        insertData.lead_id = finalLeadId;
+      }
+
       const { error } = await supabase
         .from("proposals")
         .insert(insertData);
@@ -146,16 +171,16 @@ const Proposals = () => {
       }
 
       // Mark lead as converted + update kanban
-      if (leadId) {
+      if (finalLeadId) {
         const now = new Date().toISOString();
         await supabase.from("leads").update({
           status: "converted",
           kanban_stage: "proposta",
           stage_updated_at: now,
           last_activity_at: now,
-        }).eq("id", leadId);
+        }).eq("id", finalLeadId);
         await supabase.from("lead_activities").insert({
-          lead_id: leadId,
+          lead_id: finalLeadId,
           user_id: user!.id,
           activity_type: "proposta_gerada",
           content: "Proposta gerada",
