@@ -22,26 +22,28 @@ const getStageActions = (lead: Lead): { icon: React.ReactNode; label: string; ac
       },
       { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
     ],
-  boas_vindas: [
-    { icon: <Linkedin className="h-3 w-3" />, label: "LinkedIn", action: "linkedin" },
-    { icon: <MessageSquare className="h-3 w-3" />, label: "WhatsApp", action: "whatsapp" },
-  ],
-  em_contato: [
-    { icon: <Phone className="h-3 w-3" />, label: "Agendar", action: "schedule_call" },
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-  ],
-  call_agendada: [
-    { icon: <CheckCircle className="h-3 w-3" />, label: "Call Feita", action: "call_done" },
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-  ],
-  proposta: [
-    { icon: <Send className="h-3 w-3" />, label: "Nutrir", action: "nurture" },
-    { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
-  ],
-  nutricao: [
-    { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
-    { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
-  ],
+    boas_vindas: [
+      { icon: <Linkedin className="h-3 w-3" />, label: "LinkedIn", action: "linkedin" },
+      { icon: <MessageSquare className="h-3 w-3" />, label: "WhatsApp", action: "whatsapp" },
+    ],
+    em_contato: [
+      { icon: <Phone className="h-3 w-3" />, label: "Agendar", action: "schedule_call" },
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+    ],
+    call_agendada: [
+      { icon: <CheckCircle className="h-3 w-3" />, label: "Call Feita", action: "call_done" },
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+    ],
+    proposta: [
+      { icon: <Send className="h-3 w-3" />, label: "Nutrir", action: "nurture" },
+      { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
+    ],
+    nutricao: [
+      { icon: <FileText className="h-3 w-3" />, label: "Proposta", action: "generate_proposal" },
+      { icon: <CheckCircle className="h-3 w-3" />, label: "Fechar", action: "close_won" },
+    ],
+  };
+  return base[lead.kanban_stage] || [];
 };
 
 const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }) => {
@@ -53,6 +55,8 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
   const style: React.CSSProperties = {
     opacity: isDragging ? 0.3 : 1,
   };
+
+  const actions = getStageActions(lead);
 
   const actions = STAGE_ACTIONS[lead.kanban_stage] || [];
 
