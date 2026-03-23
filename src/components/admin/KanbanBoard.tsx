@@ -137,13 +137,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         });
         onLeadUpdated();
         break;
-      case "whatsapp":
+      case "copy_whatsapp":
         if (lead.telefone) {
-          window.open(`https://wa.me/${lead.telefone.replace(/\D/g, "")}`, "_blank");
+          try {
+            await navigator.clipboard.writeText(lead.telefone);
+            toast.success("Telefone copiado!");
+          } catch {
+            toast.error("Erro ao copiar");
+          }
           await supabase.from("leads").update({ whatsapp_sent: true, last_activity_at: now }).eq("id", lead.id);
           await supabase.from("lead_activities").insert({
             lead_id: lead.id, user_id: userId,
-            activity_type: "whatsapp_enviado", content: "WhatsApp enviado",
+            activity_type: "whatsapp_enviado", content: "Telefone copiado para WhatsApp",
           });
           onLeadUpdated();
         } else {
