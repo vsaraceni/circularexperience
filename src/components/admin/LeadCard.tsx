@@ -58,8 +58,6 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
 
   const actions = getStageActions(lead);
 
-  const actions = STAGE_ACTIONS[lead.kanban_stage] || [];
-
   return (
     <div
       ref={setNodeRef}
