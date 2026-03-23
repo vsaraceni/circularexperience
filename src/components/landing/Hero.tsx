@@ -47,7 +47,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
           </div>
 
           {/* Headline */}
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 animate-fade-up" style={{
+          <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 animate-fade-up" style={{
           animationDelay: "0.1s"
         }}>
             E se a Semana do Meio Ambiente da sua empresa virasse uma{" "}
