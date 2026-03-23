@@ -60,7 +60,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
         }}>Uma experiência prática e imersiva que transforma a pauta ambiental em ação real — hands-on, com o seu time.</p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-fade-up" style={{
+          <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade-up" style={{
           animationDelay: "0.3s"
         }}>
             <Button variant="hero" size="xl" onClick={() => scrollToSection("contato")}>
