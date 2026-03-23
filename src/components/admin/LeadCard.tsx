@@ -1,5 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+
 import { Building2, User, FileText, Send, Linkedin, MessageSquare, Phone, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import UrgencyBadge from "./UrgencyBadge";
