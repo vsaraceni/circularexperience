@@ -4,11 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, LayoutGrid, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import LeadList, { type Lead } from "@/components/admin/LeadList";
+import KanbanBoard from "@/components/admin/KanbanBoard";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import logo from "@/assets/movimento-circular-logo.png";
@@ -46,11 +47,13 @@ const Proposals = () => {
   const navigate = useNavigate();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [editing, setEditing] = useState<Proposal | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("leads");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
 
   const fetchProfile = useCallback(async () => {
@@ -71,6 +74,17 @@ const Proposals = () => {
   }, [user]);
 
   const fetchLeads = async () => {
+    // Fetch ALL leads for Kanban
+    const { data: allData, error: allError } = await supabase
+      .from("leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (!allError && allData) {
+      setAllLeads(allData as Lead[]);
+    }
+
+    // Filtered leads for list view (exclude converted/archived)
     const { data, error } = await supabase
       .from("leads")
       .select("*")
@@ -131,9 +145,21 @@ const Proposals = () => {
         return;
       }
 
-      // Mark lead as converted
+      // Mark lead as converted + update kanban
       if (leadId) {
-        await supabase.from("leads").update({ status: "converted" }).eq("id", leadId);
+        const now = new Date().toISOString();
+        await supabase.from("leads").update({
+          status: "converted",
+          kanban_stage: "proposta",
+          stage_updated_at: now,
+          last_activity_at: now,
+        }).eq("id", leadId);
+        await supabase.from("lead_activities").insert({
+          lead_id: leadId,
+          user_id: user!.id,
+          activity_type: "proposta_gerada",
+          content: "Proposta gerada",
+        });
       }
 
       toast.success("Proposta criada!");
@@ -180,6 +206,46 @@ const Proposals = () => {
     setShowForm(true);
   };
 
+  const handleSendWelcomeFromKanban = async (lead: Lead) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("send-welcome-email", {
+        body: {
+          lead_id: lead.id,
+          name: lead.name,
+          email: lead.email,
+          company: lead.company,
+          cargo: lead.cargo,
+          sender_name: authorDefaults.author_name,
+          sender_email: authorDefaults.author_email,
+          sender_phone: authorDefaults.author_phone,
+        },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        const now = new Date().toISOString();
+        await supabase.from("leads").update({
+          kanban_stage: "boas_vindas",
+          stage_updated_at: now,
+          last_activity_at: now,
+          assigned_to: user!.id,
+          assigned_at: now,
+        }).eq("id", lead.id);
+        await supabase.from("lead_activities").insert({
+          lead_id: lead.id,
+          user_id: user!.id,
+          activity_type: "welcome_enviado",
+          content: "E-mail de boas-vindas enviado",
+        });
+        toast.success("Welcome enviado!");
+        fetchLeads();
+      } else {
+        throw new Error(data?.error || "Erro desconhecido");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao enviar welcome: " + (err.message || ""));
+    }
+  };
+
   const proposalsByStatus = (status: string) =>
     proposals.filter((p) => (p.status || "rascunho") === status);
 
@@ -192,6 +258,25 @@ const Proposals = () => {
             <span className="text-lg font-bold text-foreground">CRM</span>
           </div>
           <div className="flex items-center gap-2">
+            {/* View mode toggle */}
+            <div className="flex items-center border border-border rounded-lg overflow-hidden">
+              <Button
+                variant={viewMode === "kanban" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-8 px-3"
+                onClick={() => setViewMode("kanban")}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-8 px-3"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
             {user && <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />}
             <EmailTemplateEditor />
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
@@ -204,7 +289,7 @@ const Proposals = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className={`mx-auto py-8 ${viewMode === "kanban" ? "px-4" : "container px-4 max-w-5xl"}`}>
         {showForm || editing ? (
           <ProposalForm
             proposal={editing}
@@ -226,6 +311,14 @@ const Proposals = () => {
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
+            ) : viewMode === "kanban" ? (
+              <KanbanBoard
+                leads={allLeads}
+                userId={user!.id}
+                onLeadUpdated={fetchLeads}
+                onGenerateProposal={handleGenerateProposal}
+                onSendWelcome={handleSendWelcomeFromKanban}
+              />
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full grid grid-cols-5">

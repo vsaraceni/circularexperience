@@ -27,6 +27,15 @@ export interface Lead {
   welcome_sent: boolean;
   welcome_sent_at?: string | null;
   mensagem?: string | null;
+  kanban_stage: string;
+  assigned_to?: string | null;
+  assigned_at?: string | null;
+  stage_updated_at?: string | null;
+  last_activity_at?: string | null;
+  linkedin_added?: boolean;
+  whatsapp_sent?: boolean;
+  lost_reason?: string | null;
+  lost_notes?: string | null;
 }
 
 interface AuthorDefaults {
