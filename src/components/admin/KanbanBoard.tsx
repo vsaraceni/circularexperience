@@ -209,7 +209,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   return (
     <>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
         <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4">
           {STAGES.map((stage) => (
             <KanbanColumn
@@ -221,6 +221,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             />
           ))}
         </div>
+        <DragOverlay dropAnimation={null}>
+          {activeLead ? (
+            <div className="bg-card border border-primary/40 rounded-lg p-3 shadow-xl opacity-90 w-[260px]">
+              <h4 className="font-semibold text-sm text-foreground truncate">{activeLead.company || "Sem empresa"}</h4>
+              <p className="text-xs text-muted-foreground truncate">{activeLead.name}</p>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       <LeadDrawer

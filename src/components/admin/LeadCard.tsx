@@ -45,11 +45,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
   });
 
   const style: React.CSSProperties = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    opacity: isDragging ? 0.8 : 1,
-    zIndex: isDragging ? 9999 : undefined,
-    position: isDragging ? 'relative' as const : undefined,
-    pointerEvents: isDragging ? 'none' as const : undefined,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   const actions = STAGE_ACTIONS[lead.kanban_stage] || [];
