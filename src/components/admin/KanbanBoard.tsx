@@ -32,6 +32,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const lead = leads.find((l) => l.id === event.active.id);
+    setActiveLead(lead || null);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
