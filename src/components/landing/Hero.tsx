@@ -55,7 +55,7 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
           </h1>
 
           {/* Subheadline */}
-          <p className="text-lg md:text-xl text-white/80 mb-8 leading-relaxed animate-fade-up" style={{
+          <p className="text-lg md:text-xl text-white/80 mb-6 leading-relaxed animate-fade-up" style={{
           animationDelay: "0.2s"
         }}>Uma experiência prática e imersiva que transforma a pauta ambiental em ação real — hands-on, com o seu time.</p>
 
