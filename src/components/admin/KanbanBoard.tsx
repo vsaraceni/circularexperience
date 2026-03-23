@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
@@ -32,6 +32,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const lead = leads.find((l) => l.id === event.active.id);
+    setActiveLead(lead || null);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -203,7 +209,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   return (
     <>
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
         <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4">
           {STAGES.map((stage) => (
             <KanbanColumn
@@ -215,6 +221,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             />
           ))}
         </div>
+        <DragOverlay dropAnimation={null}>
+          {activeLead ? (
+            <div className="bg-card border border-primary/40 rounded-lg p-3 shadow-xl opacity-90 w-[260px]">
+              <h4 className="font-semibold text-sm text-foreground truncate">{activeLead.company || "Sem empresa"}</h4>
+              <p className="text-xs text-muted-foreground truncate">{activeLead.name}</p>
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       <LeadDrawer
