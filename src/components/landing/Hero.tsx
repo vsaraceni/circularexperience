@@ -1,25 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Clock, Users, Award, Hammer } from "lucide-react";
 import heroImage from "@/assets/hero-workshop.jpg";
-
-import logoDow from "@/assets/partners/dow.png";
-import logoScania from "@/assets/partners/scania.png";
-import logoSebrae from "@/assets/partners/sebrae.png";
-import logoCoopercaps from "@/assets/partners/coopercaps.png";
-import logoAvery from "@/assets/partners/avery-dennison.png";
-import logoSemil from "@/assets/partners/semil.png";
-import logoInvestsp from "@/assets/partners/investsp.png";
-
-const partnerLogos = [
-  { src: logoDow, alt: "DOW", height: "h-8 md:h-10" },
-  { src: logoScania, alt: "Scania", height: "h-8 md:h-10" },
-  { src: logoSebrae, alt: "SEBRAE", height: "h-10 md:h-14" },
-  { src: logoCoopercaps, alt: "COOPERCAPS", height: "h-10 md:h-14" },
-  { src: logoAvery, alt: "Avery Dennison", height: "h-8 md:h-10" },
-  { src: logoSemil, alt: "SEMIL", height: "h-12 md:h-16" },
-  { src: logoInvestsp, alt: "InvestSP", height: "h-10 md:h-14" },
-];
 
 const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; proposalTitle?: string }) => {
   const scrollToSection = (id: string) => {
