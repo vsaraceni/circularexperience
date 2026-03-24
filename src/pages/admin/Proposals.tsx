@@ -57,6 +57,10 @@ const Proposals = () => {
   const [activeTab, setActiveTab] = useState("leads");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterOrigem, setFilterOrigem] = useState("all");
+  const [filterOwner, setFilterOwner] = useState("all");
+  const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
