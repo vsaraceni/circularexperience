@@ -17,6 +17,7 @@ interface ActivityItem {
 
 interface ActivityTimelineProps {
   leadId: string;
+  refreshKey?: number;
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
