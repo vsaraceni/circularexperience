@@ -33,6 +33,8 @@ interface LeadDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onQuickAction: (lead: Lead, action: string) => void;
+  userId?: string;
+  onNoteAdded?: () => void;
 }
 
 const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction }) => {
