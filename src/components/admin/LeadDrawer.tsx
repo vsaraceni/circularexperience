@@ -2,9 +2,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
-  Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle,
+  Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -86,24 +87,36 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               <div className="grid grid-cols-2 gap-2">
                 {lead.kanban_stage === "novo" && (
                   <>
-                    <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Reenviar Welcome" : "Enviar Welcome"} onClick={() => onQuickAction(lead, "send_welcome")} />
-                    <ActionBtn icon={<FileText />} label="Gerar Proposta" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                    <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Reenviar Welcome" : "Enviar Welcome"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
+                    <ActionBtn icon={<FileText />} label="Elaborar Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
                   </>
                 )}
                 {lead.kanban_stage === "boas_vindas" && (
                   <>
-                    <ActionBtn icon={<Linkedin />} label="LinkedIn" onClick={() => onQuickAction(lead, "linkedin")} />
-                    <ActionBtn icon={<MessageSquare />} label="WhatsApp" onClick={() => onQuickAction(lead, "whatsapp")} />
-                    <ActionBtn icon={<FileText />} label="Gerar Proposta" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                    <ActionBtn icon={<Linkedin />} label="LinkedIn" tooltip="Buscar no LinkedIn" onClick={() => onQuickAction(lead, "linkedin")} />
+                    <ActionBtn icon={<MessageSquare />} label="Copiar Zap" tooltip="Copiar telefone para WhatsApp" onClick={() => onQuickAction(lead, "copy_whatsapp")} />
+                    <ActionBtn icon={<FileText />} label="Elaborar Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
                   </>
                 )}
-                {["em_contato", "call_agendada"].includes(lead.kanban_stage) && (
-                  <ActionBtn icon={<FileText />} label="Gerar Proposta" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                {lead.kanban_stage === "em_contato" && (
+                  <>
+                    <ActionBtn icon={<CalendarPlus />} label="Agendar Call" tooltip="Abrir Google Agenda para agendar call" onClick={() => onQuickAction(lead, "schedule_call")} />
+                    <ActionBtn icon={<FileText />} label="Elaborar Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                  </>
+                )}
+                {lead.kanban_stage === "call_agendada" && (
+                  <>
+                    <ActionBtn icon={<CheckCircle />} label="Call Feita" tooltip="Registrar call realizada" onClick={() => onQuickAction(lead, "call_done")} />
+                    <ActionBtn icon={<FileText />} label="Elaborar Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                  </>
                 )}
                 {["proposta", "nutricao"].includes(lead.kanban_stage) && (
                   <>
-                    <ActionBtn icon={<CheckCircle />} label="Fechar" onClick={() => onQuickAction(lead, "close_won")} variant="default" />
-                    <ActionBtn icon={<XCircle />} label="Perdido" onClick={() => onQuickAction(lead, "mark_lost")} variant="destructive" />
+                    {lead.kanban_stage === "nutricao" && (
+                      <ActionBtn icon={<FileText />} label="Elaborar Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                    )}
+                    <ActionBtn icon={<CheckCircle />} label="Fechar" tooltip="Marcar como fechado" onClick={() => onQuickAction(lead, "close_won")} variant="default" />
+                    <ActionBtn icon={<XCircle />} label="Perdido" tooltip="Marcar como perdido" onClick={() => onQuickAction(lead, "mark_lost")} variant="destructive" />
                   </>
                 )}
               </div>
@@ -163,15 +176,20 @@ function InfoRow({
 }
 
 function ActionBtn({
-  icon, label, onClick, variant = "outline",
+  icon, label, tooltip, onClick, variant = "outline",
 }: {
-  icon: React.ReactNode; label: string; onClick: () => void; variant?: "outline" | "default" | "destructive";
+  icon: React.ReactNode; label: string; tooltip: string; onClick: () => void; variant?: "outline" | "default" | "destructive";
 }) {
   return (
-    <Button variant={variant} size="sm" className="justify-start gap-2 h-9" onClick={onClick}>
-      {icon}
-      {label}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant={variant} size="sm" className="justify-start gap-2 h-9" onClick={onClick}>
+          {icon}
+          {label}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
   );
 }
 

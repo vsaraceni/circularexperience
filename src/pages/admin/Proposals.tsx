@@ -78,6 +78,7 @@ const Proposals = () => {
     const { data: allData, error: allError } = await supabase
       .from("leads")
       .select("*")
+      .neq("status", "archived")
       .order("created_at", { ascending: false });
 
     if (!allError && allData) {

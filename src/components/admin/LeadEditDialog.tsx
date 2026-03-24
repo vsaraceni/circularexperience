@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Archive } from "lucide-react";
 import type { Lead } from "./LeadList";
 
 interface LeadEditDialogProps {
@@ -18,6 +18,7 @@ interface LeadEditDialogProps {
 
 const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChange, onSaved }) => {
   const [saving, setSaving] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -70,6 +71,35 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
     }
   };
 
+  const handleArchive = async () => {
+    if (!lead) return;
+    if (!window.confirm(`Arquivar o lead "${lead.company || lead.name}"? Ele será removido do Kanban.`)) return;
+
+    setArchiving(true);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from("leads")
+        .update({ status: "archived", last_activity_at: now })
+        .eq("id", lead.id);
+      if (error) throw error;
+
+      await supabase.from("lead_activities").insert({
+        lead_id: lead.id,
+        activity_type: "lead_arquivado",
+        content: "Lead arquivado",
+      });
+
+      toast.success("Lead arquivado!");
+      onSaved();
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error("Erro ao arquivar: " + (err.message || ""));
+    } finally {
+      setArchiving(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -106,7 +136,17 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
             <Textarea id="edit-mensagem" value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} rows={4} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleArchive}
+            disabled={archiving}
+            className="gap-1 sm:mr-auto"
+          >
+            {archiving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+            Arquivar Lead
+          </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
