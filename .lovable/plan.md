@@ -1,136 +1,115 @@
 
 
-## CRM v2.0 — Fase 1: Kanban + Drawer + Toggle
+## CRM v2.1 — UX Polish + Funcionalidades
 
-### Resumo
+### Resumo das mudanças
 
-Implementar o board Kanban de 8 estágios com drag & drop, drawer lateral de detalhes, toggle Lista/Kanban, e tabela de atividades — preservando 100% dos fluxos existentes (welcome email, gerar proposta, editar lead, arquivar).
+7 melhorias em 5 arquivos, sem alterações de banco.
 
 ---
 
-### 1. Database Migration
+### 1. Tooltips em todas as ações rápidas
 
-Uma única migration com:
+**Arquivos**: `LeadCard.tsx`, `LeadDrawer.tsx`
 
-```sql
--- Novos campos em leads
-ALTER TABLE leads ADD COLUMN kanban_stage text NOT NULL DEFAULT 'novo';
-ALTER TABLE leads ADD COLUMN assigned_to uuid REFERENCES profiles(id);
-ALTER TABLE leads ADD COLUMN assigned_at timestamptz;
-ALTER TABLE leads ADD COLUMN stage_updated_at timestamptz DEFAULT now();
-ALTER TABLE leads ADD COLUMN last_activity_at timestamptz;
-ALTER TABLE leads ADD COLUMN linkedin_added boolean DEFAULT false;
-ALTER TABLE leads ADD COLUMN whatsapp_sent boolean DEFAULT false;
-ALTER TABLE leads ADD COLUMN lost_reason text;
-ALTER TABLE leads ADD COLUMN lost_notes text;
+Envolver cada botão de ação rápida com `<Tooltip>` + `<TooltipTrigger>` + `<TooltipContent>` (já existe em `@/components/ui/tooltip`). Textos descritivos:
+- LinkedIn → "Buscar no LinkedIn"
+- Copiar Zap → "Copiar telefone para WhatsApp"
+- Agendar Call → "Abrir Google Agenda para agendar call"
+- Elaborar Proposta → "Criar proposta comercial"
+- Enviar Welcome → "Enviar e-mail de boas-vindas"
+- Call Feita → "Registrar call realizada"
+- Nutrir → "Mover para nutrição"
+- Fechar → "Marcar como fechado"
 
--- Seed: mapear estágios a partir de dados existentes
-UPDATE leads SET kanban_stage = 'boas_vindas' WHERE welcome_sent = true AND status NOT IN ('converted','archived');
-UPDATE leads SET kanban_stage = 'proposta' WHERE status = 'converted';
-UPDATE leads SET last_activity_at = COALESCE(welcome_sent_at, created_at);
+Adicionar `<TooltipProvider>` no wrapper do `KanbanBoard`.
 
--- Nova tabela lead_activities
-CREATE TABLE lead_activities (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id uuid REFERENCES leads(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES profiles(id),
-  activity_type text NOT NULL,
-  content text,
-  metadata jsonb,
-  created_at timestamptz DEFAULT now()
-);
-CREATE INDEX ON lead_activities(lead_id);
-CREATE INDEX ON lead_activities(created_at DESC);
+---
 
--- RLS
-ALTER TABLE lead_activities ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins manage activities" ON lead_activities FOR ALL TO authenticated
-  USING (has_role(auth.uid(), 'admin'::app_role));
-CREATE POLICY "Auth insert activities" ON lead_activities FOR INSERT TO authenticated
-  WITH CHECK (true);
+### 2. Botão "Agendar Call" abre Google Calendar
 
--- Seed atividades para leads existentes
-INSERT INTO lead_activities (lead_id, activity_type, content, created_at)
-  SELECT id, 'lead_recebido', 'Lead recebido via ' || origem, created_at FROM leads;
+**Arquivo**: `KanbanBoard.tsx` (handler `schedule_call`)
+
+Ao clicar, construir URL do Google Calendar:
 ```
-
-Zero risco para dados existentes — tudo aditivo, campo `status` mantido intacto.
-
----
-
-### 2. Novos Componentes (7 arquivos)
-
-| Arquivo | Responsabilidade |
-|---------|-----------------|
-| `KanbanBoard.tsx` | Container horizontal com 8 colunas, scroll, contadores por estágio. Usa `@dnd-kit/core` para drag & drop. Ao dropar: atualiza `kanban_stage` + `stage_updated_at` + insere atividade `stage_mudou`. |
-| `KanbanColumn.tsx` | Coluna droppable com header (nome + count + cor) e lista de LeadCards. |
-| `LeadCard.tsx` | Card arrastável com: empresa, contato, badge de urgência (verde/amarelo/vermelho por dias desde `last_activity_at`), avatar do responsável, e botões de ação rápida por estágio. |
-| `LeadDrawer.tsx` | Sheet lateral (direita) com dados do lead, ações rápidas (welcome, proposta, LinkedIn, WhatsApp), e timeline de atividades. |
-| `ActivityTimeline.tsx` | Lista cronológica de `lead_activities` com ícones por `activity_type`. |
-| `LostDialog.tsx` | Dialog para registrar motivo de perda (dropdown + textarea). |
-| `UrgencyBadge.tsx` | Badge: verde (< 2 dias), amarelo (3-5 dias), vermelho (> 5 dias) desde última atividade. |
-
----
-
-### 3. Modificações em Arquivos Existentes
-
-**`src/pages/admin/Proposals.tsx`**
-- Adicionar estado `viewMode: 'list' | 'kanban'` com toggle no header (ícones LayoutGrid / List).
-- Atualizar `fetchLeads` para trazer todos os leads (incluindo `kanban_stage`, `assigned_to`, `last_activity_at`) — remover filtro de status para o Kanban, manter filtro para a lista.
-- Quando `viewMode === 'kanban'`, renderizar `<KanbanBoard>` no lugar das Tabs. Tabs continuam como fallback.
-- Passar `user.id` e `authorDefaults` ao KanbanBoard para atribuição automática.
-
-**`src/components/admin/LeadList.tsx`**
-- Atualizar interface `Lead` com novos campos (`kanban_stage`, `assigned_to`, `last_activity_at`).
-- Em `handleSendWelcome`: após sucesso, também atualizar `kanban_stage = 'boas_vindas'`, `assigned_to = user.id`, `assigned_at = now()`, `last_activity_at = now()` e inserir atividade.
-
-**`src/components/admin/LeadEditDialog.tsx`**
-- Sem mudanças estruturais, apenas importar `Lead` atualizado.
-
----
-
-### 4. Estágios e Ações Rápidas
-
-```text
-Estágio        Ações no Card/Drawer
-─────────────  ──────────────────────────────
-Novo           [Enviar Welcome] [Gerar Proposta]
-Boas-Vindas    [LinkedIn ✓] [WhatsApp] [Proposta]
-Em Contato     [Agendar Call] [Proposta]
-Call Agendada  [Call Feita] [Proposta]
-Proposta       [Nutrir] [Fechar] [Perdido]
-Nutrição       [Proposta] [Fechar] [Perdido]
-Fechado        (final — sem ações)
-Perdido        (final — reabrir)
+https://calendar.google.com/calendar/render?action=TEMPLATE
+  &text=Workshop imersivo Economia Circular
+  &add={lead.email}
+  &details=Call com {lead.name} - {lead.company}
 ```
+Abrir em nova aba (`window.open`). Depois, mover lead para `call_agendada` e registrar atividade.
 
-Cada ação rápida: atualiza `kanban_stage` + `last_activity_at` + insere `lead_activity`.
-
----
-
-### 5. Dependência
-
-- Instalar `@dnd-kit/core` + `@dnd-kit/sortable` + `@dnd-kit/utilities`
+**Arquivo**: `LeadCard.tsx` — renomear label "Agendar" → "Agendar Call", ícone `Phone` → `CalendarPlus`.
 
 ---
 
-### 6. O que NÃO muda
+### 3. Botão "Proposta" → "Elaborar Proposta"
 
-- `ProposalForm.tsx`, `ProposalList.tsx` — intactos
-- `EmailTemplateEditor.tsx`, `ProfileEditor.tsx` — intactos
-- Edge functions (`send-welcome-email`, `generate-pdf`, `send-lead-email`) — intactas
-- Landing page — intacta
-- Campo `status` na tabela `leads` — mantido em paralelo
+**Arquivo**: `LeadCard.tsx` — alterar label em todos os estágios que mostram "Proposta" para "Elab. Proposta" (abreviado para caber no card).
+
+**Arquivo**: `LeadDrawer.tsx` — alterar "Gerar Proposta" → "Elaborar Proposta".
 
 ---
 
-### 7. Ordem de Implementação
+### 4. Arquivar lead na edição
 
-1. Rodar migration (banco)
-2. Instalar `@dnd-kit`
-3. Criar `UrgencyBadge`, `ActivityTimeline`, `LostDialog` (componentes isolados)
-4. Criar `LeadCard`, `KanbanColumn`, `KanbanBoard`
-5. Criar `LeadDrawer`
-6. Atualizar `Proposals.tsx` com toggle e integração
-7. Atualizar `LeadList.tsx` com side-effects no welcome
+**Arquivo**: `LeadEditDialog.tsx`
+
+Adicionar botão "Arquivar Lead" (variant destructive, com ícone `Archive`) no footer do dialog. Ao clicar:
+- Confirmar com `window.confirm`
+- Atualizar `status = 'archived'` e `kanban_stage = 'perdido'` (ou um novo valor que o filtro do Kanban exclui)
+- Registrar atividade `lead_arquivado`
+- O Kanban já filtra leads com `status = 'archived'` fora da query? Verificar e ajustar a query em `Proposals.tsx` para excluir `status = 'archived'` da busca de leads.
+
+**Arquivo**: `Proposals.tsx` — adicionar `.neq('status', 'archived')` no fetch de leads do Kanban.
+
+---
+
+### 5. Ordenação de leads nas colunas
+
+**Arquivo**: `KanbanBoard.tsx`
+
+Adicionar estado `sortMode: 'arrival' | 'stale'` com toggle no topo do board (dois botões pequenos ou dropdown).
+- **arrival** (padrão): ordenar por `created_at ASC` (mais antigos primeiro)
+- **stale**: ordenar por `last_activity_at ASC` (mais parados primeiro — os "vermelhos" sobem)
+
+Aplicar `sort()` no array de leads de cada coluna dentro do `useMemo`.
+
+---
+
+### 6. Cor do card baseada na urgência
+
+**Arquivo**: `LeadCard.tsx`
+
+Calcular os dias de inatividade (mesma lógica do `UrgencyBadge`) e aplicar classes dinâmicas no container do card:
+- **0-2 dias**: `bg-emerald-500/5 border-emerald-500/20`
+- **3-5 dias**: `bg-amber-500/5 border-amber-500/20`
+- **> 5 dias**: `bg-red-500/5 border-red-500/20`
+- **Sem data**: manter `bg-card border-border` (neutro)
+
+Isso cria o mapa visual térmico sem alterar o badge existente.
+
+---
+
+### 7. Ícone "Agendar" → CalendarPlus
+
+**Arquivo**: `LeadCard.tsx` — substituir `<Phone>` por `<CalendarPlus>` de lucide-react na ação `schedule_call`.
+
+---
+
+### Arquivos impactados
+
+| Arquivo | Mudanças |
+|---------|----------|
+| `LeadCard.tsx` | Tooltips, labels, ícone calendar, cor dinâmica do card |
+| `KanbanBoard.tsx` | Google Calendar URL, sort toggle, TooltipProvider |
+| `LeadDrawer.tsx` | Tooltips, label "Elaborar Proposta" |
+| `LeadEditDialog.tsx` | Botão "Arquivar Lead" |
+| `Proposals.tsx` | Filtro `.neq('status','archived')` no fetch |
+
+### Sem impacto em
+- Tabelas / migrations (zero alteração de banco)
+- Edge functions
+- Landing page
+- Fluxo de propostas existente
 
