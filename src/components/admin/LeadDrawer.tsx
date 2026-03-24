@@ -37,8 +37,34 @@ interface LeadDrawerProps {
   onNoteAdded?: () => void;
 }
 
-const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction }) => {
+const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, onNoteAdded }) => {
+  const [noteText, setNoteText] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   if (!lead) return null;
+
+  const handleSaveNote = async () => {
+    if (!noteText.trim() || !userId) return;
+    setSavingNote(true);
+    try {
+      await supabase.from("lead_activities").insert({
+        lead_id: lead.id,
+        user_id: userId,
+        activity_type: "nota_manual",
+        content: noteText.trim(),
+      });
+      await supabase.from("leads").update({ last_activity_at: new Date().toISOString() }).eq("id", lead.id);
+      setNoteText("");
+      setRefreshKey((k) => k + 1);
+      onNoteAdded?.();
+      toast.success("Nota salva!");
+    } catch {
+      toast.error("Erro ao salvar nota");
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
