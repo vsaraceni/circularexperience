@@ -118,9 +118,39 @@ const Proposals = () => {
     }
   };
 
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name");
+    if (data) setProfiles(data);
+  };
+
   useEffect(() => {
-    Promise.all([fetchLeads(), fetchProposals(), fetchProfile()]).then(() => setLoading(false));
+    Promise.all([fetchLeads(), fetchProposals(), fetchProfile(), fetchProfiles()]).then(() => setLoading(false));
   }, [fetchProfile]);
+
+  const origens = useMemo(() => {
+    const set = new Set(allLeads.map((l) => l.origem));
+    return Array.from(set).sort();
+  }, [allLeads]);
+
+  const filteredLeads = useMemo(() => {
+    let result = allLeads;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (l) =>
+          l.name.toLowerCase().includes(term) ||
+          (l.company || "").toLowerCase().includes(term) ||
+          l.email.toLowerCase().includes(term)
+      );
+    }
+    if (filterOrigem !== "all") {
+      result = result.filter((l) => l.origem === filterOrigem);
+    }
+    if (filterOwner !== "all") {
+      result = result.filter((l) => l.assigned_to === filterOwner);
+    }
+    return result;
+  }, [allLeads, searchTerm, filterOrigem, filterOwner]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
