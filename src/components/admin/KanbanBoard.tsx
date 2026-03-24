@@ -21,9 +21,16 @@ const STAGES: KanbanStage[] = [
   { id: "perdido", label: "Perdido", color: "#ef4444" },
 ];
 
+interface Proposal {
+  id: string;
+  lead_id?: string;
+  investment: string;
+}
+
 interface KanbanBoardProps {
   leads: Lead[];
   userId: string;
+  proposals: Proposal[];
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
