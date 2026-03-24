@@ -2,6 +2,9 @@ import { useState, useMemo } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ArrowDownAZ, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
 import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
@@ -33,6 +36,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
+  const [sortMode, setSortMode] = useState<"arrival" | "stale">("arrival");
 
   const handleDragStart = (event: DragStartEvent) => {
     const lead = leads.find((l) => l.id === event.active.id);
@@ -51,8 +55,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       if (map[stage]) map[stage].push(l);
       else map["novo"].push(l);
     });
+    // Sort each column
+    Object.keys(map).forEach((key) => {
+      map[key].sort((a, b) => {
+        if (sortMode === "stale") {
+          const aTime = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
+          const bTime = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
+          return aTime - bTime; // oldest activity first
+        }
+        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return aTime - bTime; // oldest first
+      });
+    });
     return map;
-  }, [leads]);
+  }, [leads, sortMode]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -63,7 +80,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const lead = leads.find((l) => l.id === leadId);
     if (!lead || lead.kanban_stage === newStage) return;
 
-    // Optimistic: will refetch after
     const oldStage = lead.kanban_stage;
 
     try {
@@ -74,14 +90,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         last_activity_at: now,
       };
 
-      // Auto-assign if not assigned yet
       if (!lead.assigned_to) {
         updates.assigned_to = userId;
         updates.assigned_at = now;
       }
 
       if (newStage === "perdido") {
-        // Open lost dialog instead
         setLostLead(lead);
         return;
       }
@@ -93,7 +107,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
       if (error) throw error;
 
-      // Log activity
       await supabase.from("lead_activities").insert({
         lead_id: leadId,
         user_id: userId,
@@ -112,7 +125,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
     switch (action) {
       case "send_welcome": {
-        // Re-check from DB to prevent race condition between users
         const { data: freshLead } = await supabase.from("leads").select("welcome_sent").eq("id", lead.id).single();
         if (freshLead?.welcome_sent) {
           toast.info("E-mail de boas-vindas já foi enviado para este lead.");
@@ -155,15 +167,24 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           toast.error("Lead sem telefone cadastrado");
         }
         break;
-      case "schedule_call":
+      case "schedule_call": {
+        // Open Google Calendar with pre-filled event
+        const calendarUrl = new URL("https://calendar.google.com/calendar/render");
+        calendarUrl.searchParams.set("action", "TEMPLATE");
+        calendarUrl.searchParams.set("text", "Workshop imersivo Economia Circular");
+        calendarUrl.searchParams.set("add", lead.email);
+        calendarUrl.searchParams.set("details", `Call com ${lead.name} - ${lead.company || "Sem empresa"}`);
+        window.open(calendarUrl.toString(), "_blank");
+
         await supabase.from("leads").update({ kanban_stage: "call_agendada", stage_updated_at: now, last_activity_at: now }).eq("id", lead.id);
         await supabase.from("lead_activities").insert({
           lead_id: lead.id, user_id: userId,
-          activity_type: "call_agendada", content: "Call agendada",
+          activity_type: "call_agendada", content: "Call agendada via Google Calendar",
         });
         toast.success("Call agendada!");
         onLeadUpdated();
         break;
+      }
       case "call_done":
         await supabase.from("leads").update({ kanban_stage: "proposta", stage_updated_at: now, last_activity_at: now }).eq("id", lead.id);
         await supabase.from("lead_activities").insert({
@@ -221,7 +242,30 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
+      {/* Sort toggle */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xs text-muted-foreground">Ordenar:</span>
+        <div className="flex items-center border border-border rounded-lg overflow-hidden">
+          <Button
+            variant={sortMode === "arrival" ? "default" : "ghost"}
+            size="sm"
+            className="rounded-none h-7 px-2 text-xs gap-1"
+            onClick={() => setSortMode("arrival")}
+          >
+            <ArrowDownAZ className="h-3 w-3" /> Chegada
+          </Button>
+          <Button
+            variant={sortMode === "stale" ? "default" : "ghost"}
+            size="sm"
+            className="rounded-none h-7 px-2 text-xs gap-1"
+            onClick={() => setSortMode("stale")}
+          >
+            <Clock className="h-3 w-3" /> Parados
+          </Button>
+        </div>
+      </div>
+
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
         <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4">
           {STAGES.map((stage) => (
@@ -257,7 +301,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onConfirm={handleLostConfirm}
         leadName={lostLead?.company || lostLead?.name || ""}
       />
-    </>
+    </TooltipProvider>
   );
 };
 
