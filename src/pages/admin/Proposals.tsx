@@ -387,13 +387,50 @@ const Proposals = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
             ) : viewMode === "kanban" ? (
-              <KanbanBoard
-                leads={allLeads}
-                userId={user!.id}
-                onLeadUpdated={fetchLeads}
-                onGenerateProposal={handleGenerateProposal}
-                onSendWelcome={handleSendWelcomeFromKanban}
-              />
+              <>
+                {/* Filters */}
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar nome, empresa, email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                  <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+                    <SelectTrigger className="w-[140px] h-9">
+                      <SelectValue placeholder="Origem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas origens</SelectItem>
+                      {origens.map((o) => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterOwner} onValueChange={setFilterOwner}>
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="Responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {profiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <KanbanBoard
+                  leads={filteredLeads}
+                  userId={user!.id}
+                  proposals={proposals}
+                  onLeadUpdated={fetchLeads}
+                  onGenerateProposal={handleGenerateProposal}
+                  onSendWelcome={handleSendWelcomeFromKanban}
+                />
+              </>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full grid grid-cols-5">
