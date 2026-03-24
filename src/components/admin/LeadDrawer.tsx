@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
@@ -9,6 +11,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import UrgencyBadge from "./UrgencyBadge";
 import ActivityTimeline from "./ActivityTimeline";
 import type { Lead } from "./LeadList";
@@ -29,10 +33,38 @@ interface LeadDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onQuickAction: (lead: Lead, action: string) => void;
+  userId?: string;
+  onNoteAdded?: () => void;
 }
 
-const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction }) => {
+const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, onNoteAdded }) => {
+  const [noteText, setNoteText] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   if (!lead) return null;
+
+  const handleSaveNote = async () => {
+    if (!noteText.trim() || !userId) return;
+    setSavingNote(true);
+    try {
+      await supabase.from("lead_activities").insert({
+        lead_id: lead.id,
+        user_id: userId,
+        activity_type: "nota_manual",
+        content: noteText.trim(),
+      });
+      await supabase.from("leads").update({ last_activity_at: new Date().toISOString() }).eq("id", lead.id);
+      setNoteText("");
+      setRefreshKey((k) => k + 1);
+      onNoteAdded?.();
+      toast.success("Nota salva!");
+    } catch {
+      toast.error("Erro ao salvar nota");
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -123,8 +155,19 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             </div>
           </TabsContent>
 
-          <TabsContent value="atividades" className="mt-4">
-            <ActivityTimeline leadId={lead.id} />
+          <TabsContent value="atividades" className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Adicionar nota..."
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                className="min-h-[60px] text-sm"
+              />
+              <Button size="sm" disabled={!noteText.trim() || savingNote} onClick={handleSaveNote}>
+                {savingNote ? "Salvando..." : "Salvar nota"}
+              </Button>
+            </div>
+            <ActivityTimeline leadId={lead.id} refreshKey={refreshKey} />
           </TabsContent>
         </Tabs>
       </SheetContent>

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft, LayoutGrid, List } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
@@ -55,6 +57,10 @@ const Proposals = () => {
   const [activeTab, setActiveTab] = useState("leads");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterOrigem, setFilterOrigem] = useState("all");
+  const [filterOwner, setFilterOwner] = useState("all");
+  const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -112,9 +118,39 @@ const Proposals = () => {
     }
   };
 
+  const fetchProfiles = async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name");
+    if (data) setProfiles(data);
+  };
+
   useEffect(() => {
-    Promise.all([fetchLeads(), fetchProposals(), fetchProfile()]).then(() => setLoading(false));
+    Promise.all([fetchLeads(), fetchProposals(), fetchProfile(), fetchProfiles()]).then(() => setLoading(false));
   }, [fetchProfile]);
+
+  const origens = useMemo(() => {
+    const set = new Set(allLeads.map((l) => l.origem));
+    return Array.from(set).sort();
+  }, [allLeads]);
+
+  const filteredLeads = useMemo(() => {
+    let result = allLeads;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (l) =>
+          l.name.toLowerCase().includes(term) ||
+          (l.company || "").toLowerCase().includes(term) ||
+          l.email.toLowerCase().includes(term)
+      );
+    }
+    if (filterOrigem !== "all") {
+      result = result.filter((l) => l.origem === filterOrigem);
+    }
+    if (filterOwner !== "all") {
+      result = result.filter((l) => l.assigned_to === filterOwner);
+    }
+    return result;
+  }, [allLeads, searchTerm, filterOrigem, filterOwner]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
@@ -351,13 +387,50 @@ const Proposals = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
             ) : viewMode === "kanban" ? (
-              <KanbanBoard
-                leads={allLeads}
-                userId={user!.id}
-                onLeadUpdated={fetchLeads}
-                onGenerateProposal={handleGenerateProposal}
-                onSendWelcome={handleSendWelcomeFromKanban}
-              />
+              <>
+                {/* Filters */}
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px] max-w-[300px]">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar nome, empresa, email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9 h-9"
+                    />
+                  </div>
+                  <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+                    <SelectTrigger className="w-[140px] h-9">
+                      <SelectValue placeholder="Origem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas origens</SelectItem>
+                      {origens.map((o) => (
+                        <SelectItem key={o} value={o}>{o}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterOwner} onValueChange={setFilterOwner}>
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="Responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {profiles.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <KanbanBoard
+                  leads={filteredLeads}
+                  userId={user!.id}
+                  proposals={proposals}
+                  onLeadUpdated={fetchLeads}
+                  onGenerateProposal={handleGenerateProposal}
+                  onSendWelcome={handleSendWelcomeFromKanban}
+                />
+              </>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full grid grid-cols-5">

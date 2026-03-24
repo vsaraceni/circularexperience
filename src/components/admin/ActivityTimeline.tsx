@@ -17,6 +17,7 @@ interface ActivityItem {
 
 interface ActivityTimelineProps {
   leadId: string;
+  refreshKey?: number;
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -31,9 +32,11 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   perdido: <XCircle className="h-3.5 w-3.5 text-red-400" />,
   fechado: <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />,
   nota: <Activity className="h-3.5 w-3.5 text-muted-foreground" />,
+  nota_manual: <MessageSquare className="h-3.5 w-3.5 text-blue-300" />,
 };
 
-const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ leadId }) => {
+
+const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ leadId, refreshKey }) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,7 +53,7 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ leadId }) => {
       setLoading(false);
     };
     fetch();
-  }, [leadId]);
+  }, [leadId, refreshKey]);
 
   if (loading) {
     return (

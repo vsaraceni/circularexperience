@@ -21,16 +21,23 @@ const STAGES: KanbanStage[] = [
   { id: "perdido", label: "Perdido", color: "#ef4444" },
 ];
 
+interface Proposal {
+  id: string;
+  lead_id?: string;
+  investment: string;
+}
+
 interface KanbanBoardProps {
   leads: Lead[];
   userId: string;
+  proposals: Proposal[];
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  leads, userId, onLeadUpdated, onGenerateProposal, onSendWelcome,
+  leads, userId, proposals, onLeadUpdated, onGenerateProposal, onSendWelcome,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -278,15 +285,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
         <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4">
-          {STAGES.map((stage) => (
-            <KanbanColumn
-              key={stage.id}
-              stage={stage}
-              leads={leadsByStage[stage.id] || []}
-              onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
-              onQuickAction={handleQuickAction}
-            />
-          ))}
+          {STAGES.map((stage) => {
+            const stageLeads = leadsByStage[stage.id] || [];
+            const stageLeadIds = new Set(stageLeads.map((l) => l.id));
+            const stageProposals = proposals.filter((p) => p.lead_id && stageLeadIds.has(p.lead_id));
+            return (
+              <KanbanColumn
+                key={stage.id}
+                stage={stage}
+                leads={stageLeads}
+                proposals={stageProposals}
+                onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
+                onQuickAction={handleQuickAction}
+              />
+            );
+          })}
         </div>
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
@@ -303,6 +316,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         onQuickAction={handleQuickAction}
+        userId={userId}
+        onNoteAdded={onLeadUpdated}
       />
 
       <LostDialog
