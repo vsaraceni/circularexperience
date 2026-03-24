@@ -135,8 +135,21 @@ const Proposals = () => {
       const slug = `prop-${crypto.randomUUID().slice(0, 8)}`;
       const insertData: any = { ...saveData, slug, created_by: user!.id };
 
-      // Auto-create lead if none provided
+      // Check if lead already has a proposal
       let finalLeadId = leadId;
+      if (finalLeadId) {
+        const { data: existingProp } = await supabase
+          .from("proposals")
+          .select("id")
+          .eq("lead_id", finalLeadId)
+          .maybeSingle();
+        if (existingProp) {
+          toast.error("Este lead já possui uma proposta.");
+          return;
+        }
+      }
+
+      // Auto-create lead if none provided
       if (!finalLeadId) {
         const { data: newLead, error: leadError } = await supabase
           .from("leads")
