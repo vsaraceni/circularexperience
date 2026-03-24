@@ -1,47 +1,63 @@
 
 
-## Excluir proposta duplicada + Garantir 1 proposta por lead
+## Fase 2 Restante — Notas Manuais + Filtros + Contadores
 
-### 1. Excluir proposta antiga (via insert tool)
+### 1. Notas manuais no Drawer (aba Atividades)
 
-Deletar a proposta `d94df1bb-5efc-4665-9518-dc621763baa2` (slug `prop-549d09c9`, ALD Bioenergia antiga com escopo/considerações vazios).
+**Arquivo**: `src/components/admin/LeadDrawer.tsx`
 
-### 2. Constraint no banco (migration)
+Adicionar na aba "Atividades", acima do `<ActivityTimeline>`:
+- `<Textarea>` com placeholder "Adicionar nota..." + botão "Salvar"
+- Ao salvar: insert em `lead_activities` com `activity_type = 'nota_manual'`, `content = texto`, `user_id`
+- Atualizar `last_activity_at` do lead
+- Recarregar timeline (passar callback `onNoteAdded` ou usar key para re-render)
 
-```sql
-CREATE UNIQUE INDEX unique_lead_proposal ON proposals(lead_id) WHERE lead_id IS NOT NULL;
-```
+**Arquivo**: `src/components/admin/ActivityTimeline.tsx`
+- Adicionar `nota_manual` ao `ICON_MAP` (ícone `StickyNote` ou `MessageSquare`)
+- Aceitar prop `refreshKey` para forçar re-fetch ao adicionar nota
 
-Isso impede mais de uma proposta por lead. Propostas sem lead (manual sem vínculo) não são afetadas.
+**Arquivo**: `src/components/admin/KanbanBoard.tsx`
+- Passar `userId` ao `LeadDrawer` para o insert da nota
+- Atualizar `LeadDrawer` props para incluir `onNoteAdded` → chamar `onLeadUpdated`
 
-### 3. Validação no código (`Proposals.tsx`)
+### 2. Filtros no Kanban (busca, fonte, responsável)
 
-Na função `handleSave`, antes de inserir nova proposta, verificar se o `lead_id` já possui proposta:
+**Arquivo**: `src/pages/admin/Proposals.tsx`
 
-```typescript
-if (finalLeadId) {
-  const { data: existing } = await supabase
-    .from("proposals")
-    .select("id")
-    .eq("lead_id", finalLeadId)
-    .maybeSingle();
-  if (existing) {
-    toast.error("Este lead já possui uma proposta.");
-    return;
-  }
-}
-```
+Adicionar barra de filtros entre o título e o KanbanBoard (só visível em `viewMode === "kanban"`):
+- **Input de busca** (nome, empresa, email) — filtro client-side no array `allLeads`
+- **Select de origem** (LP, manual, indicação, etc.) — valores extraídos de `allLeads`
+- **Select de responsável** — query em `profiles` para listar usuários admin
 
-### 4. Botão "Elaborar Proposta" no Kanban (`KanbanBoard.tsx`)
+Filtrar `allLeads` antes de passar ao `<KanbanBoard>`, criando `filteredLeads`.
 
-Na ação `create_proposal`, verificar se já existe proposta para o lead. Se sim, exibir toast de aviso ao invés de abrir o formulário.
+### 3. Contador e valor no header da coluna
+
+**Arquivo**: `src/components/admin/KanbanColumn.tsx`
+
+- Receber prop `proposals: Proposal[]` (propostas vinculadas aos leads da coluna)
+- No header, além do count de leads, mostrar soma de `investment` (parsear valores numéricos)
+- Formato: `3 leads · R$ 45.000`
+
+**Arquivo**: `src/components/admin/KanbanBoard.tsx`
+- Passar propostas filtradas por lead_id para cada coluna
+- Requer que `KanbanBoard` receba `proposals` como prop
+
+**Arquivo**: `src/pages/admin/Proposals.tsx`
+- Passar `proposals` ao `KanbanBoard`
+
+---
 
 ### Arquivos impactados
 
-| Arquivo | Ação |
-|---------|------|
-| — | DELETE proposta antiga (insert tool) |
-| migration | Unique index parcial em `proposals.lead_id` |
-| `Proposals.tsx` | Validação antes de insert |
-| `KanbanBoard.tsx` | Check antes de abrir form de proposta |
+| Arquivo | Mudança |
+|---------|---------|
+| `LeadDrawer.tsx` | Textarea de notas + insert na timeline |
+| `ActivityTimeline.tsx` | Ícone `nota_manual`, prop `refreshKey` |
+| `KanbanBoard.tsx` | Props `userId`→drawer, `proposals`, repasse de dados |
+| `KanbanColumn.tsx` | Exibir soma de investimento no header |
+| `Proposals.tsx` | Barra de filtros, fetch de profiles, filteredLeads, passar proposals |
+
+### Sem alteração de banco
+Todas as tabelas necessárias já existem (`lead_activities`, `leads`, `proposals`, `profiles`).
 
