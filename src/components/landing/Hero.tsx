@@ -94,29 +94,6 @@ const Hero = ({ printMode = false, proposalTitle }: { printMode?: boolean; propo
             </div>
           </div>
 
-          {/* Social Proof Marquee */}
-          <div className="mt-6 animate-fade-up" style={{ animationDelay: "0.5s" }}>
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Badge className="bg-accent/20 text-accent border-accent/30 text-xs">
-                NPS +98%
-              </Badge>
-              <p className="text-sm text-white/70 text-center">
-                Confiado por <span className="font-semibold text-white">+500 profissionais</span> de empresas como:
-              </p>
-            </div>
-            <div className="overflow-hidden rounded-xl bg-white/10 backdrop-blur-md border border-white/15 py-4 px-2">
-              <div className="flex animate-marquee w-max">
-                {[...partnerLogos, ...partnerLogos].map((logo, i) => (
-                  <img
-                    key={i}
-                    src={logo.src}
-                    alt={logo.alt}
-                    className={`${logo.height} mx-6 md:mx-8 object-contain opacity-70 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
