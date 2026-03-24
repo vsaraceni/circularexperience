@@ -36,7 +36,7 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 
-const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ leadId }) => {
+const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ leadId, refreshKey }) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,7 +53,7 @@ const ActivityTimeline: React.FC<ActivityTimelineProps> = ({ leadId }) => {
       setLoading(false);
     };
     fetch();
-  }, [leadId]);
+  }, [leadId, refreshKey]);
 
   if (loading) {
     return (
