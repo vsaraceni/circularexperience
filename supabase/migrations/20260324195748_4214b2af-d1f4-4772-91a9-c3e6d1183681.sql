@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX unique_lead_proposal ON proposals(lead_id) WHERE lead_id IS NOT NULL;
