@@ -316,6 +316,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         onQuickAction={handleQuickAction}
+        userId={userId}
+        onNoteAdded={onLeadUpdated}
       />
 
       <LostDialog

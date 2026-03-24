@@ -155,8 +155,19 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             </div>
           </TabsContent>
 
-          <TabsContent value="atividades" className="mt-4">
-            <ActivityTimeline leadId={lead.id} />
+          <TabsContent value="atividades" className="mt-4 space-y-4">
+            <div className="space-y-2">
+              <Textarea
+                placeholder="Adicionar nota..."
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                className="min-h-[60px] text-sm"
+              />
+              <Button size="sm" disabled={!noteText.trim() || savingNote} onClick={handleSaveNote}>
+                {savingNote ? "Salvando..." : "Salvar nota"}
+              </Button>
+            </div>
+            <ActivityTimeline leadId={lead.id} refreshKey={refreshKey} />
           </TabsContent>
         </Tabs>
       </SheetContent>

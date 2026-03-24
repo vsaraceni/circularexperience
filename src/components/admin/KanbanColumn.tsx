@@ -11,12 +11,26 @@ export interface KanbanStage {
 interface KanbanColumnProps {
   stage: KanbanStage;
   leads: Lead[];
+  proposals: { id: string; lead_id?: string; investment: string }[];
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, onOpenDrawer, onQuickAction }) => {
+function parseInvestment(val: string): number {
+  if (!val) return 0;
+  const cleaned = val.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
+  return parseFloat(cleaned) || 0;
+}
+
+function formatBRL(val: number): string {
+  if (val === 0) return "";
+  return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, proposals, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
+
+  const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
 
   return (
     <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0">
@@ -28,6 +42,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, onOpenDrawer,
         <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
           {leads.length}
         </span>
+        {totalInvestment > 0 && (
+          <span className="text-xs text-muted-foreground ml-auto truncate">
+            {formatBRL(totalInvestment)}
+          </span>
+        )}
       </div>
 
       <div
