@@ -102,6 +102,43 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               )}
               {lead.cargo && <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo} />}
               <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
+
+              {/* Responsável */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground shrink-0"><User className="h-4 w-4" /></span>
+                <span className="text-muted-foreground text-xs w-16 shrink-0">Responsável</span>
+                <Select
+                  value={lead.assigned_to || "unassigned"}
+                  onValueChange={async (val) => {
+                    const newOwner = val === "unassigned" ? null : val;
+                    const now = new Date().toISOString();
+                    await supabase.from("leads").update({
+                      assigned_to: newOwner,
+                      assigned_at: newOwner ? now : null,
+                      last_activity_at: now,
+                    }).eq("id", lead.id);
+                    const ownerName = profiles.find((p) => p.id === val)?.full_name || "Ninguém";
+                    await supabase.from("lead_activities").insert({
+                      lead_id: lead.id,
+                      user_id: userId,
+                      activity_type: "lead_reatribuido",
+                      content: `Responsável alterado para ${ownerName}`,
+                    });
+                    toast.success("Responsável atualizado!");
+                    onNoteAdded?.();
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Sem responsável</SelectItem>
+                    {profiles.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <InfoRow
                 icon={<Calendar className="h-4 w-4" />}
                 label="Criado em"
