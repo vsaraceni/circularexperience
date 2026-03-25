@@ -4,6 +4,7 @@ import { differenceInDays } from "date-fns";
 import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import UrgencyBadge from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
 
