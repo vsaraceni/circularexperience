@@ -19,8 +19,15 @@ interface KanbanColumnProps {
 
 function parseInvestment(val: string): number {
   if (!val) return 0;
-  const cleaned = val.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
-  return parseFloat(cleaned) || 0;
+  let multiplier = 1;
+  let rest = val;
+  const mMatch = val.match(/(\d+)\s*x\s*/i);
+  if (mMatch) {
+    multiplier = parseInt(mMatch[1], 10) || 1;
+    rest = val.slice(mMatch.index! + mMatch[0].length);
+  }
+  const cleaned = rest.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
+  return (parseFloat(cleaned) || 0) * multiplier;
 }
 
 function formatBRL(val: number): string {
