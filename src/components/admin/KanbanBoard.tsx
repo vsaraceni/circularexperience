@@ -66,13 +66,13 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     Object.keys(map).forEach((key) => {
       map[key].sort((a, b) => {
         if (sortMode === "stale") {
-          const aTime = a.last_activity_at ? new Date(a.last_activity_at).getTime() : 0;
-          const bTime = b.last_activity_at ? new Date(b.last_activity_at).getTime() : 0;
-          return aTime - bTime; // oldest activity first
+          const aTime = a.last_activity_at ? new Date(a.last_activity_at).getTime() : Date.now();
+          const bTime = b.last_activity_at ? new Date(b.last_activity_at).getTime() : Date.now();
+          return aTime - bTime; // oldest activity first (most stale on top)
         }
         const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
         const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return aTime - bTime; // oldest first
+        return bTime - aTime; // newest first
       });
     });
     return map;
