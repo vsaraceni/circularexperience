@@ -39,7 +39,7 @@ interface LeadDrawerProps {
   onNoteAdded?: () => void;
 }
 
-const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, onNoteAdded }) => {
+const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded }) => {
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
