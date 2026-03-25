@@ -38,7 +38,7 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  leads, userId, proposals, onLeadUpdated, onGenerateProposal, onSendWelcome,
+  leads, userId, proposals, profiles, onLeadUpdated, onGenerateProposal, onSendWelcome,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
