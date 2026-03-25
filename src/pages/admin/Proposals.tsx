@@ -54,7 +54,7 @@ const Proposals = () => {
   const [showForm, setShowForm] = useState(false);
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("leads");
+  const [activeTab, setActiveTab] = useState("rascunhos");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
   const [searchTerm, setSearchTerm] = useState("");
@@ -376,7 +376,7 @@ const Proposals = () => {
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-foreground">Pipeline Comercial</h1>
+              <h1 className="text-2xl font-bold text-foreground">{viewMode === "list" ? "Propostas" : "Pipeline Comercial"}</h1>
               <Button onClick={() => { setPrefill(undefined); setShowForm(true); }}>
                 <Plus className="h-4 w-4 mr-1" /> Nova Proposta
               </Button>
@@ -433,27 +433,14 @@ const Proposals = () => {
               </>
             ) : (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="w-full grid grid-cols-5">
-                  <TabsTrigger value="leads">
-                    Leads {leads.length > 0 && `(${leads.length})`}
-                  </TabsTrigger>
+                <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="rascunhos">
                     Rascunhos {proposalsByStatus("rascunho").length > 0 && `(${proposalsByStatus("rascunho").length})`}
                   </TabsTrigger>
                   <TabsTrigger value="enviadas">
                     Enviadas {proposalsByStatus("enviada").length > 0 && `(${proposalsByStatus("enviada").length})`}
                   </TabsTrigger>
-                  <TabsTrigger value="fechadas">
-                    Fechadas {proposalsByStatus("fechada").length > 0 && `(${proposalsByStatus("fechada").length})`}
-                  </TabsTrigger>
-                  <TabsTrigger value="perdidas">
-                    Perdidas {proposalsByStatus("perdida").length > 0 && `(${proposalsByStatus("perdida").length})`}
-                  </TabsTrigger>
                 </TabsList>
-
-                <TabsContent value="leads">
-                  <LeadList leads={leads} onGenerateProposal={handleGenerateProposal} onLeadUpdated={fetchLeads} authorDefaults={authorDefaults} />
-                </TabsContent>
 
                 <TabsContent value="rascunhos">
                   <ProposalList
@@ -472,26 +459,6 @@ const Proposals = () => {
                     onDelete={handleDelete}
                     onStatusChange={handleStatusChange}
                     statusFilter="enviada"
-                  />
-                </TabsContent>
-
-                <TabsContent value="fechadas">
-                  <ProposalList
-                    proposals={proposalsByStatus("fechada")}
-                    onEdit={(p) => setEditing(p)}
-                    onDelete={handleDelete}
-                    onStatusChange={handleStatusChange}
-                    statusFilter="fechada"
-                  />
-                </TabsContent>
-
-                <TabsContent value="perdidas">
-                  <ProposalList
-                    proposals={proposalsByStatus("perdida")}
-                    onEdit={(p) => setEditing(p)}
-                    onDelete={handleDelete}
-                    onStatusChange={handleStatusChange}
-                    statusFilter="perdida"
                   />
                 </TabsContent>
               </Tabs>
