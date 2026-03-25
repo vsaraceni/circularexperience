@@ -1,38 +1,31 @@
 
 
-## Correção do Parse de Investimento — Suporte a Multiplicadores
+## Problema: RLS de Profiles Bloqueia Visualização de Outros Usuários
 
-### Problema
-
-O campo investimento aceita texto livre como `"2x de R$ 28.000,00"`. A função `parseInvestment` remove tudo que não é dígito/vírgula/ponto, resultando em `"228000"` → `228.000` ao invés de `2 × 28.000 = 56.000`.
+A tabela `profiles` tem RLS que só permite cada usuário ver **seu próprio perfil** (`id = auth.uid()`). Quando o admin busca todos os profiles para o dropdown de atribuição, só recebe o dele mesmo.
 
 ### Solução
 
-Reescrever `parseInvestment` em `KanbanColumn.tsx` para detectar padrões de multiplicador **antes** de limpar o valor:
+Adicionar uma policy de SELECT que permita admins verem todos os profiles:
 
-```text
-Padrões reconhecidos:
-  "2x de R$ 28.000,00"  →  regex: /(\d+)\s*x\s*/i  →  multiplier=2, value=28000
-  "3x R$ 10.000"        →  multiplier=3, value=10000
-  "R$ 28.000,00"         →  multiplier=1, value=28000
-  "56000"                →  multiplier=1, value=56000
+```sql
+CREATE POLICY "Admins can view all profiles"
+ON public.profiles FOR SELECT
+TO authenticated
+USING (has_role(auth.uid(), 'admin'::app_role));
 ```
 
-Lógica:
-1. Procurar `(\d+)\s*x\s*` no início ou antes do valor monetário
-2. Se encontrar, extrair multiplicador e remover do texto
-3. Parsear o restante com a lógica atual (remover pontos de milhar, trocar vírgula por ponto decimal)
-4. Retornar `multiplicador × valor`
+### Alterações
 
-### Arquivo impactado
+| O quê | Detalhe |
+|-------|---------|
+| **Migration** | 1 policy nova na tabela `profiles` |
+| **Código** | Nenhuma alteração necessária — `fetchProfiles` já faz `select("id, full_name")`, vai funcionar automaticamente |
 
-| Arquivo | Mudança |
-|---------|---------|
-| `KanbanColumn.tsx` | Reescrever `parseInvestment` (~10 linhas) |
+### Segurança
 
-### Sem risco
+- A tabela `profiles` só tem campos não-sensíveis (nome, email, cargo, phone) — sem risco de exposição.
+- Apenas admins autenticados ganham acesso; usuários normais continuam vendo só o próprio perfil.
 
-- Não cria campos novos
-- Se não houver multiplicador, o comportamento é idêntico ao atual (1 × valor)
-- Funciona para qualquer proposta com ou sem o padrão `Nx`
+**1 migration, 0 arquivos de código alterados.**
 
