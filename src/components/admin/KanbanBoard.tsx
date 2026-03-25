@@ -131,6 +131,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
 
+    // Auto-assign: first action on a "novo" lead claims ownership
+    if (lead.kanban_stage === "novo" && !lead.assigned_to && userId) {
+      await supabase.from("leads").update({
+        assigned_to: userId,
+        assigned_at: now,
+        last_activity_at: now,
+      }).eq("id", lead.id);
+      await supabase.from("lead_activities").insert({
+        lead_id: lead.id,
+        user_id: userId,
+        activity_type: "lead_atribuido",
+        content: "Responsável atribuído automaticamente pela primeira ação",
+      });
+    }
+
     switch (action) {
       case "send_welcome": {
         const { data: freshLead } = await supabase.from("leads").select("welcome_sent").eq("id", lead.id).single();
