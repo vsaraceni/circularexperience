@@ -11,6 +11,7 @@ export interface KanbanStage {
 interface KanbanColumnProps {
   stage: KanbanStage;
   leads: Lead[];
+  profiles?: { id: string; full_name: string | null }[];
   proposals: { id: string; lead_id?: string; investment: string }[];
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
