@@ -28,7 +28,7 @@ function formatBRL(val: number): string {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, proposals, onOpenDrawer, onQuickAction }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
