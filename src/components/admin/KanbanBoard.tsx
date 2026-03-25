@@ -319,6 +319,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onOpenChange={setDrawerOpen}
         onQuickAction={handleQuickAction}
         userId={userId}
+        profiles={profiles}
         onNoteAdded={onLeadUpdated}
       />
 

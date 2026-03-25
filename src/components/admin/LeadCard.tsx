@@ -112,10 +112,24 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], onOpenDrawer, 
         <UrgencyBadge lastActivityAt={lead.last_activity_at || null} />
       </div>
 
-      <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mb-2">
-        <User className="h-3 w-3 shrink-0" />
-        {lead.name}
-      </p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+          <User className="h-3 w-3 shrink-0" />
+          {lead.name}
+        </p>
+        {ownerInitials && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Avatar className="h-5 w-5 text-[9px]">
+                <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                  {ownerInitials}
+                </AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent>{ownerProfile?.full_name}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
       {actions.length > 0 && (
         <div className="flex gap-1 flex-wrap">

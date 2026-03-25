@@ -60,6 +60,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
             <LeadCard
               key={lead.id}
               lead={lead}
+              profiles={profiles}
               onOpenDrawer={onOpenDrawer}
               onQuickAction={onQuickAction}
             />

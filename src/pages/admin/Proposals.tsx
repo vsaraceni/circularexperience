@@ -426,6 +426,7 @@ const Proposals = () => {
                   leads={filteredLeads}
                   userId={user!.id}
                   proposals={proposals}
+                  profiles={profiles}
                   onLeadUpdated={fetchLeads}
                   onGenerateProposal={handleGenerateProposal}
                   onSendWelcome={handleSendWelcomeFromKanban}
