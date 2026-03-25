@@ -295,6 +295,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 key={stage.id}
                 stage={stage}
                 leads={stageLeads}
+                profiles={profiles}
                 proposals={stageProposals}
                 onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
                 onQuickAction={handleQuickAction}
