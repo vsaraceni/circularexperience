@@ -1,26 +1,29 @@
 
 
-## Simplificar Modo Lista — Manter apenas Rascunhos e Enviadas
+## Visualizar e Alterar Proprietário do Lead
 
-### O que muda
+### O que será feito
 
-Na view "Lista" (toggle ícone de lista), remover as abas **Leads**, **Fechadas** e **Perdidas**, mantendo apenas **Rascunhos** e **Enviadas**. Renomear o título de "Pipeline Comercial" para "Propostas" nesta view.
+1. **Avatar do proprietário no LeadCard** — exibir avatar/iniciais do responsável no card do Kanban (já existe `assigned_to`, falta exibir o nome/avatar).
 
-### Impactos
+2. **Nome do proprietário no LeadDrawer** — na aba Resumo, mostrar linha "Responsável: Nome do Usuário".
 
-- **Zero impacto no Kanban** — leads e todos os estágios continuam funcionando normalmente no board.
-- **Zero impacto no banco** — nenhuma migration necessária.
-- **Funcionalidade mantida** — leads são geridos exclusivamente pelo Kanban; propostas fechadas/perdidas são acessíveis via Kanban (estágios "fechado"/"perdido"). Se precisar editar uma proposta fechada no futuro, o Kanban já permite isso via drawer.
-- **LeadList.tsx** — continua existindo no código (usado pelo Kanban internamente), mas não é mais renderizado como aba.
+3. **Dropdown de reatribuição no LeadDrawer** — abaixo do nome do responsável, um `<Select>` com lista de admins (query em `profiles` + `user_roles`) para reatribuir. Ao mudar: atualizar `assigned_to` + `assigned_at` + registrar atividade `lead_reatribuido`.
 
-### Alterações
+### Fluxo de dados
 
-**Arquivo**: `src/pages/admin/Proposals.tsx`
+- `Proposals.tsx` já faz fetch de `profiles` (para filtro de responsável). Passar esse array ao `KanbanBoard` → `LeadDrawer`.
+- `LeadCard` recebe `profiles` para resolver `assigned_to` → iniciais do avatar.
 
-1. Alterar `activeTab` default de `"leads"` para `"rascunhos"`
-2. Remover as abas Leads, Fechadas e Perdidas do `<TabsList>` (reduzir grid de 5 para 2 colunas)
-3. Remover os `<TabsContent>` correspondentes (leads, fechadas, perdidas)
-4. Alterar título "Pipeline Comercial" para "Propostas" quando `viewMode === "list"`
+### Arquivos impactados
 
-**1 arquivo impactado, ~30 linhas removidas.**
+| Arquivo | Mudança |
+|---------|---------|
+| `LeadCard.tsx` | Exibir avatar/iniciais do `assigned_to` usando array de profiles |
+| `LeadDrawer.tsx` | Linha "Responsável" + Select para reatribuir |
+| `KanbanBoard.tsx` | Repassar `profiles` ao LeadCard e LeadDrawer |
+| `Proposals.tsx` | Passar `profiles` ao KanbanBoard |
+
+### Sem alteração de banco
+Campos `assigned_to` e `assigned_at` já existem na tabela `leads`.
 
