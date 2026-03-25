@@ -31,6 +31,7 @@ interface KanbanBoardProps {
   leads: Lead[];
   userId: string;
   proposals: Proposal[];
+  profiles?: { id: string; full_name: string | null }[];
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
