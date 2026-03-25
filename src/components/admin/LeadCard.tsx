@@ -8,8 +8,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import UrgencyBadge from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
 
+interface Profile {
+  id: string;
+  full_name: string | null;
+}
+
 interface LeadCardProps {
   lead: Lead;
+  profiles?: Profile[];
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
