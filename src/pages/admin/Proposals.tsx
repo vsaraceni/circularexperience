@@ -54,7 +54,7 @@ const Proposals = () => {
   const [showForm, setShowForm] = useState(false);
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("leads");
+  const [activeTab, setActiveTab] = useState("rascunhos");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
   const [searchTerm, setSearchTerm] = useState("");
