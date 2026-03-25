@@ -4,11 +4,18 @@ import { differenceInDays } from "date-fns";
 import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import UrgencyBadge from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
 
+interface Profile {
+  id: string;
+  full_name: string | null;
+}
+
 interface LeadCardProps {
   lead: Lead;
+  profiles?: Profile[];
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
@@ -67,7 +74,11 @@ function getUrgencyClasses(lastActivityAt: string | null): string {
   return "bg-red-500/5 border-red-500/20";
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], onOpenDrawer, onQuickAction }) => {
+  const ownerProfile = profiles.find((p) => p.id === lead.assigned_to);
+  const ownerInitials = ownerProfile?.full_name
+    ? ownerProfile.full_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
+    : null;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
@@ -101,10 +112,24 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }
         <UrgencyBadge lastActivityAt={lead.last_activity_at || null} />
       </div>
 
-      <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mb-2">
-        <User className="h-3 w-3 shrink-0" />
-        {lead.name}
-      </p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+          <User className="h-3 w-3 shrink-0" />
+          {lead.name}
+        </p>
+        {ownerInitials && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Avatar className="h-5 w-5 text-[9px]">
+                <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                  {ownerInitials}
+                </AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent>{ownerProfile?.full_name}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
 
       {actions.length > 0 && (
         <div className="flex gap-1 flex-wrap">

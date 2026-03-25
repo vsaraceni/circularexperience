@@ -31,13 +31,14 @@ interface KanbanBoardProps {
   leads: Lead[];
   userId: string;
   proposals: Proposal[];
+  profiles?: { id: string; full_name: string | null }[];
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  leads, userId, proposals, onLeadUpdated, onGenerateProposal, onSendWelcome,
+  leads, userId, proposals, profiles, onLeadUpdated, onGenerateProposal, onSendWelcome,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -294,6 +295,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 key={stage.id}
                 stage={stage}
                 leads={stageLeads}
+                profiles={profiles}
                 proposals={stageProposals}
                 onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
                 onQuickAction={handleQuickAction}
@@ -317,6 +319,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onOpenChange={setDrawerOpen}
         onQuickAction={handleQuickAction}
         userId={userId}
+        profiles={profiles}
         onNoteAdded={onLeadUpdated}
       />
 
