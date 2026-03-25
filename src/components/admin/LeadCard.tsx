@@ -74,7 +74,11 @@ function getUrgencyClasses(lastActivityAt: string | null): string {
   return "bg-red-500/5 border-red-500/20";
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, onOpenDrawer, onQuickAction }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], onOpenDrawer, onQuickAction }) => {
+  const ownerProfile = profiles.find((p) => p.id === lead.assigned_to);
+  const ownerInitials = ownerProfile?.full_name
+    ? ownerProfile.full_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
+    : null;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     data: { lead },
