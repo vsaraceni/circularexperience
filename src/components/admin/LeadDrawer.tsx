@@ -35,6 +35,7 @@ interface LeadDrawerProps {
   onOpenChange: (open: boolean) => void;
   onQuickAction: (lead: Lead, action: string) => void;
   userId?: string;
+  profiles?: { id: string; full_name: string | null }[];
   onNoteAdded?: () => void;
 }
 
