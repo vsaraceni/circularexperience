@@ -1,29 +1,38 @@
 
 
-## Visualizar e Alterar Proprietário do Lead
+## Correção do Parse de Investimento — Suporte a Multiplicadores
 
-### O que será feito
+### Problema
 
-1. **Avatar do proprietário no LeadCard** — exibir avatar/iniciais do responsável no card do Kanban (já existe `assigned_to`, falta exibir o nome/avatar).
+O campo investimento aceita texto livre como `"2x de R$ 28.000,00"`. A função `parseInvestment` remove tudo que não é dígito/vírgula/ponto, resultando em `"228000"` → `228.000` ao invés de `2 × 28.000 = 56.000`.
 
-2. **Nome do proprietário no LeadDrawer** — na aba Resumo, mostrar linha "Responsável: Nome do Usuário".
+### Solução
 
-3. **Dropdown de reatribuição no LeadDrawer** — abaixo do nome do responsável, um `<Select>` com lista de admins (query em `profiles` + `user_roles`) para reatribuir. Ao mudar: atualizar `assigned_to` + `assigned_at` + registrar atividade `lead_reatribuido`.
+Reescrever `parseInvestment` em `KanbanColumn.tsx` para detectar padrões de multiplicador **antes** de limpar o valor:
 
-### Fluxo de dados
+```text
+Padrões reconhecidos:
+  "2x de R$ 28.000,00"  →  regex: /(\d+)\s*x\s*/i  →  multiplier=2, value=28000
+  "3x R$ 10.000"        →  multiplier=3, value=10000
+  "R$ 28.000,00"         →  multiplier=1, value=28000
+  "56000"                →  multiplier=1, value=56000
+```
 
-- `Proposals.tsx` já faz fetch de `profiles` (para filtro de responsável). Passar esse array ao `KanbanBoard` → `LeadDrawer`.
-- `LeadCard` recebe `profiles` para resolver `assigned_to` → iniciais do avatar.
+Lógica:
+1. Procurar `(\d+)\s*x\s*` no início ou antes do valor monetário
+2. Se encontrar, extrair multiplicador e remover do texto
+3. Parsear o restante com a lógica atual (remover pontos de milhar, trocar vírgula por ponto decimal)
+4. Retornar `multiplicador × valor`
 
-### Arquivos impactados
+### Arquivo impactado
 
 | Arquivo | Mudança |
 |---------|---------|
-| `LeadCard.tsx` | Exibir avatar/iniciais do `assigned_to` usando array de profiles |
-| `LeadDrawer.tsx` | Linha "Responsável" + Select para reatribuir |
-| `KanbanBoard.tsx` | Repassar `profiles` ao LeadCard e LeadDrawer |
-| `Proposals.tsx` | Passar `profiles` ao KanbanBoard |
+| `KanbanColumn.tsx` | Reescrever `parseInvestment` (~10 linhas) |
 
-### Sem alteração de banco
-Campos `assigned_to` e `assigned_at` já existem na tabela `leads`.
+### Sem risco
+
+- Não cria campos novos
+- Se não houver multiplicador, o comportamento é idêntico ao atual (1 × valor)
+- Funciona para qualquer proposta com ou sem o padrão `Nx`
 
