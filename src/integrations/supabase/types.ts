@@ -97,6 +97,7 @@ export type Database = {
           assigned_at: string | null
           assigned_to: string | null
           cargo: string | null
+          closed_at: string | null
           company: string | null
           company_description: string | null
           company_website: string | null
@@ -122,6 +123,7 @@ export type Database = {
           assigned_at?: string | null
           assigned_to?: string | null
           cargo?: string | null
+          closed_at?: string | null
           company?: string | null
           company_description?: string | null
           company_website?: string | null
@@ -147,6 +149,7 @@ export type Database = {
           assigned_at?: string | null
           assigned_to?: string | null
           cargo?: string | null
+          closed_at?: string | null
           company?: string | null
           company_description?: string | null
           company_website?: string | null
@@ -202,6 +205,39 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+        }
+        Relationships: []
+      }
+      proposal_submissions: {
+        Row: {
+          channels: string[]
+          created_at: string | null
+          created_by: string
+          id: string
+          lead_id: string
+          notes: string | null
+          proposal_id: string | null
+          sent_at: string
+        }
+        Insert: {
+          channels?: string[]
+          created_at?: string | null
+          created_by: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+          proposal_id?: string | null
+          sent_at?: string
+        }
+        Update: {
+          channels?: string[]
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          proposal_id?: string | null
+          sent_at?: string
         }
         Relationships: []
       }
