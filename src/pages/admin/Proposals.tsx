@@ -402,6 +402,13 @@ const Proposals = () => {
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
+            ) : showLost ? (
+              <LostLeadsView
+                leads={allLeads}
+                profiles={profiles}
+                userId={user!.id}
+                onLeadUpdated={fetchLeads}
+              />
             ) : viewMode === "kanban" ? (
               <>
                 {/* Filters */}
