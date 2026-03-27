@@ -31,7 +31,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Fetch lead
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
       .select("email, company")
@@ -45,56 +44,92 @@ Deno.serve(async (req) => {
       });
     }
 
+    const companyName = (lead.company || "").trim();
     const emailDomain = lead.email.split("@")[1]?.toLowerCase() || "";
     const isGeneric = GENERIC_DOMAINS.includes(emailDomain);
-    const website = isGeneric ? "" : `https://${emailDomain}`;
+    const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
 
-    let description = "";
+    let website = "";
+    let siteMarkdown = "";
 
-    // Try Firecrawl if corporate domain
-    if (!isGeneric && website) {
-      const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
-      if (firecrawlKey) {
-        try {
-          console.log("Scraping with Firecrawl:", website);
-          const fcRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${firecrawlKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              url: website,
-              formats: ["markdown"],
-              onlyMainContent: true,
-            }),
-          });
+    // Strategy 1: Search by company name via Firecrawl (most accurate)
+    if (companyName && firecrawlKey) {
+      try {
+        console.log("Searching for company:", companyName);
+        const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${firecrawlKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: `"${companyName}" site oficial`,
+            limit: 3,
+            lang: "pt-br",
+            country: "br",
+            scrapeOptions: { formats: ["markdown"], onlyMainContent: true },
+          }),
+        });
 
-          const fcData = await fcRes.json();
-          const markdown = fcData?.data?.markdown || fcData?.markdown || "";
+        const searchData = await searchRes.json();
+        const results = searchData?.data || [];
 
-          if (markdown && markdown.length > 50) {
-            // Use AI to summarize
-            description = await summarizeWithAI(
-              lead.company || emailDomain,
-              markdown
-            );
-          }
-        } catch (e) {
-          console.error("Firecrawl error:", e);
+        if (results.length > 0) {
+          // Pick best result — prefer one whose URL/title matches company name
+          const companyLower = companyName.toLowerCase();
+          const best = results.find((r: any) =>
+            (r.url || "").toLowerCase().includes(companyLower.replace(/\s+/g, "").slice(0, 8)) ||
+            (r.title || "").toLowerCase().includes(companyLower)
+          ) || results[0];
+
+          website = best.url || "";
+          siteMarkdown = best.markdown || "";
+          console.log("Found via search:", website);
         }
+      } catch (e) {
+        console.error("Firecrawl search error:", e);
       }
     }
 
-    // Fallback: AI only with company name
-    if (!description) {
-      description = await summarizeWithAI(
-        lead.company || emailDomain,
-        null
-      );
+    // Strategy 2: Fallback to email domain scrape (if corporate)
+    if (!siteMarkdown && !isGeneric && emailDomain && firecrawlKey) {
+      const domainUrl = `https://${emailDomain}`;
+      try {
+        console.log("Fallback: scraping email domain:", domainUrl);
+        const fcRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${firecrawlKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: domainUrl,
+            formats: ["markdown"],
+            onlyMainContent: true,
+          }),
+        });
+
+        const fcData = await fcRes.json();
+        const markdown = fcData?.data?.markdown || fcData?.markdown || "";
+
+        if (markdown && markdown.length > 50) {
+          if (!website) website = domainUrl;
+          siteMarkdown = markdown;
+        }
+      } catch (e) {
+        console.error("Firecrawl scrape error:", e);
+      }
     }
 
-    // Save to lead
+    // Generate description with AI
+    let description = "";
+    if (siteMarkdown) {
+      description = await summarizeWithAI(companyName || emailDomain, siteMarkdown);
+    } else {
+      description = await summarizeWithAI(companyName || emailDomain, null);
+    }
+
+    // Save
     await supabase
       .from("leads")
       .update({
@@ -104,20 +139,15 @@ Deno.serve(async (req) => {
       })
       .eq("id", lead_id);
 
-    // Log activity
     await supabase.from("lead_activities").insert({
       lead_id,
       user_id: user_id || null,
       activity_type: "empresa_enriquecida",
-      content: `Empresa enriquecida: ${website || "sem site corporativo"}`,
+      content: `Empresa enriquecida: ${website || "sem site encontrado"}`,
     });
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        company_website: website,
-        company_description: description,
-      }),
+      JSON.stringify({ success: true, company_website: website, company_description: description }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
