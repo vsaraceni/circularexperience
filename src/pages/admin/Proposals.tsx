@@ -354,6 +354,9 @@ const Proposals = () => {
                 <List className="h-4 w-4" />
               </Button>
             </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/dashboard")}>
+              <BarChart3 className="h-4 w-4 mr-1" /> Dashboard
+            </Button>
             {user && <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />}
             <EmailTemplateEditor />
             <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
