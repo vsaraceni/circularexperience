@@ -310,6 +310,19 @@ function InfoRow({
     );
   }
 
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block hover:text-primary transition-colors"
+      >
+        {content}
+      </a>
+    );
+  }
+
   return content;
 }
 
