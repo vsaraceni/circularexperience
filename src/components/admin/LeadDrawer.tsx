@@ -9,6 +9,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
+  Globe, Sparkles, Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,8 +44,32 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [enriching, setEnriching] = useState(false);
 
   if (!lead) return null;
+
+  const handleEnrich = async () => {
+    setEnriching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-lead", {
+        body: { lead_id: lead.id, user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        lead.company_website = data.company_website;
+        lead.company_description = data.company_description;
+        setRefreshKey((k) => k + 1);
+        onNoteAdded?.();
+        toast.success("Empresa enriquecida!");
+      } else {
+        toast.error(data?.error || "Erro ao enriquecer");
+      }
+    } catch {
+      toast.error("Erro ao enriquecer empresa");
+    } finally {
+      setEnriching(false);
+    }
+  };
 
   const handleSaveNote = async () => {
     if (!noteText.trim() || !userId) return;
@@ -146,6 +171,37 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               />
             </div>
 
+            {/* Company enrichment section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Empresa</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  onClick={handleEnrich}
+                  disabled={enriching}
+                >
+                  {enriching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {enriching ? "Enriquecendo..." : lead.company_description ? "Reenriquecer" : "Enriquecer"}
+                </Button>
+              </div>
+              {lead.company_website && (
+                <InfoRow
+                  icon={<Globe className="h-4 w-4" />}
+                  label="Site"
+                  value={lead.company_website.replace(/^https?:\/\//, "")}
+                  href={lead.company_website}
+                />
+              )}
+              {lead.company_description && (
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Sobre a empresa</p>
+                  <p className="text-sm text-foreground">{lead.company_description}</p>
+                </div>
+              )}
+            </div>
+
             {lead.mensagem && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Mensagem</p>
@@ -215,10 +271,10 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
 };
 
 function InfoRow({
-  icon, label, value, linkedin, company, whatsapp,
+  icon, label, value, linkedin, company, whatsapp, href,
 }: {
   icon: React.ReactNode; label: string; value: string;
-  linkedin?: string; company?: string; whatsapp?: string;
+  linkedin?: string; company?: string; whatsapp?: string; href?: string;
 }) {
   const content = (
     <div className="flex items-center gap-2 text-sm">
@@ -245,6 +301,19 @@ function InfoRow({
     return (
       <a
         href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block hover:text-primary transition-colors"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  if (href) {
+    return (
+      <a
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="block hover:text-primary transition-colors"

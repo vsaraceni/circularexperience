@@ -98,6 +98,8 @@ export type Database = {
           assigned_to: string | null
           cargo: string | null
           company: string | null
+          company_description: string | null
+          company_website: string | null
           created_at: string | null
           email: string
           id: string
@@ -121,6 +123,8 @@ export type Database = {
           assigned_to?: string | null
           cargo?: string | null
           company?: string | null
+          company_description?: string | null
+          company_website?: string | null
           created_at?: string | null
           email: string
           id?: string
@@ -144,6 +148,8 @@ export type Database = {
           assigned_to?: string | null
           cargo?: string | null
           company?: string | null
+          company_description?: string | null
+          company_website?: string | null
           created_at?: string | null
           email?: string
           id?: string

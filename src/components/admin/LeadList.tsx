@@ -36,6 +36,8 @@ export interface Lead {
   whatsapp_sent?: boolean;
   lost_reason?: string | null;
   lost_notes?: string | null;
+  company_website?: string | null;
+  company_description?: string | null;
 }
 
 interface AuthorDefaults {
