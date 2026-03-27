@@ -1,31 +1,52 @@
 
 
-## Problema: RLS de Profiles Bloqueia Visualização de Outros Usuários
+## Enriquecer Lead com Site e Descrição via Firecrawl + IA
 
-A tabela `profiles` tem RLS que só permite cada usuário ver **seu próprio perfil** (`id = auth.uid()`). Quando o admin busca todos os profiles para o dropdown de atribuição, só recebe o dele mesmo.
+### Passo 1 — Conectar Firecrawl
 
-### Solução
+O Firecrawl ainda nao esta conectado ao workspace. Sera necessario conecta-lo antes de implementar.
 
-Adicionar uma policy de SELECT que permita admins verem todos os profiles:
+### Passo 2 — Migration: 2 colunas novas em `leads`
 
 ```sql
-CREATE POLICY "Admins can view all profiles"
-ON public.profiles FOR SELECT
-TO authenticated
-USING (has_role(auth.uid(), 'admin'::app_role));
+ALTER TABLE leads ADD COLUMN company_website text DEFAULT '';
+ALTER TABLE leads ADD COLUMN company_description text DEFAULT '';
 ```
 
-### Alterações
+### Passo 3 — Edge Function `enrich-lead`
 
-| O quê | Detalhe |
-|-------|---------|
-| **Migration** | 1 policy nova na tabela `profiles` |
-| **Código** | Nenhuma alteração necessária — `fetchProfiles` já faz `select("id, full_name")`, vai funcionar automaticamente |
+Nova function que:
+1. Recebe `lead_id`
+2. Busca o lead no banco (email + company)
+3. Extrai dominio do email corporativo (ex: `joao@aldenergia.com.br` → `aldenergia.com.br`)
+4. Ignora dominios genericos (gmail, hotmail, outlook, yahoo)
+5. Usa Firecrawl scrape (`formats: ['summary']`) para obter resumo do site
+6. Se Firecrawl falhar ou dominio generico, usa Lovable AI (Gemini Flash) para gerar descricao baseada apenas no nome da empresa
+7. Salva `company_website` e `company_description` no lead
+8. Registra atividade `empresa_enriquecida` na timeline
 
-### Segurança
+### Passo 4 — UI no LeadDrawer
 
-- A tabela `profiles` só tem campos não-sensíveis (nome, email, cargo, phone) — sem risco de exposição.
-- Apenas admins autenticados ganham acesso; usuários normais continuam vendo só o próprio perfil.
+Na aba Resumo, adicionar:
+- Linha "Site" com icone Globe + link clicavel (se preenchido)
+- Bloco "Sobre a empresa" com texto da descricao (se preenchido)
+- Botao "Enriquecer" com icone Sparkles — chama a edge function via `supabase.functions.invoke('enrich-lead')`
+- Loading state enquanto processa
 
-**1 migration, 0 arquivos de código alterados.**
+### Passo 5 — Atualizar interface Lead
+
+Adicionar `company_website` e `company_description` ao type `Lead` em `LeadList.tsx`.
+
+### Arquivos impactados
+
+| Arquivo | Mudanca |
+|---------|---------|
+| migration | 2 colunas em `leads` |
+| `supabase/functions/enrich-lead/index.ts` | Nova edge function |
+| `src/components/admin/LeadDrawer.tsx` | Exibir site + descricao + botao enriquecer |
+| `src/components/admin/LeadList.tsx` | 2 campos no type Lead |
+
+### Prerequisito
+
+Conectar Firecrawl ao projeto antes de implementar. Sera solicitado no inicio da implementacao.
 
