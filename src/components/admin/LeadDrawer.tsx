@@ -44,8 +44,32 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [enriching, setEnriching] = useState(false);
 
   if (!lead) return null;
+
+  const handleEnrich = async () => {
+    setEnriching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enrich-lead", {
+        body: { lead_id: lead.id, user_id: userId },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        lead.company_website = data.company_website;
+        lead.company_description = data.company_description;
+        setRefreshKey((k) => k + 1);
+        onNoteAdded?.();
+        toast.success("Empresa enriquecida!");
+      } else {
+        toast.error(data?.error || "Erro ao enriquecer");
+      }
+    } catch {
+      toast.error("Erro ao enriquecer empresa");
+    } finally {
+      setEnriching(false);
+    }
+  };
 
   const handleSaveNote = async () => {
     if (!noteText.trim() || !userId) return;
