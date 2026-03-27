@@ -271,10 +271,10 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
 };
 
 function InfoRow({
-  icon, label, value, linkedin, company, whatsapp,
+  icon, label, value, linkedin, company, whatsapp, href,
 }: {
   icon: React.ReactNode; label: string; value: string;
-  linkedin?: string; company?: string; whatsapp?: string;
+  linkedin?: string; company?: string; whatsapp?: string; href?: string;
 }) {
   const content = (
     <div className="flex items-center gap-2 text-sm">
