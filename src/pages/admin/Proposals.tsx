@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
