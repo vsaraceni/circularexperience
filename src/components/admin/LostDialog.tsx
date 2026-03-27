@@ -8,12 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 
 const LOST_REASONS = [
-  "Sem orçamento",
-  "Timing inadequado",
-  "Escolheu concorrente",
   "Sem resposta",
-  "Escopo não atendido",
-  "Outro",
+  "Preço fora do orçamento",
+  "Escolheu outro fornecedor",
+  "Projeto cancelado ou adiado",
+  "Sem fit com o produto",
+  "Timing — pode voltar no futuro",
 ];
 
 interface LostDialogProps {
@@ -37,7 +37,7 @@ const LostDialog: React.FC<LostDialogProps> = ({ open, onOpenChange, onConfirm, 
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Marcar como Perdido</AlertDialogTitle>
+          <AlertDialogTitle>Por que este lead foi perdido?</AlertDialogTitle>
           <AlertDialogDescription>
             Registrar o lead "{leadName}" como perdido. Selecione o motivo.
           </AlertDialogDescription>
@@ -61,7 +61,7 @@ const LostDialog: React.FC<LostDialogProps> = ({ open, onOpenChange, onConfirm, 
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} disabled={!reason}>Confirmar</AlertDialogAction>
+          <AlertDialogAction onClick={handleConfirm} disabled={!reason}>Confirmar perda</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

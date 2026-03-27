@@ -40,6 +40,9 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
 
   const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
 
+  // Build a set of lead IDs that have proposals
+  const leadsWithProposals = new Set(proposals.filter((p) => p.lead_id).map((p) => p.lead_id));
+
   return (
     <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0">
       <div
@@ -68,6 +71,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
               key={lead.id}
               lead={lead}
               profiles={profiles}
+              hasProposal={leadsWithProposals.has(lead.id)}
               onOpenDrawer={onOpenDrawer}
               onQuickAction={onQuickAction}
             />
