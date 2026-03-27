@@ -378,10 +378,24 @@ const Proposals = () => {
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-foreground">{viewMode === "list" ? "Propostas" : "Pipeline Comercial"}</h1>
-              <Button onClick={() => { setPrefill(undefined); setShowForm(true); }}>
-                <Plus className="h-4 w-4 mr-1" /> Nova Proposta
-              </Button>
+              <h1 className="text-2xl font-bold text-foreground">{showLost ? "Leads Perdidos" : viewMode === "list" ? "Propostas" : "Pipeline Comercial"}</h1>
+              <div className="flex items-center gap-2">
+                {viewMode === "kanban" && !showLost && (
+                  <Button variant="outline" size="sm" onClick={() => setShowLost(true)}>
+                    <Eye className="h-4 w-4 mr-1" /> Ver Perdidos
+                  </Button>
+                )}
+                {showLost && (
+                  <Button variant="outline" size="sm" onClick={() => setShowLost(false)}>
+                    <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Pipeline
+                  </Button>
+                )}
+                {!showLost && (
+                  <Button onClick={() => { setPrefill(undefined); setShowForm(true); }}>
+                    <Plus className="h-4 w-4 mr-1" /> Nova Proposta
+                  </Button>
+                )}
+              </div>
             </div>
 
             {loading ? (
