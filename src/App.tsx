@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Proposals from "./pages/admin/Proposals";
 import ProposalView from "./pages/ProposalView";
 import PrintablePresentation from "./pages/PrintablePresentation";
+import Dashboard from "./pages/admin/Dashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
