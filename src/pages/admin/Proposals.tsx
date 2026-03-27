@@ -57,6 +57,7 @@ const Proposals = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("rascunhos");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
+  const [showLost, setShowLost] = useState(false);
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("all");
