@@ -8,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
 import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
+import SubmissionDialog from "./SubmissionDialog";
+import ContactDialog from "./ContactDialog";
 import type { Lead } from "./LeadList";
 
 const STAGES: KanbanStage[] = [
@@ -18,7 +20,6 @@ const STAGES: KanbanStage[] = [
   { id: "proposta", label: "Proposta", color: "#06b6d4" },
   { id: "nutricao", label: "Nutrição", color: "#ec4899" },
   { id: "fechado", label: "Fechado", color: "#22c55e" },
-  { id: "perdido", label: "Perdido", color: "#ef4444" },
 ];
 
 interface Proposal {
@@ -45,6 +46,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [sortMode, setSortMode] = useState<"arrival" | "stale">("arrival");
+  const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
+  const [contactLead, setContactLead] = useState<Lead | null>(null);
 
   const handleDragStart = (event: DragStartEvent) => {
     const lead = leads.find((l) => l.id === event.active.id);
@@ -55,29 +58,31 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
+  // Filter out lost leads from kanban
+  const activeLeads = useMemo(() => leads.filter((l) => l.kanban_stage !== "perdido"), [leads]);
+
   const leadsByStage = useMemo(() => {
     const map: Record<string, Lead[]> = {};
     STAGES.forEach((s) => (map[s.id] = []));
-    leads.forEach((l) => {
+    activeLeads.forEach((l) => {
       const stage = l.kanban_stage || "novo";
       if (map[stage]) map[stage].push(l);
       else map["novo"].push(l);
     });
-    // Sort each column
     Object.keys(map).forEach((key) => {
       map[key].sort((a, b) => {
         if (sortMode === "stale") {
           const aTime = a.last_activity_at ? new Date(a.last_activity_at).getTime() : Date.now();
           const bTime = b.last_activity_at ? new Date(b.last_activity_at).getTime() : Date.now();
-          return aTime - bTime; // oldest activity first (most stale on top)
+          return aTime - bTime;
         }
         const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
         const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return bTime - aTime; // newest first
+        return bTime - aTime;
       });
     });
     return map;
-  }, [leads, sortMode]);
+  }, [activeLeads, sortMode]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -103,13 +108,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         updates.assigned_at = now;
       }
 
-      if (newStage === "perdido") {
-        setLostLead(lead);
-        return;
-      }
-
       if (newStage === "fechado") {
         updates.status = "converted";
+        updates.closed_at = now;
       }
 
       const { error } = await supabase.from("leads").update(updates).eq("id", leadId);
@@ -186,7 +187,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         if (lead.telefone) {
           try {
             await navigator.clipboard.writeText(lead.telefone);
-            toast.success("Telefone copiado!");
+            toast.success("Número copiado!");
           } catch {
             toast.error("Erro ao copiar");
           }
@@ -201,7 +202,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         }
         break;
       case "schedule_call": {
-        // Open Google Calendar with pre-filled event
         const calendarUrl = new URL("https://calendar.google.com/calendar/render");
         calendarUrl.searchParams.set("action", "TEMPLATE");
         calendarUrl.searchParams.set("text", "Workshop imersivo Economia Circular");
@@ -227,18 +227,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         toast.success("Call registrada!");
         onLeadUpdated();
         break;
-      case "nurture":
-        await supabase.from("leads").update({ kanban_stage: "nutricao", stage_updated_at: now, last_activity_at: now }).eq("id", lead.id);
-        await supabase.from("lead_activities").insert({
-          lead_id: lead.id, user_id: userId,
-          activity_type: "stage_mudou", content: "Movido para Nutrição",
-        });
-        toast.success("Lead movido para Nutrição");
-        onLeadUpdated();
+      case "register_submission":
+        setSubmissionLead(lead);
+        break;
+      case "register_contact":
+        setContactLead(lead);
         break;
       case "close_won":
         await supabase.from("leads").update({
-          kanban_stage: "fechado", status: "converted", stage_updated_at: now, last_activity_at: now,
+          kanban_stage: "fechado", status: "converted", stage_updated_at: now, last_activity_at: now, closed_at: now,
         }).eq("id", lead.id);
         await supabase.from("lead_activities").insert({
           lead_id: lead.id, user_id: userId,
@@ -271,6 +268,59 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       toast.error("Erro: " + (err.message || ""));
     } finally {
       setLostLead(null);
+    }
+  };
+
+  const handleSubmissionConfirm = async (sentAt: Date, channels: string[], notes: string) => {
+    if (!submissionLead) return;
+    const now = new Date().toISOString();
+    try {
+      // Find the proposal for this lead
+      const proposal = proposals.find((p) => p.lead_id === submissionLead.id);
+
+      await supabase.from("proposal_submissions" as any).insert({
+        lead_id: submissionLead.id,
+        proposal_id: proposal?.id || null,
+        sent_at: sentAt.toISOString().split("T")[0],
+        channels,
+        notes,
+        created_by: userId,
+      });
+
+      await supabase.from("leads").update({
+        kanban_stage: "nutricao", stage_updated_at: now, last_activity_at: now,
+      }).eq("id", submissionLead.id);
+
+      await supabase.from("lead_activities").insert({
+        lead_id: submissionLead.id, user_id: userId,
+        activity_type: "proposta_enviada",
+        content: `Proposta enviada via ${channels.join(", ")}${notes ? ` — ${notes}` : ""}`,
+      });
+
+      toast.success("Envio registrado! Lead movido para Nutrição.");
+      onLeadUpdated();
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || ""));
+    } finally {
+      setSubmissionLead(null);
+    }
+  };
+
+  const handleContactConfirm = async (content: string) => {
+    if (!contactLead) return;
+    const now = new Date().toISOString();
+    try {
+      await supabase.from("leads").update({ last_activity_at: now }).eq("id", contactLead.id);
+      await supabase.from("lead_activities").insert({
+        lead_id: contactLead.id, user_id: userId,
+        activity_type: "contato_registrado", content,
+      });
+      toast.success("Contato registrado!");
+      onLeadUpdated();
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || ""));
+    } finally {
+      setContactLead(null);
     }
   };
 
@@ -343,6 +393,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onOpenChange={(open) => !open && setLostLead(null)}
         onConfirm={handleLostConfirm}
         leadName={lostLead?.company || lostLead?.name || ""}
+      />
+
+      <SubmissionDialog
+        open={!!submissionLead}
+        onOpenChange={(open) => !open && setSubmissionLead(null)}
+        onConfirm={handleSubmissionConfirm}
+        leadName={submissionLead?.company || submissionLead?.name || ""}
+      />
+
+      <ContactDialog
+        open={!!contactLead}
+        onOpenChange={(open) => !open && setContactLead(null)}
+        onConfirm={handleContactConfirm}
+        leadName={contactLead?.company || contactLead?.name || ""}
       />
     </TooltipProvider>
   );

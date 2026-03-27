@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
@@ -14,6 +14,7 @@ import LeadList, { type Lead } from "@/components/admin/LeadList";
 import KanbanBoard from "@/components/admin/KanbanBoard";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
+import LostLeadsView from "@/components/admin/LostLeadsView";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
@@ -56,6 +57,7 @@ const Proposals = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("rascunhos");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
+  const [showLost, setShowLost] = useState(false);
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("all");
@@ -376,16 +378,37 @@ const Proposals = () => {
         ) : (
           <>
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-foreground">{viewMode === "list" ? "Propostas" : "Pipeline Comercial"}</h1>
-              <Button onClick={() => { setPrefill(undefined); setShowForm(true); }}>
-                <Plus className="h-4 w-4 mr-1" /> Nova Proposta
-              </Button>
+              <h1 className="text-2xl font-bold text-foreground">{showLost ? "Leads Perdidos" : viewMode === "list" ? "Propostas" : "Pipeline Comercial"}</h1>
+              <div className="flex items-center gap-2">
+                {viewMode === "kanban" && !showLost && (
+                  <Button variant="outline" size="sm" onClick={() => setShowLost(true)}>
+                    <Eye className="h-4 w-4 mr-1" /> Ver Perdidos
+                  </Button>
+                )}
+                {showLost && (
+                  <Button variant="outline" size="sm" onClick={() => setShowLost(false)}>
+                    <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Pipeline
+                  </Button>
+                )}
+                {!showLost && (
+                  <Button onClick={() => { setPrefill(undefined); setShowForm(true); }}>
+                    <Plus className="h-4 w-4 mr-1" /> Nova Proposta
+                  </Button>
+                )}
+              </div>
             </div>
 
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
+            ) : showLost ? (
+              <LostLeadsView
+                leads={allLeads}
+                profiles={profiles}
+                userId={user!.id}
+                onLeadUpdated={fetchLeads}
+              />
             ) : viewMode === "kanban" ? (
               <>
                 {/* Filters */}
