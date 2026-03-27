@@ -171,6 +171,37 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               />
             </div>
 
+            {/* Company enrichment section */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Empresa</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 text-xs"
+                  onClick={handleEnrich}
+                  disabled={enriching}
+                >
+                  {enriching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {enriching ? "Enriquecendo..." : lead.company_description ? "Reenriquecer" : "Enriquecer"}
+                </Button>
+              </div>
+              {lead.company_website && (
+                <InfoRow
+                  icon={<Globe className="h-4 w-4" />}
+                  label="Site"
+                  value={lead.company_website.replace(/^https?:\/\//, "")}
+                  href={lead.company_website}
+                />
+              )}
+              {lead.company_description && (
+                <div className="bg-muted/50 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Sobre a empresa</p>
+                  <p className="text-sm text-foreground">{lead.company_description}</p>
+                </div>
+              )}
+            </div>
+
             {lead.mensagem && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Mensagem</p>
