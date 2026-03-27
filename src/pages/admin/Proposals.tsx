@@ -14,6 +14,7 @@ import LeadList, { type Lead } from "@/components/admin/LeadList";
 import KanbanBoard from "@/components/admin/KanbanBoard";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
+import LostLeadsView from "@/components/admin/LostLeadsView";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
