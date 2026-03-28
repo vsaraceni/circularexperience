@@ -1,12 +1,13 @@
 import { useDraggable } from "@dnd-kit/core";
-import { differenceInDays, format } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle, X, MessageSquare, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import UrgencyBadge from "./UrgencyBadge";
+import { Badge } from "@/components/ui/badge";
+import UrgencyBadge, { getUrgencyLevel } from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
 
 interface Profile {
@@ -79,12 +80,27 @@ const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactN
   }
 };
 
-function getUrgencyClasses(lastActivityAt: string | null): string {
-  if (!lastActivityAt) return "bg-card border-border";
-  const days = differenceInDays(new Date(), new Date(lastActivityAt));
-  if (days <= 2) return "bg-emerald-500/5 border-emerald-500/20";
-  if (days <= 5) return "bg-amber-500/5 border-amber-500/20";
-  return "bg-red-500/5 border-red-500/20";
+function getNextActionLabel(lead: Lead, hasProposal: boolean): string | null {
+  switch (lead.kanban_stage) {
+    case "novo": return "Enviar boas-vindas";
+    case "boas_vindas": return "LinkedIn + WhatsApp";
+    case "em_contato": return "Qualificar e agendar call";
+    case "call_agendada": return "Aguardando call";
+    case "proposta": return hasProposal ? "Registrar envio" : "Elaborar proposta";
+    case "nutricao": {
+      const level = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null);
+      return level === "critical" || level === "warning" ? "Follow-up" : "Aguardando retorno";
+    }
+    default: return null;
+  }
+}
+
+function getUrgencyBgClasses(level: "normal" | "warning" | "critical"): string {
+  switch (level) {
+    case "warning": return "bg-[#FFF8E1] dark:bg-amber-900/20 border-amber-300/40 dark:border-amber-500/30";
+    case "critical": return "bg-[#FFEBEE] dark:bg-red-900/20 border-red-300/40 dark:border-red-500/30";
+    default: return "bg-card border-border";
+  }
 }
 
 const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, onOpenDrawer, onQuickAction }) => {
@@ -102,8 +118,10 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
   };
 
   const actions = getStageActions(lead, hasProposal);
-  const urgencyClasses = getUrgencyClasses(lead.last_activity_at || null);
+  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null);
+  const urgencyClasses = getUrgencyBgClasses(urgencyLevel);
   const showLostIcon = LOST_STAGES.has(lead.kanban_stage);
+  const nextAction = getNextActionLabel(lead, hasProposal);
 
   return (
     <div
@@ -142,7 +160,11 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
           <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
           {lead.company || "Sem empresa"}
         </h4>
-        {!showLostIcon && <UrgencyBadge lastActivityAt={lead.last_activity_at || null} />}
+        <UrgencyBadge
+          stage={lead.kanban_stage}
+          stageUpdatedAt={lead.stage_updated_at || null}
+          lastActivityAt={lead.last_activity_at || null}
+        />
       </div>
 
       {lead.kanban_stage === "fechado" && lead.closed_at && (
@@ -158,7 +180,6 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
           {lead.name}
         </p>
         <div className="flex items-center gap-1">
-          {showLostIcon ? <UrgencyBadge lastActivityAt={lead.last_activity_at || null} /> : null}
           {ownerInitials && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -196,6 +217,14 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
               <TooltipContent>{TOOLTIP_MAP[a.action] || a.label}</TooltipContent>
             </Tooltip>
           ))}
+        </div>
+      )}
+
+      {nextAction && (
+        <div className="mt-2">
+          <Badge variant="secondary" className="text-[10px] px-2 py-0 font-normal">
+            {nextAction}
+          </Badge>
         </div>
       )}
     </div>
