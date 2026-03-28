@@ -1,49 +1,67 @@
 
 
-## Dashboard de Indicadores — Plano de Implementação
+## SLAs Visuais e Urgency por Estágio
 
-### O que será construído
+### O que muda
 
-Uma página `/admin/dashboard` com métricas visuais do pipeline comercial, acessível por um botão no header do CRM.
-
-### Componentes do Dashboard
-
-**Cards de métricas (topo)**
-- Leads total (ativos, excluindo perdidos/arquivados)
-- Em aberto (estágios novo → nutrição)
-- Propostas enviadas (count de `proposal_submissions`)
-- Taxa de conversão (fechados ÷ total histórico)
-- Pipeline total (soma dos investimentos das propostas vinculadas a leads ativos)
-
-**Funil de conversão (centro-esquerda)**
-- Gráfico de barras horizontais com contagem por estágio (novo → fechado)
-- Usa os 7 estágios do STAGES array
-
-**Leads por fonte (centro-direita)**
-- Gráfico de pizza/donut agrupando por campo `origem`
-
-**Taxa de perda por motivo (baixo-esquerda)**
-- Gráfico de barras com os 6 motivos de perda
-
-**Leads por responsável (baixo-direita)**
-- Gráfico de barras agrupando por `assigned_to` (cruzando com `profiles.full_name`)
-
-### Filtros
-
-Barra de filtros no topo: período (últimos 30/60/90 dias ou tudo), responsável, fonte.
+Substituir o sistema atual de urgência (baseado em `last_activity_at` com thresholds fixos de 2/5 dias) por um sistema de SLA por estágio, com tempo decorrido visível, background colorido, badge de próxima ação, contadores de atrasados nas colunas e ordenação por urgência.
 
 ### Mudanças
 
+#### 1. `UrgencyBadge.tsx` — Reescrever completamente
+
+Recebe `stage` e `stageUpdatedAt` (em vez de apenas `lastActivityAt`). Para Nutrição, recebe também `lastActivityAt`.
+
+Lógica de SLA por estágio:
+- **Novo**: horas. Normal ≤2h, atenção 2–4h, crítico >4h
+- **Boas-Vindas**: horas/minutos. Normal ≤2h, atenção 2–6h, crítico >6h
+- **Em Contato**: dias. Normal ≤2d, atenção 2–4d, crítico >4d
+- **Call Agendada**: dias. Normal ≤5d, atenção 5–10d, crítico >10d
+- **Proposta**: dias. Normal ≤2d, atenção 2–4d, crítico >4d
+- **Nutrição**: dias desde `last_activity_at`. Normal ≤5d, atenção 5–10d, crítico >10d
+- **Fechado**: sem badge
+
+Formato de exibição:
+- Novo e Boas-Vindas: horas/minutos ("1h32m", "4h15m"). Acima de 24h: "2d"
+- Demais: dias ("1d", "3d"). Abaixo de 24h: "hoje"
+
+Exportar função `getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt)` que retorna `"normal" | "warning" | "critical"` — será usada pelo card e pela coluna.
+
+#### 2. `LeadCard.tsx` — Background por urgência + badge de ação
+
+Substituir `getUrgencyClasses` por chamada a `getUrgencyLevel`. Cores de fundo:
+- Normal: bg padrão (`bg-card`)
+- Atenção: `bg-[#FFF8E1]` (dark mode: `dark:bg-amber-900/20`)
+- Crítico: `bg-[#FFEBEE]` (dark mode: `dark:bg-red-900/20`)
+
+Mover o tempo decorrido para o canto superior direito (onde hoje fica o UrgencyBadge).
+
+Adicionar badge de próxima ação na parte inferior do card (pill cinza claro):
+| Estágio | Badge |
+|---|---|
+| Novo | "Enviar boas-vindas" |
+| Boas-Vindas | "LinkedIn + WhatsApp" |
+| Em Contato | "Qualificar e agendar call" |
+| Call Agendada | "Aguardando call" |
+| Proposta | "Elaborar proposta" ou "Registrar envio" (condicional) |
+| Nutrição | "Follow-up" se >5d, senão "Aguardando retorno" |
+| Fechado | sem badge |
+
+#### 3. `KanbanColumn.tsx` — Contador de atrasados + ordenação
+
+No header, ao lado do count existente, mostrar "· N atrasados" em vermelho se houver cards críticos.
+
+Ordenar leads: críticos primeiro, depois atenção, depois normal. Dentro de cada grupo, mais antigo primeiro.
+
+#### 4. Ajustes de props
+
+Passar `stage` ao `UrgencyBadge` e ao cálculo de urgência. Todos os dados necessários (`kanban_stage`, `stage_updated_at`, `last_activity_at`) já existem no type `Lead`.
+
+### Arquivos impactados
+
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/admin/Dashboard.tsx` | **Novo** — página principal do dashboard |
-| `src/App.tsx` | Rota `/admin/dashboard` com ProtectedRoute |
-| `src/pages/admin/Proposals.tsx` | Botão "Dashboard" no header, ao lado de "Ver Perdidos" |
-
-### Detalhes técnicos
-
-- Dados lidos via `supabase.from("leads").select("*")` + `supabase.from("proposals").select("*")` + `supabase.from("proposal_submissions").select("*")` + `supabase.from("profiles").select("id, full_name")`
-- Cálculos feitos client-side (volume baixo de dados)
-- Gráficos usando Recharts (já instalado via shadcn/ui chart)
-- Sem migrations necessárias — todos os dados já existem no banco
+| `UrgencyBadge.tsx` | Reescrever: SLA por estágio, formato horas/dias, exportar `getUrgencyLevel` |
+| `LeadCard.tsx` | Background por nível, tempo no canto sup. direito, pill de próxima ação |
+| `KanbanColumn.tsx` | Contador de atrasados no header, ordenação por urgência |
 
