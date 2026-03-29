@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye, BarChart3 } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye, BarChart3, AlertTriangle } from "lucide-react";
+import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
+import { subDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
@@ -62,6 +64,8 @@ const Proposals = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("all");
   const [filterOwner, setFilterOwner] = useState("all");
+  const [filterPeriod, setFilterPeriod] = useState("all");
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const fetchProfile = useCallback(async () => {
@@ -149,10 +153,24 @@ const Proposals = () => {
       result = result.filter((l) => l.origem === filterOrigem);
     }
     if (filterOwner !== "all") {
-      result = result.filter((l) => l.assigned_to === filterOwner);
+      if (filterOwner === "unassigned") {
+        result = result.filter((l) => !l.assigned_to);
+      } else {
+        result = result.filter((l) => l.assigned_to === filterOwner);
+      }
+    }
+    if (filterPeriod !== "all") {
+      const days = parseInt(filterPeriod, 10);
+      const cutoff = subDays(new Date(), days);
+      result = result.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
+    }
+    if (filterOverdue) {
+      result = result.filter((l) =>
+        getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
+      );
     }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
@@ -442,11 +460,32 @@ const Proposals = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="unassigned">Sem responsável</SelectItem>
                       {profiles.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                    <SelectTrigger className="w-[150px] h-9">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90">Últimos 90 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant={filterOverdue ? "destructive" : "outline"}
+                    size="sm"
+                    className="h-9 gap-1"
+                    onClick={() => setFilterOverdue(!filterOverdue)}
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Vencidos
+                  </Button>
                 </div>
                 <KanbanBoard
                   leads={filteredLeads}

@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowDownAZ, Clock } from "lucide-react";
+import { ArrowDownAZ, Clock, AlertTriangle } from "lucide-react";
+import { getUrgencyLevel } from "./UrgencyBadge";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
@@ -45,7 +46,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
-  const [sortMode, setSortMode] = useState<"arrival" | "stale">("arrival");
+  const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
 
@@ -69,8 +70,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       if (map[stage]) map[stage].push(l);
       else map["novo"].push(l);
     });
+    const URGENCY_ORDER = { critical: 0, warning: 1, normal: 2 };
     Object.keys(map).forEach((key) => {
       map[key].sort((a, b) => {
+        if (sortMode === "urgency") {
+          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null);
+          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null);
+          const diff = URGENCY_ORDER[la] - URGENCY_ORDER[lb];
+          if (diff !== 0) return diff;
+          const da = new Date(a.stage_updated_at || a.created_at || 0).getTime();
+          const db = new Date(b.stage_updated_at || b.created_at || 0).getTime();
+          return da - db;
+        }
         if (sortMode === "stale") {
           const aTime = a.last_activity_at ? new Date(a.last_activity_at).getTime() : Date.now();
           const bTime = b.last_activity_at ? new Date(b.last_activity_at).getTime() : Date.now();
@@ -330,6 +341,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs text-muted-foreground">Ordenar:</span>
         <div className="flex items-center border border-border rounded-lg overflow-hidden">
+          <Button
+            variant={sortMode === "urgency" ? "default" : "ghost"}
+            size="sm"
+            className="rounded-none h-7 px-2 text-xs gap-1"
+            onClick={() => setSortMode("urgency")}
+          >
+            <AlertTriangle className="h-3 w-3" /> Urgência
+          </Button>
           <Button
             variant={sortMode === "arrival" ? "default" : "ghost"}
             size="sm"
