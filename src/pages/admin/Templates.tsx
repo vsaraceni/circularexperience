@@ -24,7 +24,7 @@ const Templates = () => {
   const { data: templates = [], isLoading } = useAllTemplatesAdmin();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Partial<MessageTemplate>>({});
+  const [editForm, setEditForm] = useState<{ title?: string; subject?: string | null; body?: string; channel?: string }>({});
   const [addDialog, setAddDialog] = useState(false);
   const [addForm, setAddForm] = useState({ stage: "novo", channel: "whatsapp" as string, title: "", subject: "", body: "" });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
