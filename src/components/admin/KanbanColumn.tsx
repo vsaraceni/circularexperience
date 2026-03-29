@@ -47,8 +47,6 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
     getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
   ).length;
 
-  const sortedLeads = sortByUrgency(leads);
-
   return (
     <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0">
       <div
