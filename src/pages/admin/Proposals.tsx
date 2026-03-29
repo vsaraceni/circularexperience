@@ -67,7 +67,9 @@ const Proposals = () => {
   const [filterOwner, setFilterOwner] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterOverdue, setFilterOverdue] = useState(false);
+  const [filterAttention, setFilterAttention] = useState(false);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
+  const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
