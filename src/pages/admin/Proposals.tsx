@@ -396,6 +396,7 @@ const Proposals = () => {
                 <List className="h-4 w-4" />
               </Button>
             </div>
+            {user && <NotificationBell userId={user.id} />}
             <Button variant="ghost" size="sm" onClick={() => navigate("/admin/dashboard")}>
               <BarChart3 className="h-4 w-4 mr-1" /> Dashboard
             </Button>
