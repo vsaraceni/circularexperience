@@ -500,7 +500,7 @@ const Proposals = () => {
                       <SelectItem value="90">Últimos 90 dias</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
+                   <Button
                     variant={filterOverdue ? "destructive" : "outline"}
                     size="sm"
                     className="h-9 gap-1"
@@ -508,6 +508,15 @@ const Proposals = () => {
                   >
                     <AlertTriangle className="h-3.5 w-3.5" />
                     Vencidos
+                  </Button>
+                  <Button
+                    variant={filterAttention ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 gap-1"
+                    onClick={() => setFilterAttention(!filterAttention)}
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    Atenção
                   </Button>
                 </div>
                 <KanbanBoard
