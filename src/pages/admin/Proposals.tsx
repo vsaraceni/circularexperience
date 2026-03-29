@@ -172,8 +172,28 @@ const Proposals = () => {
         getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
       );
     }
+    if (filterAttention) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const overdueFollowUpLeads = new Set(
+        allPendingFollowUps.filter(f => new Date(f.due_date + "T00:00:00") < today).map(f => f.lead_id)
+      );
+      const todayFollowUpLeads = new Set(
+        allPendingFollowUps.filter(f => new Date(f.due_date + "T00:00:00").getTime() === today.getTime()).map(f => f.lead_id)
+      );
+      // Proposals expiring within 3 days
+      const threeDaysFromNow = new Date(today); threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+      const expiringProposalLeads = new Set(
+        proposals.filter(p => p.valid_until && new Date(p.valid_until) <= threeDaysFromNow && p.lead_id).map(p => p.lead_id!)
+      );
+      result = result.filter((l) =>
+        getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical" ||
+        overdueFollowUpLeads.has(l.id) ||
+        todayFollowUpLeads.has(l.id) ||
+        expiringProposalLeads.has(l.id)
+      );
+    }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue, filterAttention, allPendingFollowUps, proposals]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
