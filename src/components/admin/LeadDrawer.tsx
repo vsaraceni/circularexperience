@@ -245,7 +245,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="resumo" className="flex-1 overflow-y-auto mt-4 pr-1">
+          <TabsContent value="resumo" className="overflow-y-auto mt-4 pr-1">
               <Accordion type="single" collapsible defaultValue="lead-data">
                 {/* Block 1: Dados do Lead */}
                 <AccordionItem value="lead-data">
@@ -448,7 +448,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               </Accordion>
           </TabsContent>
 
-          <TabsContent value="followups" className="mt-4 flex flex-col flex-1 min-h-0">
+          <TabsContent value="followups" className="mt-4 overflow-hidden">
             <div className="space-y-3 mb-4">
               <p className="text-sm font-medium text-foreground">Agendar follow-up</p>
               <div className="flex items-center gap-2">
@@ -562,7 +562,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             </div>
           </TabsContent>
 
-          <TabsContent value="atividades" className="mt-4 flex-1 overflow-y-auto space-y-4">
+          <TabsContent value="atividades" className="mt-4 overflow-y-auto space-y-4">
             <div className="space-y-2 shrink-0">
               <Textarea
                 placeholder="Adicionar nota..."
