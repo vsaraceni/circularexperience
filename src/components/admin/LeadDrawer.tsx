@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -65,12 +66,33 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const saveOverride = useSaveTemplateOverride();
   const deleteOverride = useDeleteTemplateOverride();
 
+  // Fetch last proposal submission date for this lead
+  const { data: lastSubmissionDate } = useQuery({
+    queryKey: ["last_submission_date", lead?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("proposal_submissions")
+        .select("sent_at")
+        .eq("lead_id", lead!.id)
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.sent_at) {
+        const d = new Date(data.sent_at);
+        return format(d, "dd/MM", { locale: ptBR });
+      }
+      return null;
+    },
+    enabled: !!lead?.id,
+  });
+
   if (!lead) return null;
 
   const assignedProfile = profiles.find((p) => p.id === lead.assigned_to) || null;
+  const extraVars = { data_envio_proposta: lastSubmissionDate };
 
   const getEffectiveBody = (t: TemplateWithOverride) => t.override_body || t.body;
-  const getFilledBody = (t: TemplateWithOverride) => replaceVariables(getEffectiveBody(t), lead, assignedProfile);
+  const getFilledBody = (t: TemplateWithOverride) => replaceVariables(getEffectiveBody(t), lead, assignedProfile, extraVars);
   const getCurrentText = (t: TemplateWithOverride) => edits[t.id] ?? getFilledBody(t);
 
   const handleEnrich = async () => {
