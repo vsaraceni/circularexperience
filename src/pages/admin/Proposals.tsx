@@ -458,6 +458,10 @@ const Proposals = () => {
                   <LogOut className="h-4 w-4" aria-hidden="true" /> Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </header>
 
       <main className={`mx-auto py-6 ${viewMode === "kanban" ? "px-6" : "container px-4 max-w-5xl"}`}>
         {showForm || editing ? (
