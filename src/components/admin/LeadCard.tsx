@@ -2,7 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle, X, MessageSquare, Calendar } from "lucide-react";
+import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle, X, MessageSquare, Calendar, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -19,6 +19,7 @@ interface LeadCardProps {
   lead: Lead;
   profiles?: Profile[];
   hasProposal?: boolean;
+  followUpStatus?: { hasToday: boolean; hasOverdue: boolean };
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
@@ -103,7 +104,7 @@ function getUrgencyBgClasses(level: "normal" | "warning" | "critical"): string {
   }
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, onOpenDrawer, onQuickAction }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, followUpStatus, onOpenDrawer, onQuickAction }) => {
   const ownerProfile = profiles.find((p) => p.id === lead.assigned_to);
   const ownerInitials = ownerProfile?.full_name
     ? ownerProfile.full_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -165,6 +166,26 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
           stageUpdatedAt={lead.stage_updated_at || null}
           lastActivityAt={lead.last_activity_at || null}
         />
+        {followUpStatus?.hasOverdue && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-0.5 text-[10px] text-destructive font-medium">
+                <CalendarClock className="h-3 w-3" /> Atrasado
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Follow-up atrasado</TooltipContent>
+          </Tooltip>
+        )}
+        {followUpStatus?.hasToday && !followUpStatus?.hasOverdue && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                <CalendarClock className="h-3 w-3" /> Hoje
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Follow-up agendado para hoje</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {lead.kanban_stage === "fechado" && lead.closed_at && (

@@ -11,6 +11,7 @@ import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
 import SubmissionDialog from "./SubmissionDialog";
 import ContactDialog from "./ContactDialog";
+import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import type { Lead } from "./LeadList";
 
 const STAGES: KanbanStage[] = [
@@ -49,6 +50,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
+  const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
+
+  const followUpsByLead = useMemo(() => {
+    const map: Record<string, { hasToday: boolean; hasOverdue: boolean }> = {};
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    allPendingFollowUps.forEach(f => {
+      const due = new Date(f.due_date + "T00:00:00");
+      if (!map[f.lead_id]) map[f.lead_id] = { hasToday: false, hasOverdue: false };
+      if (due < today) map[f.lead_id].hasOverdue = true;
+      else if (due.getTime() === today.getTime()) map[f.lead_id].hasToday = true;
+    });
+    return map;
+  }, [allPendingFollowUps]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const lead = leads.find((l) => l.id === event.active.id);
@@ -381,6 +395,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 leads={stageLeads}
                 profiles={profiles}
                 proposals={stageProposals}
+                followUpsByLead={followUpsByLead}
                 onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
                 onQuickAction={handleQuickAction}
               />

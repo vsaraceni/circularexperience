@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye, BarChart3, AlertTriangle } from "lucide-react";
+import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye, BarChart3, AlertTriangle, Bell } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
+import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import ProposalForm from "@/components/admin/ProposalForm";
@@ -17,6 +18,7 @@ import KanbanBoard from "@/components/admin/KanbanBoard";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import LostLeadsView from "@/components/admin/LostLeadsView";
+import NotificationBell from "@/components/admin/NotificationBell";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
@@ -66,7 +68,9 @@ const Proposals = () => {
   const [filterOwner, setFilterOwner] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterOverdue, setFilterOverdue] = useState(false);
+  const [filterAttention, setFilterAttention] = useState(false);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
+  const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -169,8 +173,28 @@ const Proposals = () => {
         getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
       );
     }
+    if (filterAttention) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const overdueFollowUpLeads = new Set(
+        allPendingFollowUps.filter(f => new Date(f.due_date + "T00:00:00") < today).map(f => f.lead_id)
+      );
+      const todayFollowUpLeads = new Set(
+        allPendingFollowUps.filter(f => new Date(f.due_date + "T00:00:00").getTime() === today.getTime()).map(f => f.lead_id)
+      );
+      // Proposals expiring within 3 days
+      const threeDaysFromNow = new Date(today); threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+      const expiringProposalLeads = new Set(
+        proposals.filter(p => p.valid_until && new Date(p.valid_until) <= threeDaysFromNow && p.lead_id).map(p => p.lead_id!)
+      );
+      result = result.filter((l) =>
+        getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical" ||
+        overdueFollowUpLeads.has(l.id) ||
+        todayFollowUpLeads.has(l.id) ||
+        expiringProposalLeads.has(l.id)
+      );
+    }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue, filterAttention, allPendingFollowUps, proposals]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
@@ -372,6 +396,7 @@ const Proposals = () => {
                 <List className="h-4 w-4" />
               </Button>
             </div>
+            {user && <NotificationBell userId={user.id} />}
             <Button variant="ghost" size="sm" onClick={() => navigate("/admin/dashboard")}>
               <BarChart3 className="h-4 w-4 mr-1" /> Dashboard
             </Button>
@@ -477,7 +502,7 @@ const Proposals = () => {
                       <SelectItem value="90">Últimos 90 dias</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button
+                   <Button
                     variant={filterOverdue ? "destructive" : "outline"}
                     size="sm"
                     className="h-9 gap-1"
@@ -485,6 +510,15 @@ const Proposals = () => {
                   >
                     <AlertTriangle className="h-3.5 w-3.5" />
                     Vencidos
+                  </Button>
+                  <Button
+                    variant={filterAttention ? "default" : "outline"}
+                    size="sm"
+                    className="h-9 gap-1"
+                    onClick={() => setFilterAttention(!filterAttention)}
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    Atenção
                   </Button>
                 </div>
                 <KanbanBoard

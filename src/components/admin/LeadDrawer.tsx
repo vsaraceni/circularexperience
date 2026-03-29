@@ -27,6 +27,11 @@ import {
   type TemplateWithOverride,
 } from "./messageTemplates";
 import { useTemplatesWithOverrides, useSaveTemplateOverride, useDeleteTemplateOverride } from "@/hooks/useMessageTemplates";
+import { useLeadFollowUps, useCreateFollowUp, useCompleteFollowUp } from "@/hooks/useFollowUps";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { Lead } from "./LeadList";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -57,6 +62,8 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const [refreshKey, setRefreshKey] = useState(0);
   const [enriching, setEnriching] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const [followUpNote, setFollowUpNote] = useState("");
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const navigate = useNavigate();
 
   const { data: templates = [], isLoading: loadingTemplates } = useTemplatesWithOverrides(
@@ -65,6 +72,9 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   );
   const saveOverride = useSaveTemplateOverride();
   const deleteOverride = useDeleteTemplateOverride();
+  const { data: followUps = [], isLoading: loadingFollowUps } = useLeadFollowUps(lead?.id);
+  const createFollowUp = useCreateFollowUp();
+  const completeFollowUp = useCompleteFollowUp();
 
   // Fetch last proposal submission date for this lead
   const { data: lastSubmissionDate } = useQuery({
@@ -222,8 +232,16 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
         </SheetHeader>
 
         <Tabs defaultValue="resumo" className="flex flex-col flex-1 min-h-0">
-          <TabsList className="w-full grid grid-cols-2 shrink-0">
+          <TabsList className="w-full grid grid-cols-3 shrink-0">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            <TabsTrigger value="followups" className="gap-1">
+              Follow-ups
+              {followUps.filter(f => !f.completed).length > 0 && (
+                <Badge variant="destructive" className="h-4 min-w-[16px] px-1 text-[10px]">
+                  {followUps.filter(f => !f.completed).length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>
 
@@ -465,6 +483,120 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   <ActionBtn icon={<XCircle />} label="Perdido" tooltip="Marcar como perdido" onClick={() => onQuickAction(lead, "mark_lost")} variant="destructive" />
                 )}
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="followups" className="mt-4 flex flex-col flex-1 min-h-0">
+            <div className="space-y-3 mb-4">
+              <p className="text-sm font-medium text-foreground">Agendar follow-up</p>
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1 w-[140px] justify-start", !followUpDate && "text-muted-foreground")}>
+                      <Calendar className="h-3 w-3" />
+                      {followUpDate ? format(followUpDate, "dd/MM/yyyy") : "Data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarWidget
+                      mode="single"
+                      selected={followUpDate}
+                      onSelect={setFollowUpDate}
+                      disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  placeholder="Nota (opcional)"
+                  value={followUpNote}
+                  onChange={(e) => setFollowUpNote(e.target.value)}
+                  className="h-8 text-xs flex-1"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  disabled={!followUpDate || createFollowUp.isPending}
+                  onClick={async () => {
+                    if (!followUpDate || !userId) return;
+                    await createFollowUp.mutateAsync({
+                      leadId: lead.id,
+                      userId,
+                      dueDate: format(followUpDate, "yyyy-MM-dd"),
+                      note: followUpNote || undefined,
+                    });
+                    setFollowUpDate(undefined);
+                    setFollowUpNote("");
+                    onNoteAdded?.();
+                    toast.success("Follow-up agendado!");
+                  }}
+                >
+                  Agendar
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {followUps.filter(f => !f.completed).length === 0 && !loadingFollowUps && (
+                <p className="text-xs text-muted-foreground italic text-center py-4">Nenhum follow-up pendente</p>
+              )}
+              {followUps.filter(f => !f.completed).map(f => {
+                const dueDate = new Date(f.due_date + "T00:00:00");
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const isOverdue = dueDate < today;
+                const isToday = dueDate.getTime() === today.getTime();
+                return (
+                  <div key={f.id} className={cn(
+                    "border rounded-lg p-3 flex items-start gap-3",
+                    isOverdue ? "border-destructive/40 bg-destructive/5" : isToday ? "border-amber-400/40 bg-amber-50 dark:bg-amber-900/10" : "border-border"
+                  )}>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("text-xs font-medium", isOverdue ? "text-destructive" : isToday ? "text-amber-600 dark:text-amber-400" : "text-foreground")}>
+                        {isOverdue ? "🔴 Atrasado" : isToday ? "📅 Hoje" : format(dueDate, "dd MMM", { locale: ptBR })}
+                        {" · "}{format(dueDate, "dd/MM/yyyy")}
+                      </p>
+                      {f.note && <p className="text-xs text-muted-foreground mt-0.5">{f.note}</p>}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 shrink-0"
+                      disabled={completeFollowUp.isPending}
+                      onClick={async () => {
+                        await completeFollowUp.mutateAsync({ id: f.id, leadId: lead.id, userId: userId! });
+                        onNoteAdded?.();
+                        toast.success("Follow-up concluído!");
+                      }}
+                    >
+                      <CheckCircle className="h-3 w-3" /> Concluir
+                    </Button>
+                  </div>
+                );
+              })}
+
+              {followUps.filter(f => f.completed).length > 0 && (
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="completed">
+                    <AccordionTrigger className="text-xs text-muted-foreground hover:no-underline py-2">
+                      Concluídos ({followUps.filter(f => f.completed).length})
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-2">
+                        {followUps.filter(f => f.completed).map(f => (
+                          <div key={f.id} className="border border-border rounded-lg p-2 opacity-60">
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(f.due_date + "T00:00:00"), "dd/MM/yyyy")}
+                              {f.completed_at && ` · concluído em ${format(new Date(f.completed_at), "dd/MM", { locale: ptBR })}`}
+                            </p>
+                            {f.note && <p className="text-xs text-muted-foreground mt-0.5">{f.note}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              )}
             </div>
           </TabsContent>
 

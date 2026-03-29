@@ -14,6 +14,7 @@ interface KanbanColumnProps {
   leads: Lead[];
   profiles?: { id: string; full_name: string | null }[];
   proposals: { id: string; lead_id?: string; investment: string }[];
+  followUpsByLead?: Record<string, { hasToday: boolean; hasOverdue: boolean }>;
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
@@ -37,7 +38,7 @@ function formatBRL(val: number): string {
 }
 
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, onOpenDrawer, onQuickAction }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, followUpsByLead = {}, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
@@ -81,6 +82,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
             lead={lead}
             profiles={profiles}
             hasProposal={leadsWithProposals.has(lead.id)}
+            followUpStatus={followUpsByLead[lead.id]}
             onOpenDrawer={onOpenDrawer}
             onQuickAction={onQuickAction}
           />
