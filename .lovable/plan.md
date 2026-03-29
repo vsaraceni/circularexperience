@@ -1,41 +1,103 @@
 
 
-## Drawer com Blocos Expansíveis (Accordion)
+## Follow-ups, Filtro "Precisam de Atenção" e Notificações
 
-### O que muda
+### Fase 1 — Follow-ups (Prioridade 1)
 
-Substituir o layout linear do tab "Resumo" por 3 blocos accordion (usando `@radix-ui/react-accordion` já disponível). Ao expandir um bloco, os outros recolhem automaticamente (`type="single"`).
+**Banco de dados**
 
-### Blocos
+Nova tabela `lead_follow_ups`:
+- `id` uuid PK
+- `lead_id` uuid NOT NULL
+- `created_by` uuid NOT NULL
+- `due_date` date NOT NULL
+- `note` text
+- `completed` boolean DEFAULT false
+- `completed_at` timestamptz
+- `created_at` timestamptz DEFAULT now()
 
-| # | Título | Conteúdo | Estado inicial |
-|---|--------|----------|----------------|
-| 1 | Dados do Lead | Contato, e-mail, telefone, cargo, origem, responsável, criado em, mensagem | **Aberto** |
-| 2 | Empresa | Seção de enrichment (site, descrição, botão enriquecer) | Fechado |
-| 3 | Mensagens | `MessageTemplatesSection` expandida inline (todas as mensagens visíveis com scroll) | Fechado |
+RLS: admins gerenciam tudo.
 
-### Comportamento
+**Drawer — nova aba "Follow-ups"**
 
-- `Accordion type="single" collapsible` — ao abrir um bloco, os demais recolhem.
-- Ao clicar em "Mensagens", o bloco expande mostrando **todos os templates** do estágio diretamente (sem o botão "Ver todas" intermediário). O conteúdo tem `max-h-[50vh] overflow-y-auto` para scroll interno.
-- Os botões de ação (Enviar Boas-Vindas, Perdido etc.) ficam **fora do accordion**, fixos na parte inferior — sempre visíveis independente do bloco aberto.
-- Header de cada bloco mostra um contador relevante: Dados (nenhum), Empresa (badge se enriquecida), Mensagens (contagem de templates disponíveis).
+Adicionar terceira aba no `TabsList` do drawer (ao lado de "Resumo" e "Histórico"):
+- Form inline: data (date picker) + nota (input) + botão "Agendar"
+- Lista de follow-ups pendentes (ordenados por `due_date` ASC), com botão "Concluir"
+- Lista colapsável de concluídos
+- Badge com contagem de pendentes no tab trigger
 
-### Melhorias sobre a ideia original
+**LeadCard — indicador visual**
 
-1. **Ações sempre visíveis** — não ficam escondidas dentro de um bloco.
-2. **Mensagens inline com scroll** — evita abrir dialog separado para ver templates; tudo fica no drawer.
-3. **Contador no header** — "Mensagens (3)" dá contexto sem precisar abrir.
+- Se o lead tem follow-up com `due_date = hoje` e `completed = false`, mostrar ícone 📅 com tooltip "Follow-up hoje"
+- Se `due_date < hoje` e não concluído, mostrar em vermelho "Follow-up atrasado"
 
-### Arquivo impactado
+**Hook `useFollowUps.ts`**
+
+- `useLeadFollowUps(leadId)` — query dos follow-ups do lead
+- `useCreateFollowUp()` — mutation insert
+- `useCompleteFollowUp()` — mutation update completed/completed_at
+- Registrar atividade `follow_up_agendado` e `follow_up_concluido` em `lead_activities`
+
+---
+
+### Fase 2 — Filtro "Precisam de Atenção" (Prioridade 2)
+
+**Proposals.tsx — botão no header**
+
+Novo toggle/botão "⚠ Atenção" ao lado dos filtros existentes. Quando ativo, filtra leads que atendem **qualquer** critério:
+- SLA em nível `critical` (já calculado por `getUrgencyLevel`)
+- Follow-up atrasado (`due_date < hoje` e `completed = false`)
+- Proposta expirando (`valid_until` dentro de 3 dias)
+
+Lógica client-side — carrega follow-ups de todos os leads em batch para avaliar.
+
+---
+
+### Fase 3 — Notificações In-App (Prioridade 3)
+
+**Banco de dados**
+
+Nova tabela `notifications`:
+- `id` uuid PK
+- `user_id` uuid NOT NULL
+- `type` text (follow_up_due, sla_breach, proposal_expiring)
+- `title` text
+- `body` text
+- `lead_id` uuid
+- `read` boolean DEFAULT false
+- `created_at` timestamptz DEFAULT now()
+
+RLS: usuário lê/atualiza as próprias.
+
+**UI — Sino no header do CRM**
+
+- Ícone Bell no header de `Proposals.tsx`, com badge de contagem de não-lidas
+- Dropdown (Popover) com lista das últimas 20 notificações
+- Click marca como lida e abre o drawer do lead
+
+**Geração de notificações**
+
+Edge function `check-notifications` rodando via `pg_cron` (1x por hora):
+- Follow-ups vencendo hoje → notifica `assigned_to`
+- Leads com SLA crítico há >1h sem notificação → notifica `assigned_to`
+- Propostas expirando em 3 dias → notifica `created_by`
+
+---
+
+### Arquivos impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `LeadDrawer.tsx` | Substituir layout do tab "resumo" por Accordion com 3 blocos. Mover ações para fora. Renderizar templates inline no bloco 3. |
+| **Migration** | Criar `lead_follow_ups` e `notifications` |
+| `useFollowUps.ts` (novo) | Hook CRUD follow-ups |
+| `LeadDrawer.tsx` | Nova aba "Follow-ups" |
+| `LeadCard.tsx` | Badge follow-up hoje/atrasado |
+| `Proposals.tsx` | Filtro "Atenção", sino de notificações |
+| `useNotifications.ts` (novo) | Hook leitura/mark-read |
+| `NotificationBell.tsx` (novo) | Componente sino + dropdown |
+| `check-notifications/index.ts` (novo) | Edge function cron |
 
-### Detalhes técnicos
+### Estratégia de entrega
 
-- Usar `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent` de `@/components/ui/accordion`.
-- No bloco Mensagens, renderizar diretamente a lista de templates (reutilizando lógica de `MessageTemplatesSection` / `messageTemplates.ts`) em vez de apenas o preview.
-- `defaultValue="lead-data"` para abrir o primeiro bloco por padrão.
+Implementar na sequência: Fase 1 → Fase 2 → Fase 3, cada uma funcional independentemente.
 
