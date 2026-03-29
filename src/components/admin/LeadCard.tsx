@@ -166,6 +166,26 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
           stageUpdatedAt={lead.stage_updated_at || null}
           lastActivityAt={lead.last_activity_at || null}
         />
+        {followUpStatus?.hasOverdue && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-0.5 text-[10px] text-destructive font-medium">
+                <CalendarClock className="h-3 w-3" /> Atrasado
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Follow-up atrasado</TooltipContent>
+          </Tooltip>
+        )}
+        {followUpStatus?.hasToday && !followUpStatus?.hasOverdue && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-0.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                <CalendarClock className="h-3 w-3" /> Hoje
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>Follow-up agendado para hoje</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {lead.kanban_stage === "fechado" && lead.closed_at && (
