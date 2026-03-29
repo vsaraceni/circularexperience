@@ -36,20 +36,6 @@ function formatBRL(val: number): string {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-const URGENCY_ORDER = { critical: 0, warning: 1, normal: 2 };
-
-function sortByUrgency(leads: Lead[]): Lead[] {
-  return [...leads].sort((a, b) => {
-    const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null);
-    const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null);
-    const diff = URGENCY_ORDER[la] - URGENCY_ORDER[lb];
-    if (diff !== 0) return diff;
-    // Older first within same level
-    const da = new Date(a.stage_updated_at || a.created_at || 0).getTime();
-    const db = new Date(b.stage_updated_at || b.created_at || 0).getTime();
-    return da - db;
-  });
-}
 
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
