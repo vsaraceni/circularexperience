@@ -562,7 +562,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             </div>
           </TabsContent>
 
-          <TabsContent value="atividades" className="mt-4 flex-1 overflow-y-auto space-y-4">
+          <TabsContent value="atividades" className="mt-4 overflow-y-auto space-y-4">
             <div className="space-y-2 shrink-0">
               <Textarea
                 placeholder="Adicionar nota..."
