@@ -245,8 +245,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="resumo" className="flex flex-col flex-1 min-h-0 mt-4">
-            <div className="flex-1 overflow-y-auto pr-1">
+          <TabsContent value="resumo" className="flex-1 overflow-y-auto mt-4 pr-1">
               <Accordion type="single" collapsible defaultValue="lead-data">
                 {/* Block 1: Dados do Lead */}
                 <AccordionItem value="lead-data">
@@ -447,43 +446,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   </AccordionItem>
                 )}
               </Accordion>
-            </div>
-
-            {/* Actions — fixed at bottom */}
-            <div className="shrink-0 border-t border-border pt-3 mt-3">
-              <div className="grid grid-cols-2 gap-2">
-                {lead.kanban_stage === "novo" && (
-                  <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
-                )}
-                {lead.kanban_stage === "boas_vindas" && (
-                  <>
-                    <ActionBtn icon={<Linkedin />} label="LinkedIn" tooltip="Buscar no LinkedIn" onClick={() => onQuickAction(lead, "linkedin")} />
-                    <ActionBtn icon={<MessageSquare />} label="Copiar Zap" tooltip="Copiar telefone para WhatsApp" onClick={() => onQuickAction(lead, "copy_whatsapp")} />
-                  </>
-                )}
-                {lead.kanban_stage === "em_contato" && (
-                  <ActionBtn icon={<CalendarPlus />} label="Agendar Call" tooltip="Agendar call e mover para Call Agendada" onClick={() => onQuickAction(lead, "schedule_call")} />
-                )}
-                {lead.kanban_stage === "call_agendada" && (
-                  <ActionBtn icon={<CheckCircle />} label="Call Realizada" tooltip="Registrar call realizada" onClick={() => onQuickAction(lead, "call_done")} />
-                )}
-                {lead.kanban_stage === "proposta" && (
-                  <>
-                    <ActionBtn icon={<FileText />} label="Elab. Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
-                    <ActionBtn icon={<Send />} label="Registrar Envio" tooltip="Registrar envio da proposta" onClick={() => onQuickAction(lead, "register_submission")} />
-                  </>
-                )}
-                {lead.kanban_stage === "nutricao" && (
-                  <>
-                    <ActionBtn icon={<MessageSquare />} label="Registrar Contato" tooltip="Registrar contato realizado" onClick={() => onQuickAction(lead, "register_contact")} />
-                    <ActionBtn icon={<CheckCircle />} label="Fechar" tooltip="Fechar lead com sucesso" onClick={() => onQuickAction(lead, "close_won")} variant="default" />
-                  </>
-                )}
-                {["em_contato", "call_agendada", "proposta", "nutricao"].includes(lead.kanban_stage) && (
-                  <ActionBtn icon={<XCircle />} label="Perdido" tooltip="Marcar como perdido" onClick={() => onQuickAction(lead, "mark_lost")} variant="destructive" />
-                )}
-              </div>
-            </div>
           </TabsContent>
 
           <TabsContent value="followups" className="mt-4 flex flex-col flex-1 min-h-0">
@@ -600,8 +562,8 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             </div>
           </TabsContent>
 
-          <TabsContent value="atividades" className="mt-4 space-y-4 flex-1 overflow-y-auto">
-            <div className="space-y-2">
+          <TabsContent value="atividades" className="mt-4 flex-1 overflow-y-auto space-y-4">
+            <div className="space-y-2 shrink-0">
               <Textarea
                 placeholder="Adicionar nota..."
                 value={noteText}
@@ -615,6 +577,42 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             <ActivityTimeline leadId={lead.id} refreshKey={refreshKey} />
           </TabsContent>
         </Tabs>
+
+        {/* Footer fixo — ações rápidas visíveis em qualquer aba */}
+        <div className="shrink-0 border-t border-border pt-3 pb-2 px-1">
+          <div className="grid grid-cols-2 gap-2">
+            {lead.kanban_stage === "novo" && (
+              <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
+            )}
+            {lead.kanban_stage === "boas_vindas" && (
+              <>
+                <ActionBtn icon={<Linkedin />} label="LinkedIn" tooltip="Buscar no LinkedIn" onClick={() => onQuickAction(lead, "linkedin")} />
+                <ActionBtn icon={<MessageSquare />} label="Copiar Zap" tooltip="Copiar telefone para WhatsApp" onClick={() => onQuickAction(lead, "copy_whatsapp")} />
+              </>
+            )}
+            {lead.kanban_stage === "em_contato" && (
+              <ActionBtn icon={<CalendarPlus />} label="Agendar Call" tooltip="Agendar call e mover para Call Agendada" onClick={() => onQuickAction(lead, "schedule_call")} />
+            )}
+            {lead.kanban_stage === "call_agendada" && (
+              <ActionBtn icon={<CheckCircle />} label="Call Realizada" tooltip="Registrar call realizada" onClick={() => onQuickAction(lead, "call_done")} />
+            )}
+            {lead.kanban_stage === "proposta" && (
+              <>
+                <ActionBtn icon={<FileText />} label="Elab. Proposta" tooltip="Criar proposta comercial" onClick={() => onQuickAction(lead, "generate_proposal")} />
+                <ActionBtn icon={<Send />} label="Registrar Envio" tooltip="Registrar envio da proposta" onClick={() => onQuickAction(lead, "register_submission")} />
+              </>
+            )}
+            {lead.kanban_stage === "nutricao" && (
+              <>
+                <ActionBtn icon={<MessageSquare />} label="Registrar Contato" tooltip="Registrar contato realizado" onClick={() => onQuickAction(lead, "register_contact")} />
+                <ActionBtn icon={<CheckCircle />} label="Fechar" tooltip="Fechar lead com sucesso" onClick={() => onQuickAction(lead, "close_won")} variant="default" />
+              </>
+            )}
+            {["em_contato", "call_agendada", "proposta", "nutricao"].includes(lead.kanban_stage) && (
+              <ActionBtn icon={<XCircle />} label="Perdido" tooltip="Marcar como perdido" onClick={() => onQuickAction(lead, "mark_lost")} variant="destructive" />
+            )}
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
