@@ -72,6 +72,9 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   );
   const saveOverride = useSaveTemplateOverride();
   const deleteOverride = useDeleteTemplateOverride();
+  const { data: followUps = [], isLoading: loadingFollowUps } = useLeadFollowUps(lead?.id);
+  const createFollowUp = useCreateFollowUp();
+  const completeFollowUp = useCompleteFollowUp();
 
   // Fetch last proposal submission date for this lead
   const { data: lastSubmissionDate } = useQuery({
