@@ -16,6 +16,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import UrgencyBadge from "./UrgencyBadge";
+import MessageTemplatesSection from "./MessageTemplatesSection";
 import ActivityTimeline from "./ActivityTimeline";
 import type { Lead } from "./LeadList";
 
