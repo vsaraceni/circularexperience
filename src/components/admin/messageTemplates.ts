@@ -20,7 +20,6 @@ export interface TemplateWithOverride extends MessageTemplate {
 // Manual variables that need user input before copying
 export const MANUAL_VARIABLES = [
   "{{dia1}}", "{{dia2}}", "{{horário}}", "{{mês}}", "{{prazo}}",
-  "{{nome_especialista}}", "{{cargo_especialista}}", "{{data_envio_proposta}}",
 ];
 
 export const CHANNEL_CONFIG: Record<string, { label: string; color: string }> = {
