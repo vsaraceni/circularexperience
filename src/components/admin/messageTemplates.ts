@@ -45,6 +45,7 @@ export function replaceVariables(
   text: string,
   lead: { name: string; company?: string | null; cargo?: string | null },
   assignedProfile?: { full_name: string | null; cargo?: string | null } | null,
+  extra?: { data_envio_proposta?: string | null },
 ): string {
   let result = text;
   result = result.replace(/\{\{nome\}\}/g, lead.name || "");
@@ -54,13 +55,23 @@ export function replaceVariables(
   const specialistName = assignedProfile?.full_name || "nosso especialista";
   result = result.replace(/\{\{nome_especialista\}\}/g, specialistName);
 
-  let specialistRole = "do Movimento Circular";
-  if (assignedProfile?.full_name?.toLowerCase().includes("vinicius")) {
-    specialistRole = "Diretor Executivo do Movimento Circular";
-  } else if (assignedProfile?.full_name?.toLowerCase().includes("alinye")) {
-    specialistRole = "Gestora de Parcerias do Movimento Circular";
+  // Use profile cargo if available, otherwise fallback to name heuristic
+  let specialistRole = assignedProfile?.cargo || "";
+  if (!specialistRole) {
+    if (assignedProfile?.full_name?.toLowerCase().includes("vinicius")) {
+      specialistRole = "Diretor Executivo do Movimento Circular";
+    } else if (assignedProfile?.full_name?.toLowerCase().includes("alinye")) {
+      specialistRole = "Gestora de Parcerias do Movimento Circular";
+    } else {
+      specialistRole = "do Movimento Circular";
+    }
   }
   result = result.replace(/\{\{cargo_especialista\}\}/g, specialistRole);
+
+  // Auto-replace proposal submission date
+  if (extra?.data_envio_proposta) {
+    result = result.replace(/\{\{data_envio_proposta\}\}/g, extra.data_envio_proposta);
+  }
 
   return result;
 }
