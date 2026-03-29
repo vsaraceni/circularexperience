@@ -448,7 +448,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               </Accordion>
           </TabsContent>
 
-          <TabsContent value="followups" className="mt-4 flex flex-col flex-1 min-h-0">
+          <TabsContent value="followups" className="mt-4 overflow-hidden">
             <div className="space-y-3 mb-4">
               <p className="text-sm font-medium text-foreground">Agendar follow-up</p>
               <div className="flex items-center gap-2">
