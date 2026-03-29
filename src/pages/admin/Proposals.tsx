@@ -64,6 +64,8 @@ const Proposals = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("all");
   const [filterOwner, setFilterOwner] = useState("all");
+  const [filterPeriod, setFilterPeriod] = useState("all");
+  const [filterOverdue, setFilterOverdue] = useState(false);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
 
   const fetchProfile = useCallback(async () => {
