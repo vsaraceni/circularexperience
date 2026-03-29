@@ -443,13 +443,13 @@ const Proposals = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52 rounded-xl p-2 shadow-lg bg-white border" style={{ borderColor: 'hsl(var(--color-border))' }}>
                 {user && (
-                  <DropdownMenuItem onClick={() => setShowProfileEditor(true)} className="gap-2 cursor-pointer rounded-lg">
-                    <User className="h-4 w-4" aria-hidden="true" /> Meu Perfil
-                  </DropdownMenuItem>
+                  <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
+                    <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />
+                  </div>
                 )}
-                <DropdownMenuItem onClick={() => setShowEmailEditor(true)} className="gap-2 cursor-pointer rounded-lg">
-                  <Mail className="h-4 w-4" aria-hidden="true" /> Email de Boas-Vindas
-                </DropdownMenuItem>
+                <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
+                  <EmailTemplateEditor />
+                </div>
                 <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">
                   <ExternalLink className="h-4 w-4" aria-hidden="true" /> Ir para o Site
                 </DropdownMenuItem>
@@ -458,18 +458,6 @@ const Proposals = () => {
                   <LogOut className="h-4 w-4" aria-hidden="true" /> Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-
-      {/* Profile Editor Dialog (triggered from dropdown) */}
-      {showProfileEditor && user && (
-        <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} triggerOpen={showProfileEditor} onClose={() => setShowProfileEditor(false)} />
-      )}
-      {showEmailEditor && (
-        <EmailTemplateEditor triggerOpen={showEmailEditor} onClose={() => setShowEmailEditor(false)} />
-      )}
 
       <main className={`mx-auto py-6 ${viewMode === "kanban" ? "px-6" : "container px-4 max-w-5xl"}`}>
         {showForm || editing ? (
