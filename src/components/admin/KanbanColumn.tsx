@@ -38,7 +38,7 @@ function formatBRL(val: number): string {
 }
 
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, onOpenDrawer, onQuickAction }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, followUpsByLead = {}, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
