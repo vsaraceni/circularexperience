@@ -46,7 +46,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
-  const [sortMode, setSortMode] = useState<"arrival" | "stale">("arrival");
+  const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
 
