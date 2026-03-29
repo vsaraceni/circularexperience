@@ -1,103 +1,97 @@
 
 
-## Follow-ups, Filtro "Precisam de Atenção" e Notificações
+## Evolução Visual e UX do CRM Pipeline
 
-### Fase 1 — Follow-ups (Prioridade 1)
+### Escopo
 
-**Banco de dados**
+Refatoração visual completa da página Pipeline (`Proposals.tsx`) e seus componentes filhos (navbar, filtros, colunas, cards), aplicando design system com tokens de cor, tipografia Inter, espaçamento 4px, e sombras padronizadas. Nenhuma lógica de negócio será alterada.
 
-Nova tabela `lead_follow_ups`:
-- `id` uuid PK
-- `lead_id` uuid NOT NULL
-- `created_by` uuid NOT NULL
-- `due_date` date NOT NULL
-- `note` text
-- `completed` boolean DEFAULT false
-- `completed_at` timestamptz
-- `created_at` timestamptz DEFAULT now()
+### Ordem de execução (8 etapas)
 
-RLS: admins gerenciam tudo.
+#### 1. Design System — CSS tokens (`index.css`)
 
-**Drawer — nova aba "Follow-ups"**
+Adicionar variáveis CSS no `:root` para todas as cores do briefing (brand, urgency, stage, text, bg, border) e sombras dos cards (repouso, hover, dragging). Inter já está importada. Ajustar `body` para usar Inter como font principal em todo o app. Manter as variáveis HSL existentes para não quebrar componentes shadcn.
 
-Adicionar terceira aba no `TabsList` do drawer (ao lado de "Resumo" e "Histórico"):
-- Form inline: data (date picker) + nota (input) + botão "Agendar"
-- Lista de follow-ups pendentes (ordenados por `due_date` ASC), com botão "Concluir"
-- Lista colapsável de concluídos
-- Badge com contagem de pendentes no tab trigger
+#### 2. Navbar — 3 zonas (`Proposals.tsx`)
 
-**LeadCard — indicador visual**
+Redesenhar o `<header>` com 3 zonas:
 
-- Se o lead tem follow-up com `due_date = hoje` e `completed = false`, mostrar ícone 📅 com tooltip "Follow-up hoje"
-- Se `due_date < hoje` e não concluído, mostrar em vermelho "Follow-up atrasado"
+- **Esquerda**: Logo + "CRM" (Inter 14px muted) + toggle grid/lista (fundo `--color-bg-subtle`, ativo com fundo brand)
+- **Centro**: Apenas Dashboard (ícone + label)
+- **Direita**: NotificationBell + Avatar circular com iniciais do usuário (fundo brand-light, texto brand). Click no avatar abre `DropdownMenu` com: Meu Perfil, Email de Boas-Vindas, Ir para o Site ↗, Sair
 
-**Hook `useFollowUps.ts`**
+Altura 56px, fundo branco, border-bottom `--color-border`, sem sombras.
 
-- `useLeadFollowUps(leadId)` — query dos follow-ups do lead
-- `useCreateFollowUp()` — mutation insert
-- `useCompleteFollowUp()` — mutation update completed/completed_at
-- Registrar atividade `follow_up_agendado` e `follow_up_concluido` em `lead_activities`
+#### 3. Header da página (`Proposals.tsx`)
 
----
+- Título "Pipeline Comercial" — Inter 22px Bold `--color-text-primary`
+- Direita: "Ver Perdidos" (outlined com cor brand) + "+ Nova Proposta" (filled brand). Border-radius 8px, gap 8px.
 
-### Fase 2 — Filtro "Precisam de Atenção" (Prioridade 2)
+#### 4. Barra de filtros (`Proposals.tsx`)
 
-**Proposals.tsx — botão no header**
+Padronizar todos os controles visuais:
+- Search, Origem, Responsável, Período — mesmo estilo (borda `--color-border`, radius 8px)
+- Novo dropdown **"Status"** substituindo os botões soltos "Vencidos" e "Atenção": opções Todos / Vencidos / Atenção / No prazo
+- Quando filtro ativo: borda brand, texto brand, fundo brand-light
+- Mover ordenação para linha separada: label "Ordenar por:" + 3 pills (Urgência/Chegada/Parados) com estilo pill-radius 20px, ativo brand filled
 
-Novo toggle/botão "⚠ Atenção" ao lado dos filtros existentes. Quando ativo, filtra leads que atendem **qualquer** critério:
-- SLA em nível `critical` (já calculado por `getUrgencyLevel`)
-- Follow-up atrasado (`due_date < hoje` e `completed = false`)
-- Proposta expirando (`valid_until` dentro de 3 dias)
+#### 5. Colunas Kanban (`KanbanColumn.tsx`)
 
-Lógica client-side — carrega follow-ups de todos os leads em batch para avaliar.
+- Header: barra colorida 3px topo (usar `--color-stage-*`), nome Inter 13px SemiBold, badge contador em `--color-bg-subtle`, badge atrasados em fundo `#FDEDED` texto `#D32F2F`, valor monetário em verde à direita
+- Corpo: fundo `#F7F8FA`, border-radius 12px, padding 12px
+- Empty state: ícone + texto cinza centralizado
+- Scrollbar customizada (thin, cor `--color-border`)
+- Atualizar cores dos estágios em `KanbanBoard.tsx` STAGES para usar os novos tokens
 
----
+#### 6. LeadCard (`LeadCard.tsx`) — componente principal
 
-### Fase 3 — Notificações In-App (Prioridade 3)
+Anatomia top-down:
+```text
+┌──────────────────────────────────┐
+│ Empresa (14px SemiBold)  [Badge] │
+│ 👤 Contato (13px #555)  [Avatar] │
+│ ──────────────────────────────── │
+│ [Pill próxima ação]              │
+│ [CTA primário]  [CTA secundário] │
+└──────────────────────────────────┘
+```
 
-**Banco de dados**
+- **Badge de tempo**: ícone + cor semântica (verde/amarelo/laranja/vermelho) conforme thresholds, radius 12px, 11px
+- **Avatar responsável**: 28px, fundo brand-light, texto brand, tooltip com nome completo, `aria-label`
+- **Divisória**: 1px `#F0F0F0`
+- **Pill próxima ação**: fundo `--color-bg-subtle`, texto `#555`, radius 20px, 11px
+- **Ações**: max 2 visíveis, CTA primário cor brand bold, secundário muted. Área mínima 44px height
+- **Card atrasado (critical)**: borda esquerda 3px `#D32F2F`, fundo `#FFFAFA`
+- **Hover**: sombra aumenta para hover token
+- **Dragging**: sombra dragging token, opacity 90%, rotate 2deg
+- Follow-up badges permanecem como estão
 
-Nova tabela `notifications`:
-- `id` uuid PK
-- `user_id` uuid NOT NULL
-- `type` text (follow_up_due, sla_breach, proposal_expiring)
-- `title` text
-- `body` text
-- `lead_id` uuid
-- `read` boolean DEFAULT false
-- `created_at` timestamptz DEFAULT now()
+#### 7. UrgencyBadge (`UrgencyBadge.tsx`)
 
-RLS: usuário lê/atualiza as próprias.
+Atualizar `LEVEL_CLASSES` para usar os novos tokens de cor com ícone textual (✅/⚠️/🔶/🔴) prefixado ao tempo. Manter a mesma lógica de `getUrgencyLevel`.
 
-**UI — Sino no header do CRM**
+#### 8. Acessibilidade (transversal)
 
-- Ícone Bell no header de `Proposals.tsx`, com badge de contagem de não-lidas
-- Dropdown (Popover) com lista das últimas 20 notificações
-- Click marca como lida e abre o drawer do lead
-
-**Geração de notificações**
-
-Edge function `check-notifications` rodando via `pg_cron` (1x por hora):
-- Follow-ups vencendo hoje → notifica `assigned_to`
-- Leads com SLA crítico há >1h sem notificação → notifica `assigned_to`
-- Propostas expirando em 3 dias → notifica `created_by`
-
----
+- `aria-label` em todos os ícones funcionais (X perdido, ações do card, toggle view, avatar)
+- `aria-hidden="true"` em ícones decorativos (Building2, User)
+- Foco visível: `outline 2px solid #5B2D8E`, `outline-offset: 2px` (utility class global)
+- Transições: `transition: all 0.15s ease` nos hover states
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| **Migration** | Criar `lead_follow_ups` e `notifications` |
-| `useFollowUps.ts` (novo) | Hook CRUD follow-ups |
-| `LeadDrawer.tsx` | Nova aba "Follow-ups" |
-| `LeadCard.tsx` | Badge follow-up hoje/atrasado |
-| `Proposals.tsx` | Filtro "Atenção", sino de notificações |
-| `useNotifications.ts` (novo) | Hook leitura/mark-read |
-| `NotificationBell.tsx` (novo) | Componente sino + dropdown |
-| `check-notifications/index.ts` (novo) | Edge function cron |
+| `index.css` | Tokens CSS (cores, sombras, foco), fundo geral `#F0F2F5` |
+| `Proposals.tsx` | Navbar 3 zonas com dropdown conta, header simplificado, filtros padronizados com dropdown Status, pills de ordenação |
+| `KanbanBoard.tsx` | Cores STAGES atualizadas, sort pills movidos para cá ou removidos (sort já está aqui), DragOverlay com rotate+sombra |
+| `KanbanColumn.tsx` | Header redesenhado, fundo coluna, scrollbar custom, empty state com ícone |
+| `LeadCard.tsx` | Anatomia completa redesenhada, sombras, borda esquerda critical, hover/drag states, acessibilidade |
+| `UrgencyBadge.tsx` | Cores novas + ícone prefix |
+| `tailwind.config.ts` | Adicionar `fontFamily.sans` com Inter como primeira opção |
 
-### Estratégia de entrega
+### O que NÃO muda
 
-Implementar na sequência: Fase 1 → Fase 2 → Fase 3, cada uma funcional independentemente.
+- Lógica de negócio, drag-and-drop, integrações, dados
+- Dashboard, Perfil, configurações — só Pipeline
+- Estágios e suas regras de SLA
 
