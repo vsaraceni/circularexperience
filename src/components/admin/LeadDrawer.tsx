@@ -62,6 +62,8 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const [refreshKey, setRefreshKey] = useState(0);
   const [enriching, setEnriching] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const [followUpNote, setFollowUpNote] = useState("");
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const navigate = useNavigate();
 
   const { data: templates = [], isLoading: loadingTemplates } = useTemplatesWithOverrides(
