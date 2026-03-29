@@ -104,7 +104,7 @@ function getUrgencyBgClasses(level: "normal" | "warning" | "critical"): string {
   }
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, onOpenDrawer, onQuickAction }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, followUpStatus, onOpenDrawer, onQuickAction }) => {
   const ownerProfile = profiles.find((p) => p.id === lead.assigned_to);
   const ownerInitials = ownerProfile?.full_name
     ? ownerProfile.full_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
