@@ -405,6 +405,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         userId={userId}
         profiles={profiles}
         onNoteAdded={onLeadUpdated}
+        isAdmin
       />
 
       <LostDialog
