@@ -82,6 +82,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
             lead={lead}
             profiles={profiles}
             hasProposal={leadsWithProposals.has(lead.id)}
+            followUpStatus={followUpsByLead[lead.id]}
             onOpenDrawer={onOpenDrawer}
             onQuickAction={onQuickAction}
           />
