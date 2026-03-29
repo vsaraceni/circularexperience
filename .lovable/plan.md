@@ -1,43 +1,41 @@
 
 
-## Filtros e Ordenamento do CRM — Correção e Evolução
+## Drawer com Blocos Expansíveis (Accordion)
 
-### Problemas atuais
+### O que muda
 
-1. **Ordenação quebrada**: O KanbanBoard tem toggle "Chegada / Parados" que ordena os leads, mas o KanbanColumn sempre re-ordena por urgência (`sortByUrgency`), ignorando a escolha do usuário.
-2. **Faltam filtros temporais e de urgência**.
+Substituir o layout linear do tab "Resumo" por 3 blocos accordion (usando `@radix-ui/react-accordion` já disponível). Ao expandir um bloco, os outros recolhem automaticamente (`type="single"`).
 
-### Mudanças
+### Blocos
 
-#### 1. `KanbanColumn.tsx` — Respeitar a ordenação do board
+| # | Título | Conteúdo | Estado inicial |
+|---|--------|----------|----------------|
+| 1 | Dados do Lead | Contato, e-mail, telefone, cargo, origem, responsável, criado em, mensagem | **Aberto** |
+| 2 | Empresa | Seção de enrichment (site, descrição, botão enriquecer) | Fechado |
+| 3 | Mensagens | `MessageTemplatesSection` expandida inline (todas as mensagens visíveis com scroll) | Fechado |
 
-Remover a função `sortByUrgency` e o re-sort interno. A coluna deve renderizar os leads na ordem que recebe do board. A ordenação por urgência será uma das opções no board.
+### Comportamento
 
-#### 2. `KanbanBoard.tsx` — Corrigir sort + adicionar 3 modos
+- `Accordion type="single" collapsible` — ao abrir um bloco, os demais recolhem.
+- Ao clicar em "Mensagens", o bloco expande mostrando **todos os templates** do estágio diretamente (sem o botão "Ver todas" intermediário). O conteúdo tem `max-h-[50vh] overflow-y-auto` para scroll interno.
+- Os botões de ação (Enviar Boas-Vindas, Perdido etc.) ficam **fora do accordion**, fixos na parte inferior — sempre visíveis independente do bloco aberto.
+- Header de cada bloco mostra um contador relevante: Dados (nenhum), Empresa (badge se enriquecida), Mensagens (contagem de templates disponíveis).
 
-Substituir o toggle atual (arrival/stale) por 3 opções de ordenação:
-- **Urgência** (padrão): críticos primeiro, depois atenção, depois normal. Dentro de cada grupo, mais antigo primeiro. (Comportamento que já existe na coluna, movido para cá.)
-- **Chegada**: mais recente primeiro (`created_at` desc)
-- **Parados**: menos atividade recente primeiro (`last_activity_at` asc)
+### Melhorias sobre a ideia original
 
-#### 3. `Proposals.tsx` — Novos filtros
+1. **Ações sempre visíveis** — não ficam escondidas dentro de um bloco.
+2. **Mensagens inline com scroll** — evita abrir dialog separado para ver templates; tudo fica no drawer.
+3. **Contador no header** — "Mensagens (3)" dá contexto sem precisar abrir.
 
-Adicionar dois novos filtros na barra existente (ao lado de Origem e Responsável):
-
-- **Período**: Select com opções "Todos", "Últimos 7 dias", "Últimos 30 dias", "Últimos 90 dias". Filtra por `created_at` do lead.
-- **Vencidos**: Botão toggle (estilo chip/badge) "Vencidos" que, quando ativo, mostra apenas leads com urgency level `critical`. Usa a função `getUrgencyLevel` já exportada do `UrgencyBadge.tsx`.
-
-Atualizar o `filteredLeads` useMemo para aplicar esses dois filtros adicionais.
-
-#### 4. Filtro "Sem responsável"
-
-Adicionar opção "Sem responsável" no select de Responsável existente (valor especial `unassigned`), filtrando `assigned_to === null`.
-
-### Arquivos impactados
+### Arquivo impactado
 
 | Arquivo | Mudança |
 |---------|---------|
-| `KanbanColumn.tsx` | Remover `sortByUrgency`, renderizar na ordem recebida |
-| `KanbanBoard.tsx` | 3 modos de sort (urgência/chegada/parados), aplicar sort centralizado |
-| `Proposals.tsx` | Filtros de período e vencidos, opção "Sem responsável" |
+| `LeadDrawer.tsx` | Substituir layout do tab "resumo" por Accordion com 3 blocos. Mover ações para fora. Renderizar templates inline no bloco 3. |
+
+### Detalhes técnicos
+
+- Usar `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent` de `@/components/ui/accordion`.
+- No bloco Mensagens, renderizar diretamente a lista de templates (reutilizando lógica de `MessageTemplatesSection` / `messageTemplates.ts`) em vez de apenas o preview.
+- `defaultValue="lead-data"` para abrir o primeiro bloco por padrão.
 
