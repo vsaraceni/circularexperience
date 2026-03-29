@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, User, Mail, ExternalLink } from "lucide-react";
+import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, ExternalLink } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
