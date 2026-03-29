@@ -11,6 +11,7 @@ import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
 import SubmissionDialog from "./SubmissionDialog";
 import ContactDialog from "./ContactDialog";
+import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import type { Lead } from "./LeadList";
 
 const STAGES: KanbanStage[] = [
