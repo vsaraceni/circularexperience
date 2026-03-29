@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, ArrowLeft, LayoutGrid, List, Search, Eye, BarChart3, AlertTriangle, Bell } from "lucide-react";
+import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, User, Mail, ExternalLink } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import LeadList, { type Lead } from "@/components/admin/LeadList";
@@ -67,10 +69,16 @@ const Proposals = () => {
   const [filterOrigem, setFilterOrigem] = useState("all");
   const [filterOwner, setFilterOwner] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
-  const [filterOverdue, setFilterOverdue] = useState(false);
-  const [filterAttention, setFilterAttention] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [showEmailEditor, setShowEmailEditor] = useState(false);
+
+  const userInitials = useMemo(() => {
+    if (!authorDefaults.author_name) return "?";
+    return authorDefaults.author_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  }, [authorDefaults.author_name]);
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -90,7 +98,6 @@ const Proposals = () => {
   }, [user]);
 
   const fetchLeads = async () => {
-    // Fetch ALL leads for Kanban
     const { data: allData, error: allError } = await supabase
       .from("leads")
       .select("*")
@@ -101,7 +108,6 @@ const Proposals = () => {
       setAllLeads(allData as Lead[]);
     }
 
-    // Filtered leads for list view (exclude converted/archived)
     const { data, error } = await supabase
       .from("leads")
       .select("*")
@@ -168,12 +174,13 @@ const Proposals = () => {
       const cutoff = subDays(new Date(), days);
       result = result.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
     }
-    if (filterOverdue) {
+
+    // Status filter replaces old filterOverdue and filterAttention
+    if (filterStatus === "vencidos") {
       result = result.filter((l) =>
         getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
       );
-    }
-    if (filterAttention) {
+    } else if (filterStatus === "atencao") {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const overdueFollowUpLeads = new Set(
         allPendingFollowUps.filter(f => new Date(f.due_date + "T00:00:00") < today).map(f => f.lead_id)
@@ -181,7 +188,6 @@ const Proposals = () => {
       const todayFollowUpLeads = new Set(
         allPendingFollowUps.filter(f => new Date(f.due_date + "T00:00:00").getTime() === today.getTime()).map(f => f.lead_id)
       );
-      // Proposals expiring within 3 days
       const threeDaysFromNow = new Date(today); threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
       const expiringProposalLeads = new Set(
         proposals.filter(p => p.valid_until && new Date(p.valid_until) <= threeDaysFromNow && p.lead_id).map(p => p.lead_id!)
@@ -192,9 +198,14 @@ const Proposals = () => {
         todayFollowUpLeads.has(l.id) ||
         expiringProposalLeads.has(l.id)
       );
+    } else if (filterStatus === "no_prazo") {
+      result = result.filter((l) =>
+        getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "normal"
+      );
     }
+
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue, filterAttention, allPendingFollowUps, proposals]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, allPendingFollowUps, proposals]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
@@ -215,7 +226,6 @@ const Proposals = () => {
       const slug = `prop-${crypto.randomUUID().slice(0, 8)}`;
       const insertData: any = { ...saveData, slug, created_by: user!.id };
 
-      // Check if lead already has a proposal
       let finalLeadId = leadId;
       if (finalLeadId) {
         const { data: existingProp } = await supabase
@@ -229,7 +239,6 @@ const Proposals = () => {
         }
       }
 
-      // Auto-create lead if none provided
       if (!finalLeadId) {
         const { data: newLead, error: leadError } = await supabase
           .from("leads")
@@ -264,7 +273,6 @@ const Proposals = () => {
         return;
       }
 
-      // Mark lead as converted + update kanban
       if (finalLeadId) {
         const now = new Date().toISOString();
         await supabase.from("leads").update({
@@ -368,51 +376,104 @@ const Proposals = () => {
   const proposalsByStatus = (status: string) =>
     proposals.filter((p) => (p.status || "rascunho") === status);
 
+  const isFilterActive = (filter: string, value: string) => value !== "all";
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <LogoImage src={logo} alt="Movimento Circular" className="h-10" />
-            <span className="text-lg font-bold text-foreground">CRM</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {/* View mode toggle */}
-            <div className="flex items-center border border-border rounded-lg overflow-hidden">
-              <Button
-                variant={viewMode === "kanban" ? "default" : "ghost"}
-                size="sm"
-                className="rounded-none h-8 px-3"
+    <div className="min-h-screen" style={{ background: 'hsl(var(--color-bg-page))' }}>
+      {/* ===== NAVBAR — 3 ZONES ===== */}
+      <header className="bg-white border-b sticky top-0 z-40" style={{ borderColor: 'hsl(var(--color-border))', height: 56 }}>
+        <div className="w-full px-6 flex items-center justify-between h-14">
+          {/* Zone Left — Logo + CRM + View Toggle */}
+          <div className="flex items-center gap-3">
+            <LogoImage src={logo} alt="Movimento Circular" className="h-8" />
+            <span className="text-sm font-medium" style={{ color: 'hsl(var(--color-text-muted))' }}>CRM</span>
+            <div className="flex items-center rounded-md overflow-hidden ml-2" style={{ background: 'hsl(var(--color-bg-subtle))', border: '1px solid hsl(var(--color-border))' }}>
+              <button
                 onClick={() => setViewMode("kanban")}
+                className="h-8 w-8 flex items-center justify-center transition-all"
+                style={{
+                  background: viewMode === "kanban" ? 'hsl(var(--color-brand))' : 'transparent',
+                  color: viewMode === "kanban" ? 'white' : 'hsl(var(--color-text-muted))',
+                  borderRadius: 6,
+                }}
+                aria-label="Visualização Kanban"
               >
                 <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="sm"
-                className="rounded-none h-8 px-3"
+              </button>
+              <button
                 onClick={() => setViewMode("list")}
+                className="h-8 w-8 flex items-center justify-center transition-all"
+                style={{
+                  background: viewMode === "list" ? 'hsl(var(--color-brand))' : 'transparent',
+                  color: viewMode === "list" ? 'white' : 'hsl(var(--color-text-muted))',
+                  borderRadius: 6,
+                }}
+                aria-label="Visualização Lista"
               >
                 <List className="h-4 w-4" />
-              </Button>
+              </button>
             </div>
+          </div>
+
+          {/* Zone Center — Dashboard */}
+          <div className="flex items-center">
+            <button
+              onClick={() => navigate("/admin/dashboard")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-gray-100"
+              style={{ color: 'hsl(var(--color-text-secondary))' }}
+            >
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </button>
+          </div>
+
+          {/* Zone Right — Notifications + Account */}
+          <div className="flex items-center gap-2">
             {user && <NotificationBell userId={user.id} />}
-            <Button variant="ghost" size="sm" onClick={() => navigate("/admin/dashboard")}>
-              <BarChart3 className="h-4 w-4 mr-1" /> Dashboard
-            </Button>
-            {user && <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />}
-            <EmailTemplateEditor />
-            <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-              <ArrowLeft className="h-4 w-4 mr-1" /> Site
-            </Button>
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="h-4 w-4 mr-1" /> Sair
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="focus:outline-none" aria-label="Menu da conta">
+                  <Avatar className="h-8 w-8 cursor-pointer">
+                    <AvatarFallback
+                      className="text-xs font-semibold"
+                      style={{ background: 'hsl(var(--color-brand-light))', color: 'hsl(var(--color-brand))' }}
+                    >
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 rounded-xl p-2 shadow-lg bg-white border" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                {user && (
+                  <DropdownMenuItem onClick={() => setShowProfileEditor(true)} className="gap-2 cursor-pointer rounded-lg">
+                    <User className="h-4 w-4" aria-hidden="true" /> Meu Perfil
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setShowEmailEditor(true)} className="gap-2 cursor-pointer rounded-lg">
+                  <Mail className="h-4 w-4" aria-hidden="true" /> Email de Boas-Vindas
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" /> Ir para o Site
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="gap-2 cursor-pointer rounded-lg text-destructive">
+                  <LogOut className="h-4 w-4" aria-hidden="true" /> Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
 
-      <main className={`mx-auto py-8 ${viewMode === "kanban" ? "px-4" : "container px-4 max-w-5xl"}`}>
+      {/* Profile Editor Dialog (triggered from dropdown) */}
+      {showProfileEditor && user && (
+        <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} triggerOpen={showProfileEditor} onClose={() => setShowProfileEditor(false)} />
+      )}
+      {showEmailEditor && (
+        <EmailTemplateEditor triggerOpen={showEmailEditor} onClose={() => setShowEmailEditor(false)} />
+      )}
+
+      <main className={`mx-auto py-6 ${viewMode === "kanban" ? "px-6" : "container px-4 max-w-5xl"}`}>
         {showForm || editing ? (
           <ProposalForm
             proposal={editing}
@@ -423,22 +484,42 @@ const Proposals = () => {
           />
         ) : (
           <>
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-foreground">{showLost ? "Leads Perdidos" : viewMode === "list" ? "Propostas" : "Pipeline Comercial"}</h1>
+            {/* ===== PAGE HEADER ===== */}
+            <div className="flex items-center justify-between mb-5">
+              <h1 className="text-[22px] font-bold" style={{ color: 'hsl(var(--color-text-primary))' }}>
+                {showLost ? "Leads Perdidos" : viewMode === "list" ? "Propostas" : "Pipeline Comercial"}
+              </h1>
               <div className="flex items-center gap-2">
                 {viewMode === "kanban" && !showLost && (
-                  <Button variant="outline" size="sm" onClick={() => setShowLost(true)}>
-                    <Eye className="h-4 w-4 mr-1" /> Ver Perdidos
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-4 rounded-lg font-medium"
+                    style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
+                    onClick={() => setShowLost(true)}
+                  >
+                    <Eye className="h-4 w-4 mr-1.5" aria-hidden="true" /> Ver Perdidos
                   </Button>
                 )}
                 {showLost && (
-                  <Button variant="outline" size="sm" onClick={() => setShowLost(false)}>
-                    <ArrowLeft className="h-4 w-4 mr-1" /> Voltar ao Pipeline
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 px-4 rounded-lg font-medium"
+                    style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
+                    onClick={() => setShowLost(false)}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-1.5" aria-hidden="true" /> Voltar ao Pipeline
                   </Button>
                 )}
                 {!showLost && (
-                  <Button onClick={() => { setPrefill(undefined); setShowForm(true); }}>
-                    <Plus className="h-4 w-4 mr-1" /> Nova Proposta
+                  <Button
+                    size="sm"
+                    className="h-9 px-4 rounded-lg font-medium"
+                    style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
+                    onClick={() => { setPrefill(undefined); setShowForm(true); }}
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" /> Nova Proposta
                   </Button>
                 )}
               </div>
@@ -446,7 +527,7 @@ const Proposals = () => {
 
             {loading ? (
               <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'hsl(var(--color-brand))' }} />
               </div>
             ) : showLost ? (
               <LostLeadsView
@@ -457,30 +538,55 @@ const Proposals = () => {
               />
             ) : viewMode === "kanban" ? (
               <>
-                {/* Filters */}
-                <div className="flex items-center gap-3 mb-4 flex-wrap">
-                  <div className="relative flex-1 min-w-[200px] max-w-[300px]">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                {/* ===== FILTERS BAR ===== */}
+                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px] max-w-[320px]">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
                     <Input
-                      placeholder="Buscar nome, empresa, email..."
+                      placeholder="Buscar por nome, empresa, email..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 h-9"
+                      className="pl-9 h-9 rounded-lg text-sm"
+                      style={{ borderColor: 'hsl(var(--color-border))' }}
                     />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-2.5 h-4 w-4 flex items-center justify-center"
+                        style={{ color: 'hsl(var(--color-text-muted))' }}
+                        aria-label="Limpar busca"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
                   <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-                    <SelectTrigger className="w-[140px] h-9">
-                      <SelectValue placeholder="Origem" />
+                    <SelectTrigger
+                      className="w-[150px] h-9 rounded-lg text-sm"
+                      style={{
+                        borderColor: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
+                        color: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
+                        background: filterOrigem !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
+                      }}
+                    >
+                      <SelectValue placeholder="Todas as origens" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas origens</SelectItem>
+                      <SelectItem value="all">Todas as origens</SelectItem>
                       {origens.map((o) => (
                         <SelectItem key={o} value={o}>{o}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <Select value={filterOwner} onValueChange={setFilterOwner}>
-                    <SelectTrigger className="w-[160px] h-9">
+                    <SelectTrigger
+                      className="w-[160px] h-9 rounded-lg text-sm"
+                      style={{
+                        borderColor: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
+                        color: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
+                        background: filterOwner !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
+                      }}
+                    >
                       <SelectValue placeholder="Responsável" />
                     </SelectTrigger>
                     <SelectContent>
@@ -492,7 +598,14 @@ const Proposals = () => {
                     </SelectContent>
                   </Select>
                   <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                    <SelectTrigger className="w-[150px] h-9">
+                    <SelectTrigger
+                      className="w-[150px] h-9 rounded-lg text-sm"
+                      style={{
+                        borderColor: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
+                        color: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
+                        background: filterPeriod !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
+                      }}
+                    >
                       <SelectValue placeholder="Período" />
                     </SelectTrigger>
                     <SelectContent>
@@ -502,24 +615,24 @@ const Proposals = () => {
                       <SelectItem value="90">Últimos 90 dias</SelectItem>
                     </SelectContent>
                   </Select>
-                   <Button
-                    variant={filterOverdue ? "destructive" : "outline"}
-                    size="sm"
-                    className="h-9 gap-1"
-                    onClick={() => setFilterOverdue(!filterOverdue)}
-                  >
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    Vencidos
-                  </Button>
-                  <Button
-                    variant={filterAttention ? "default" : "outline"}
-                    size="sm"
-                    className="h-9 gap-1"
-                    onClick={() => setFilterAttention(!filterAttention)}
-                  >
-                    <Bell className="h-3.5 w-3.5" />
-                    Atenção
-                  </Button>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger
+                      className="w-[140px] h-9 rounded-lg text-sm"
+                      style={{
+                        borderColor: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
+                        color: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
+                        background: filterStatus !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
+                      }}
+                    >
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="vencidos">Vencidos</SelectItem>
+                      <SelectItem value="atencao">⚠ Atenção</SelectItem>
+                      <SelectItem value="no_prazo">No prazo</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <KanbanBoard
                   leads={filteredLeads}

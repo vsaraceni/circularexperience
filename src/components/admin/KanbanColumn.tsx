@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
+import { ArrowDown } from "lucide-react";
 import LeadCard from "./LeadCard";
 import { getUrgencyLevel } from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
@@ -37,7 +38,6 @@ function formatBRL(val: number): string {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-
 const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, followUpsByLead = {}, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
@@ -50,31 +50,54 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
 
   return (
     <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0">
+      {/* Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2 rounded-t-lg border border-b-0 border-border"
-        style={{ borderTopColor: stage.color, borderTopWidth: 3 }}
+        className="px-3 py-2.5 rounded-t-xl bg-white"
+        style={{
+          borderTop: `3px solid ${stage.color}`,
+          border: '1px solid hsl(var(--color-border))',
+          borderTopColor: stage.color,
+          borderTopWidth: 3,
+        }}
       >
-        <span className="font-semibold text-sm text-foreground">{stage.label}</span>
-        <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-          {leads.length}
-        </span>
-        {criticalCount > 0 && (
-          <span className="text-xs text-red-500 font-medium">
-            · {criticalCount} atrasado{criticalCount > 1 ? "s" : ""}
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-[13px]" style={{ color: 'hsl(var(--color-text-primary))' }}>
+            {stage.label}
           </span>
-        )}
-        {totalInvestment > 0 && (
-          <span className="text-xs text-muted-foreground ml-auto truncate">
-            {formatBRL(totalInvestment)}
+          <span
+            className="text-xs rounded-full px-2 py-0.5 font-medium"
+            style={{ background: 'hsl(var(--color-bg-subtle))', color: 'hsl(var(--color-text-secondary))' }}
+          >
+            {leads.length}
           </span>
-        )}
+          {criticalCount > 0 && (
+            <span
+              className="text-xs font-medium rounded-full px-2 py-0.5 cursor-pointer"
+              style={{ background: '#FDEDED', color: '#D32F2F' }}
+            >
+              {criticalCount} atrasado{criticalCount > 1 ? "s" : ""}
+            </span>
+          )}
+          {totalInvestment > 0 && (
+            <span className="text-xs font-bold ml-auto truncate" style={{ color: 'hsl(var(--color-urgent-ok))' }}>
+              {formatBRL(totalInvestment)}
+            </span>
+          )}
+        </div>
       </div>
 
+      {/* Body */}
       <div
         ref={setNodeRef}
-        className={`flex-1 p-2 space-y-2 rounded-b-lg border border-border min-h-[200px] overflow-y-auto max-h-[calc(100vh-240px)] transition-colors ${
-          isOver ? "bg-primary/5 border-primary/30" : "bg-muted/30"
+        className={`flex-1 p-3 space-y-3 rounded-b-xl min-h-[200px] overflow-y-auto max-h-[calc(100vh-240px)] transition-colors crm-scrollbar ${
+          isOver ? "ring-2 ring-inset" : ""
         }`}
+        style={{
+          background: isOver ? 'hsl(var(--color-brand-light))' : '#F7F8FA',
+          border: '1px solid hsl(var(--color-border))',
+          borderTop: 'none',
+          ...(isOver ? { ringColor: 'hsl(var(--color-brand) / 0.3)' } : {}),
+        }}
       >
         {leads.map((lead) => (
           <LeadCard
@@ -89,9 +112,12 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
         ))}
 
         {leads.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-8 opacity-60">
-            Arraste leads aqui
-          </p>
+          <div className="flex flex-col items-center justify-center py-10 opacity-50">
+            <ArrowDown className="h-5 w-5 mb-1" style={{ color: '#BBB' }} aria-hidden="true" />
+            <p className="text-[13px]" style={{ color: '#BBB' }}>
+              Arraste leads aqui
+            </p>
+          </div>
         )}
       </div>
     </div>

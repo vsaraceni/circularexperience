@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ArrowDownAZ, Clock, AlertTriangle } from "lucide-react";
 import { getUrgencyLevel } from "./UrgencyBadge";
-import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
 import LeadDrawer from "./LeadDrawer";
@@ -15,13 +14,13 @@ import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import type { Lead } from "./LeadList";
 
 const STAGES: KanbanStage[] = [
-  { id: "novo", label: "Novo", color: "hsl(var(--primary))" },
-  { id: "boas_vindas", label: "Boas-Vindas", color: "#3b82f6" },
-  { id: "em_contato", label: "Em Contato", color: "#8b5cf6" },
-  { id: "call_agendada", label: "Call Agendada", color: "#f59e0b" },
-  { id: "proposta", label: "Proposta", color: "#06b6d4" },
-  { id: "nutricao", label: "Nutrição", color: "#ec4899" },
-  { id: "fechado", label: "Fechado", color: "#22c55e" },
+  { id: "novo", label: "Novo", color: "hsl(0, 0%, 62%)" },
+  { id: "boas_vindas", label: "Boas-Vindas", color: "hsl(210, 79%, 46%)" },
+  { id: "em_contato", label: "Em Contato", color: "hsl(210, 79%, 46%)" },
+  { id: "call_agendada", label: "Call Agendada", color: "hsl(282, 60%, 38%)" },
+  { id: "proposta", label: "Proposta", color: "hsl(122, 39%, 39%)" },
+  { id: "nutricao", label: "Nutrição", color: "hsl(27, 91%, 48%)" },
+  { id: "fechado", label: "Fechado", color: "hsl(122, 48%, 34%)" },
 ];
 
 interface Proposal {
@@ -73,7 +72,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // Filter out lost leads from kanban
   const activeLeads = useMemo(() => leads.filter((l) => l.kanban_stage !== "perdido"), [leads]);
 
   const leadsByStage = useMemo(() => {
@@ -157,7 +155,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
 
-    // Auto-assign: first action on a "novo" lead claims ownership
     if (lead.kanban_stage === "novo" && !lead.assigned_to && userId) {
       await supabase.from("leads").update({
         assigned_to: userId,
@@ -300,7 +297,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (!submissionLead) return;
     const now = new Date().toISOString();
     try {
-      // Find the proposal for this lead
       const proposal = proposals.find((p) => p.lead_id === submissionLead.id);
 
       await supabase.from("proposal_submissions" as any).insert({
@@ -351,39 +347,33 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      {/* Sort toggle */}
+      {/* Sort pills */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs text-muted-foreground">Ordenar:</span>
-        <div className="flex items-center border border-border rounded-lg overflow-hidden">
-          <Button
-            variant={sortMode === "urgency" ? "default" : "ghost"}
-            size="sm"
-            className="rounded-none h-7 px-2 text-xs gap-1"
-            onClick={() => setSortMode("urgency")}
-          >
-            <AlertTriangle className="h-3 w-3" /> Urgência
-          </Button>
-          <Button
-            variant={sortMode === "arrival" ? "default" : "ghost"}
-            size="sm"
-            className="rounded-none h-7 px-2 text-xs gap-1"
-            onClick={() => setSortMode("arrival")}
-          >
-            <ArrowDownAZ className="h-3 w-3" /> Chegada
-          </Button>
-          <Button
-            variant={sortMode === "stale" ? "default" : "ghost"}
-            size="sm"
-            className="rounded-none h-7 px-2 text-xs gap-1"
-            onClick={() => setSortMode("stale")}
-          >
-            <Clock className="h-3 w-3" /> Parados
-          </Button>
+        <span className="text-xs font-medium" style={{ color: 'hsl(var(--color-text-muted))' }}>Ordenar por:</span>
+        <div className="flex items-center gap-1.5">
+          {([
+            { key: "urgency" as const, icon: <AlertTriangle className="h-3 w-3" />, label: "Urgência" },
+            { key: "arrival" as const, icon: <ArrowDownAZ className="h-3 w-3" />, label: "Chegada" },
+            { key: "stale" as const, icon: <Clock className="h-3 w-3" />, label: "Parados" },
+          ]).map(pill => (
+            <button
+              key={pill.key}
+              onClick={() => setSortMode(pill.key)}
+              className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full transition-all"
+              style={{
+                background: sortMode === pill.key ? 'hsl(var(--color-brand))' : 'hsl(var(--color-bg-subtle))',
+                color: sortMode === pill.key ? 'white' : 'hsl(var(--color-text-secondary))',
+                border: sortMode === pill.key ? 'none' : '1px solid hsl(var(--color-border))',
+              }}
+            >
+              {pill.icon} {pill.label}
+            </button>
+          ))}
         </div>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
-        <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
           {STAGES.map((stage) => {
             const stageLeads = leadsByStage[stage.id] || [];
             const stageLeadIds = new Set(stageLeads.map((l) => l.id));
@@ -404,9 +394,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
-            <div className="bg-card border border-primary/40 rounded-lg p-3 shadow-xl opacity-90 w-[260px]">
-              <h4 className="font-semibold text-sm text-foreground truncate">{activeLead.company || "Sem empresa"}</h4>
-              <p className="text-xs text-muted-foreground truncate">{activeLead.name}</p>
+            <div
+              className="bg-white border rounded-[10px] p-3 w-[260px]"
+              style={{
+                boxShadow: 'var(--shadow-card-drag)',
+                opacity: 0.9,
+                transform: 'rotate(2deg)',
+                borderColor: 'hsl(var(--color-brand) / 0.4)',
+              }}
+            >
+              <h4 className="font-semibold text-sm truncate" style={{ color: 'hsl(var(--color-text-primary))' }}>{activeLead.company || "Sem empresa"}</h4>
+              <p className="text-xs truncate" style={{ color: 'hsl(var(--color-text-secondary))' }}>{activeLead.name}</p>
             </div>
           ) : null}
         </DragOverlay>
