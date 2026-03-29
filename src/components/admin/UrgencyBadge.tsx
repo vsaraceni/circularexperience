@@ -69,10 +69,10 @@ interface UrgencyBadgeProps {
   lastActivityAt: string | null;
 }
 
-const LEVEL_CLASSES: Record<UrgencyLevel, string> = {
-  normal: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  warning: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  critical: "bg-red-500/20 text-red-400 border-red-500/30",
+const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: string }> = {
+  normal: { bg: "#E8F5E9", color: "#388E3C", icon: "✅" },
+  warning: { bg: "#FFFDE7", color: "#F9A825", icon: "⚠️" },
+  critical: { bg: "#FDEDED", color: "#D32F2F", icon: "🔴" },
 };
 
 const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, lastActivityAt }) => {
@@ -82,11 +82,15 @@ const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, last
   if (!elapsed) return null;
 
   const level = getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt);
+  const styles = LEVEL_STYLES[level];
 
   return (
-    <Badge className={`${LEVEL_CLASSES[level]} text-[10px] px-1.5 py-0`}>
-      {elapsed}
-    </Badge>
+    <span
+      className="inline-flex items-center gap-0.5 text-[11px] font-medium px-2 py-0.5 rounded-xl"
+      style={{ background: styles.bg, color: styles.color }}
+    >
+      {styles.icon} {elapsed}
+    </span>
   );
 };
 
