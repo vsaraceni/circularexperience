@@ -232,8 +232,16 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
         </SheetHeader>
 
         <Tabs defaultValue="resumo" className="flex flex-col flex-1 min-h-0">
-          <TabsList className="w-full grid grid-cols-2 shrink-0">
+          <TabsList className="w-full grid grid-cols-3 shrink-0">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            <TabsTrigger value="followups" className="gap-1">
+              Follow-ups
+              {followUps.filter(f => !f.completed).length > 0 && (
+                <Badge variant="destructive" className="h-4 min-w-[16px] px-1 text-[10px]">
+                  {followUps.filter(f => !f.completed).length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>
 
