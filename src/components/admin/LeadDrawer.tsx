@@ -10,22 +10,22 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
-  Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle,
+  Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import UrgencyBadge from "./UrgencyBadge";
 import ActivityTimeline from "./ActivityTimeline";
 import {
-  getTemplatesForStage,
   replaceVariables,
   hasManualVariables,
-  MANUAL_VARIABLES,
   CHANNEL_CONFIG,
-  type MessageTemplate,
+  type TemplateWithOverride,
 } from "./messageTemplates";
+import { useTemplatesWithOverrides, useSaveTemplateOverride, useDeleteTemplateOverride } from "@/hooks/useMessageTemplates";
 import type { Lead } from "./LeadList";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -47,22 +47,31 @@ interface LeadDrawerProps {
   userId?: string;
   profiles?: { id: string; full_name: string | null }[];
   onNoteAdded?: () => void;
+  isAdmin?: boolean;
 }
 
-const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded }) => {
+const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded, isAdmin }) => {
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [enriching, setEnriching] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const navigate = useNavigate();
+
+  const { data: templates = [], isLoading: loadingTemplates } = useTemplatesWithOverrides(
+    lead?.kanban_stage || "",
+    userId
+  );
+  const saveOverride = useSaveTemplateOverride();
+  const deleteOverride = useDeleteTemplateOverride();
 
   if (!lead) return null;
 
-  const templates = getTemplatesForStage(lead.kanban_stage);
   const assignedProfile = profiles.find((p) => p.id === lead.assigned_to) || null;
 
-  const getFilledBody = (t: MessageTemplate) => replaceVariables(t.body, lead, assignedProfile);
-  const getCurrentText = (t: MessageTemplate) => edits[t.id] ?? getFilledBody(t);
+  const getEffectiveBody = (t: TemplateWithOverride) => t.override_body || t.body;
+  const getFilledBody = (t: TemplateWithOverride) => replaceVariables(getEffectiveBody(t), lead, assignedProfile);
+  const getCurrentText = (t: TemplateWithOverride) => edits[t.id] ?? getFilledBody(t);
 
   const handleEnrich = async () => {
     setEnriching(true);
@@ -109,7 +118,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
     }
   };
 
-  const handleCopyTemplate = async (t: MessageTemplate) => {
+  const handleCopyTemplate = async (t: TemplateWithOverride) => {
     const text = getCurrentText(t);
     const hasManual = hasManualVariables(text);
     await navigator.clipboard.writeText(text);
@@ -144,12 +153,31 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
     setEdits((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleRestoreTemplate = (t: MessageTemplate) => {
-    setEdits((prev) => {
-      const next = { ...prev };
-      delete next[t.id];
-      return next;
-    });
+  const handleSaveAsMyVersion = async (t: TemplateWithOverride) => {
+    if (!userId) return;
+    const text = edits[t.id];
+    if (!text) return;
+    try {
+      await saveOverride.mutateAsync({ templateId: t.id, userId, body: text });
+      setEdits((prev) => { const n = { ...prev }; delete n[t.id]; return n; });
+      toast.success("Salvo como sua versão personalizada!");
+    } catch {
+      toast.error("Erro ao salvar personalização");
+    }
+  };
+
+  const handleRestoreDefault = async (t: TemplateWithOverride) => {
+    if (t.override_id) {
+      try {
+        await deleteOverride.mutateAsync(t.override_id);
+        setEdits((prev) => { const n = { ...prev }; delete n[t.id]; return n; });
+        toast.success("Restaurado para o padrão!");
+      } catch {
+        toast.error("Erro ao restaurar");
+      }
+    } else {
+      setEdits((prev) => { const n = { ...prev }; delete n[t.id]; return n; });
+    }
   };
 
   return (
@@ -178,7 +206,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </TabsList>
 
           <TabsContent value="resumo" className="flex flex-col flex-1 min-h-0 mt-4">
-            {/* Accordion area — scrollable */}
             <div className="flex-1 overflow-y-auto pr-1">
               <Accordion type="single" collapsible defaultValue="lead-data">
                 {/* Block 1: Dados do Lead */}
@@ -198,8 +225,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                       )}
                       {lead.cargo && <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo} />}
                       <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
-
-                      {/* Responsável */}
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><User className="h-4 w-4" /></span>
                         <span className="text-muted-foreground text-xs w-16 shrink-0">Responsável</span>
@@ -264,24 +289,13 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   <AccordionContent>
                     <div className="space-y-2">
                       <div className="flex items-center justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 gap-1 text-xs"
-                          onClick={handleEnrich}
-                          disabled={enriching}
-                        >
+                        <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleEnrich} disabled={enriching}>
                           {enriching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                           {enriching ? "Enriquecendo..." : lead.company_description ? "Reenriquecer" : "Enriquecer"}
                         </Button>
                       </div>
                       {lead.company_website && (
-                        <InfoRow
-                          icon={<Globe className="h-4 w-4" />}
-                          label="Site"
-                          value={lead.company_website.replace(/^https?:\/\//, "")}
-                          href={lead.company_website}
-                        />
+                        <InfoRow icon={<Globe className="h-4 w-4" />} label="Site" value={lead.company_website.replace(/^https?:\/\//, "")} href={lead.company_website} />
                       )}
                       {lead.company_description && (
                         <div className="bg-muted/50 rounded-lg p-3">
@@ -308,8 +322,20 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs gap-1 w-full justify-center"
+                            onClick={() => navigate("/admin/templates")}
+                          >
+                            <Settings className="h-3 w-3" />
+                            Gerenciar templates
+                          </Button>
+                        )}
                         {templates.map((t) => {
                           const isEdited = t.id in edits;
+                          const hasOverride = !!t.override_body;
                           const channelCfg = CHANNEL_CONFIG[t.channel];
                           const currentText = getCurrentText(t);
 
@@ -320,6 +346,11 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                                   {channelCfg.label}
                                 </span>
                                 <span className="text-xs font-medium text-foreground flex-1">{t.title}</span>
+                                {hasOverride && !isEdited && (
+                                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/30 rounded px-1.5 py-0.5">
+                                    personalizado
+                                  </span>
+                                )}
                                 {isEdited && (
                                   <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">editado</span>
                                 )}
@@ -344,15 +375,27 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                                 </p>
                               )}
 
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={() => handleCopyTemplate(t)}>
                                   <Copy className="h-3 w-3" />
                                   Copiar
                                 </Button>
                                 {isEdited && (
-                                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleRestoreTemplate(t)}>
+                                  <>
+                                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleSaveAsMyVersion(t)}>
+                                      <Save className="h-3 w-3" />
+                                      Salvar como minha versão
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleRestoreDefault(t)}>
+                                      <RotateCcw className="h-3 w-3" />
+                                      {hasOverride ? "Restaurar padrão" : "Desfazer"}
+                                    </Button>
+                                  </>
+                                )}
+                                {!isEdited && hasOverride && (
+                                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => handleRestoreDefault(t)}>
                                     <RotateCcw className="h-3 w-3" />
-                                    Restaurar
+                                    Restaurar padrão
                                   </Button>
                                 )}
                               </div>
@@ -436,27 +479,14 @@ function InfoRow({
       <span className="text-foreground truncate">{value}</span>
     </div>
   );
-
   if (linkedin) {
-    return (
-      <a href={`https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(`${linkedin} ${company || ""}`.trim())}`} target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">
-        {content}
-      </a>
-    );
+    return <a href={`https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(`${linkedin} ${company || ""}`.trim())}`} target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">{content}</a>;
   }
   if (whatsapp) {
-    return (
-      <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">
-        {content}
-      </a>
-    );
+    return <a href={`https://wa.me/${whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">{content}</a>;
   }
   if (href) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">
-        {content}
-      </a>
-    );
+    return <a href={href} target="_blank" rel="noopener noreferrer" className="block hover:text-primary transition-colors">{content}</a>;
   }
   return content;
 }

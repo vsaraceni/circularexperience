@@ -10,6 +10,7 @@ import Proposals from "./pages/admin/Proposals";
 import ProposalView from "./pages/ProposalView";
 import PrintablePresentation from "./pages/PrintablePresentation";
 import Dashboard from "./pages/admin/Dashboard";
+import Templates from "./pages/admin/Templates";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,14 @@ const App = () => (
             element={
               <ProtectedRoute requireAdmin>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/templates"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Templates />
               </ProtectedRoute>
             }
           />
