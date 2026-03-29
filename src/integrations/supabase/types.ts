@@ -181,6 +181,45 @@ export type Database = {
           },
         ]
       }
+      message_templates: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string | null
+          id: string
+          is_active: boolean
+          sort_order: number
+          stage: string
+          subject: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          stage: string
+          subject?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          stage?: string
+          subject?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           cargo: string | null
@@ -329,6 +368,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_template_overrides: {
+        Row: {
+          body: string
+          created_at: string | null
+          id: string
+          template_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string | null
+          id?: string
+          template_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string | null
+          id?: string
+          template_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_template_overrides_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
