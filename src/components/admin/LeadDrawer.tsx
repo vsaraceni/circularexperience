@@ -245,8 +245,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
             <TabsTrigger value="atividades">Atividades</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="resumo" className="flex flex-col flex-1 min-h-0 mt-4">
-            <div className="flex-1 overflow-y-auto pr-1">
+          <TabsContent value="resumo" className="flex-1 overflow-y-auto mt-4 pr-1">
               <Accordion type="single" collapsible defaultValue="lead-data">
                 {/* Block 1: Dados do Lead */}
                 <AccordionItem value="lead-data">
