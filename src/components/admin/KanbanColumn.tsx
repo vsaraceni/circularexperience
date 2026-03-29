@@ -75,7 +75,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
           isOver ? "bg-primary/5 border-primary/30" : "bg-muted/30"
         }`}
       >
-        {sortedLeads.map((lead) => (
+        {leads.map((lead) => (
           <LeadCard
             key={lead.id}
             lead={lead}

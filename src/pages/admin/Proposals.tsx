@@ -460,11 +460,32 @@ const Proposals = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="unassigned">Sem responsável</SelectItem>
                       {profiles.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                    <SelectTrigger className="w-[150px] h-9">
+                      <SelectValue placeholder="Período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="7">Últimos 7 dias</SelectItem>
+                      <SelectItem value="30">Últimos 30 dias</SelectItem>
+                      <SelectItem value="90">Últimos 90 dias</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant={filterOverdue ? "destructive" : "outline"}
+                    size="sm"
+                    className="h-9 gap-1"
+                    onClick={() => setFilterOverdue(!filterOverdue)}
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Vencidos
+                  </Button>
                 </div>
                 <KanbanBoard
                   leads={filteredLeads}

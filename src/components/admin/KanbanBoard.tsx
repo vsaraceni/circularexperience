@@ -342,6 +342,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         <span className="text-xs text-muted-foreground">Ordenar:</span>
         <div className="flex items-center border border-border rounded-lg overflow-hidden">
           <Button
+            variant={sortMode === "urgency" ? "default" : "ghost"}
+            size="sm"
+            className="rounded-none h-7 px-2 text-xs gap-1"
+            onClick={() => setSortMode("urgency")}
+          >
+            <AlertTriangle className="h-3 w-3" /> Urgência
+          </Button>
+          <Button
             variant={sortMode === "arrival" ? "default" : "ghost"}
             size="sm"
             className="rounded-none h-7 px-2 text-xs gap-1"
