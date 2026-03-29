@@ -210,8 +210,14 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               </div>
             )}
 
+            <MessageTemplatesSection
+              lead={lead}
+              userId={userId}
+              assignedProfile={profiles.find((p) => p.id === lead.assigned_to) || null}
+              onActivity={onNoteAdded}
+            />
+
             <div className="space-y-2 pt-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ações Rápidas</p>
               <div className="grid grid-cols-2 gap-2">
                 {lead.kanban_stage === "novo" && (
                   <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
