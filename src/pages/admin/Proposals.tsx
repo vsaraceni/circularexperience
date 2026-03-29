@@ -72,8 +72,6 @@ const Proposals = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
-  const [showProfileEditor, setShowProfileEditor] = useState(false);
-  const [showEmailEditor, setShowEmailEditor] = useState(false);
 
   const userInitials = useMemo(() => {
     if (!authorDefaults.author_name) return "?";
