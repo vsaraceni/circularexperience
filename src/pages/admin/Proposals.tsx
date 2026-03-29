@@ -153,10 +153,24 @@ const Proposals = () => {
       result = result.filter((l) => l.origem === filterOrigem);
     }
     if (filterOwner !== "all") {
-      result = result.filter((l) => l.assigned_to === filterOwner);
+      if (filterOwner === "unassigned") {
+        result = result.filter((l) => !l.assigned_to);
+      } else {
+        result = result.filter((l) => l.assigned_to === filterOwner);
+      }
+    }
+    if (filterPeriod !== "all") {
+      const days = parseInt(filterPeriod, 10);
+      const cutoff = subDays(new Date(), days);
+      result = result.filter((l) => l.created_at && new Date(l.created_at) >= cutoff);
+    }
+    if (filterOverdue) {
+      result = result.filter((l) =>
+        getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
+      );
     }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterOverdue]);
 
   const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
