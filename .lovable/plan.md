@@ -1,47 +1,24 @@
 
 
-## Correção do Espaço em Branco e Ações no Bottom Bar
+## Fix: TabsContent não ocupa área vertical completa
 
 ### Problema
 
-1. **Espaço em branco gigante** na aba Atividades — o conteúdo (nota + timeline) fica empurrado para baixo porque o flex layout reserva espaço sem preenchê-lo corretamente
-2. **Ações rápidas** só existem na aba "Resumo" — ao trocar de aba, perde-se acesso às ações do lead
-3. Aba Follow-ups também tem espaço desperdiçado quando há poucos itens
+O `TabsContent` do Radix usa `display: none` quando inativo, mas quando ativo não tem `display: flex` nem height para preencher o container. A classe `flex-1` no `TabsContent` não funciona porque o componente Radix não aplica `display: flex` por padrão — ele renderiza como `display: block`.
 
 ### Solução
 
-Mover os **botões de ação rápida para um footer fixo no bottom do drawer**, **fora** das Tabs. Assim ficam visíveis em qualquer aba.
+Adicionar ao CSS global (ou via classes) que `TabsContent[data-state=active]` tenha `display: flex; flex-direction: column; flex: 1; min-height: 0`. Isso garante que cada aba ativa ocupe toda a área vertical disponível.
 
-#### Estrutura do drawer (de cima pra baixo)
+### Mudanças
 
-```text
-┌─ SheetHeader (empresa + badges) ─────────┐
-├─ TabsList (Resumo | Follow-ups | Atividades) ─┤
-├─ TabsContent (scroll interno, flex-1) ────┤
-│   conteúdo da aba ativa ocupa todo espaço │
-├─ Footer fixo (border-top) ────────────────┤
-│   botões de ação rápida do estágio atual  │
-└───────────────────────────────────────────┘
-```
+**`src/components/ui/tabs.tsx`** — Atualizar o `TabsContent` para incluir classes de flex layout quando ativo:
+- Adicionar `data-[state=active]:flex data-[state=active]:flex-col data-[state=active]:flex-1 data-[state=active]:min-h-0` ao className padrão do `TabsContent`
 
-#### Mudanças por aba
+**`src/components/admin/LeadDrawer.tsx`** — Ajustar classes das 3 abas:
+- **Resumo**: `className="flex-1 overflow-y-auto mt-4 pr-1"` → `className="overflow-y-auto mt-4 pr-1"` (flex-1 vem do TabsContent global)
+- **Follow-ups**: `className="mt-4 flex flex-col flex-1 min-h-0"` → `className="mt-4 overflow-hidden"` (flex-col e flex-1 já vêm do TabsContent)
+- **Atividades**: `className="mt-4 flex-1 overflow-y-auto space-y-4"` → `className="mt-4 overflow-y-auto space-y-4"`
 
-| Aba | O que muda |
-|-----|-----------|
-| **Resumo** | Remove o bloco de ações do final do TabsContent. Accordion preenche todo o espaço. |
-| **Follow-ups** | Conteúdo alinhado ao topo, sem gap. Sem mudança funcional. |
-| **Atividades** | Nota + botão "Salvar nota" no topo, timeline logo abaixo com scroll. Sem espaço vazio. |
-
-#### Footer fixo (novo)
-
-- Posicionado **depois** do `</Tabs>`, dentro do `SheetContent`
-- `shrink-0`, `border-t`, `pt-3`, `pb-2`
-- Mesma grid 2 colunas com os ActionBtn existentes
-- Lógica por estágio idêntica à atual (só muda de lugar)
-
-### Arquivo impactado
-
-| Arquivo | Mudança |
-|---------|---------|
-| `LeadDrawer.tsx` | Extrair bloco de ações de dentro de `TabsContent[resumo]` para footer fixo fora das Tabs. Ajustar classes CSS das 3 abas para eliminar whitespace. |
+Resultado: cada aba preenche todo o espaço vertical entre o `TabsList` e o footer fixo.
 
