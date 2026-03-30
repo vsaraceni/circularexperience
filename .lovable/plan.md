@@ -1,13 +1,41 @@
 
 
-## Variável `{{nome}}` → Primeiro Nome (com segurança para nomes compostos)
+## Ícone ⓘ com Tooltip de SLA no Header da Coluna
 
-### Problema
+### O que muda
 
-Hoje `{{nome}}` retorna o nome completo do lead. O ideal é retornar apenas o primeiro nome, mas nomes compostos brasileiros como "Maria Eduarda", "João Pedro", "Ana Clara" seriam cortados incorretamente se simplesmente fizermos `split(" ")[0]`.
+Adicionar um ícone `Info` (lucide-react) ao lado do nome de cada etapa no header da coluna Kanban. No hover, exibe um tooltip com os limites de SLA daquele estágio.
 
-### Abordagem segura
+### Implementação
 
-Criar uma função `extractFirstName(fullName)` que:
+**Arquivo**: `src/components/admin/KanbanColumn.tsx`
 
-1. Mantém uma lista de **prefixos compostos** comuns em português: `"Maria"`, `"Ana"`, `"João"`, `"José"`, `"Luiz"`, `"Luis
+1. Importar `Info` de `lucide-react` e `Tooltip, TooltipTrigger, TooltipContent, TooltipProvider` de `@/components/ui/tooltip`
+2. Exportar o `SLA_CONFIG` de `UrgencyBadge.tsx` (já exportável, basta importar)
+3. No header, após o `<span>` do nome da etapa, adicionar:
+
+```tsx
+<Tooltip>
+  <TooltipTrigger asChild>
+    <Info className="h-3.5 w-3.5 cursor-help opacity-40 hover:opacity-70" />
+  </TooltipTrigger>
+  <TooltipContent side="bottom">
+    {/* Ex: "⚠️ Atenção: 2h · 🔴 Crítico: 6h" */}
+  </TooltipContent>
+</Tooltip>
+```
+
+4. Criar helper local que lê `SLA_CONFIG[stage.id]` e formata o texto:
+   - Se `useHours`: `"⚠️ ${warningH}h · 🔴 ${criticalH}h"`
+   - Se dias: `"⚠️ ${warningD}d · 🔴 ${criticalD}d"`
+   - Estágios sem SLA (fechado): não renderiza o ícone
+
+5. Envolver o componente `KanbanColumn` (ou o board inteiro) com `<TooltipProvider>` se ainda não estiver presente
+
+### Arquivos impactados
+
+| Arquivo | Mudança |
+|---------|---------|
+| `KanbanColumn.tsx` | Ícone Info + Tooltip com SLA por estágio |
+| `UrgencyBadge.tsx` | Exportar `SLA_CONFIG` (adicionar `export` ao const) |
+
