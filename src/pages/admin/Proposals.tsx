@@ -481,8 +481,24 @@ const Proposals = () => {
               </h1>
               <div className="flex items-center gap-2">
                 {viewMode === "kanban" && !showLost && (
-                  <Button
-                    variant="outline"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 p-0 rounded-lg"
+                        style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
+                      >
+                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowLost(true)}>
+                        <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
                     size="sm"
                     className="h-9 px-4 rounded-lg font-medium"
                     style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
