@@ -17,6 +17,7 @@ import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import LeadList, { type Lead } from "@/components/admin/LeadList";
 import KanbanBoard from "@/components/admin/KanbanBoard";
+import MissionsBanner from "@/components/admin/MissionsBanner";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import LostLeadsView from "@/components/admin/LostLeadsView";
@@ -632,6 +633,22 @@ const Proposals = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                <MissionsBanner
+                  leads={filteredLeads}
+                  userId={user!.id}
+                  profiles={profiles}
+                  onScrollToStage={(stageId) => {
+                    const el = document.querySelector(`[data-stage-id="${stageId}"]`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+                      el.classList.add("ring-2", "ring-offset-2");
+                      el.setAttribute("style", `${el.getAttribute("style") || ""};--tw-ring-color: #2FB2C0`);
+                      setTimeout(() => {
+                        el.classList.remove("ring-2", "ring-offset-2");
+                      }, 2000);
+                    }
+                  }}
+                />
                 <KanbanBoard
                   leads={filteredLeads}
                   userId={user!.id}

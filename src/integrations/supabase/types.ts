@@ -137,6 +137,8 @@ export type Database = {
         Row: {
           assigned_at: string | null
           assigned_to: string | null
+          briefing_notes: string | null
+          call_date: string | null
           cargo: string | null
           closed_at: string | null
           company: string | null
@@ -163,6 +165,8 @@ export type Database = {
         Insert: {
           assigned_at?: string | null
           assigned_to?: string | null
+          briefing_notes?: string | null
+          call_date?: string | null
           cargo?: string | null
           closed_at?: string | null
           company?: string | null
@@ -189,6 +193,8 @@ export type Database = {
         Update: {
           assigned_at?: string | null
           assigned_to?: string | null
+          briefing_notes?: string | null
+          call_date?: string | null
           cargo?: string | null
           closed_at?: string | null
           company?: string | null

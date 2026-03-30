@@ -50,7 +50,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
   ).length;
 
   return (
-    <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0">
+    <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0" data-stage-id={stage.id}>
       {/* Header */}
       <div
         className="px-3 py-2.5 rounded-t-xl bg-white"

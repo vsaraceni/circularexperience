@@ -349,6 +349,30 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   </AccordionContent>
                 </AccordionItem>
 
+                {/* Block: Briefing (only for call_agendada) */}
+                {lead.kanban_stage === "call_agendada" && (
+                  <AccordionItem value="briefing">
+                    <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                      <span className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        Briefing
+                        {(!(lead as any).briefing_notes || (lead as any).briefing_notes.trim() === "") && (
+                          <Badge className="text-[10px] h-4 px-1.5 ml-1" style={{ background: "#FFFDE7", color: "#F9A825", border: "none" }}>
+                            Pendente
+                          </Badge>
+                        )}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <BriefingField
+                        leadId={lead.id}
+                        initialValue={(lead as any).briefing_notes || ""}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
                 {/* Block 3: Mensagens */}
                 {templates.length > 0 && (
                   <AccordionItem value="mensagens">
@@ -658,6 +682,39 @@ function ActionBtn({
       </TooltipTrigger>
       <TooltipContent>{tooltip}</TooltipContent>
     </Tooltip>
+  );
+}
+
+function BriefingField({ leadId, initialValue, onSaved }: { leadId: string; initialValue: string; onSaved: () => void }) {
+  const [text, setText] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const dirty = text !== initialValue;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await supabase.from("leads").update({ briefing_notes: text } as any).eq("id", leadId);
+      toast.success("Briefing salvo!");
+      onSaved();
+    } catch {
+      toast.error("Erro ao salvar briefing");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Textarea
+        placeholder="Notas de briefing para a call..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="min-h-[132px] text-sm font-mono leading-relaxed resize-y"
+      />
+      <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+        {saving ? "Salvando..." : "Salvar briefing"}
+      </Button>
+    </div>
   );
 }
 

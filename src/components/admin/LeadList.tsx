@@ -39,6 +39,8 @@ export interface Lead {
   closed_at?: string | null;
   company_website?: string | null;
   company_description?: string | null;
+  call_date?: string | null;
+  briefing_notes?: string | null;
 }
 
 interface AuthorDefaults {
