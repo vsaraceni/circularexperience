@@ -1,7 +1,8 @@
 import { useDroppable } from "@dnd-kit/core";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Info } from "lucide-react";
 import LeadCard from "./LeadCard";
-import { getUrgencyLevel } from "./UrgencyBadge";
+import { getUrgencyLevel, SLA_CONFIG } from "./UrgencyBadge";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import type { Lead } from "./LeadList";
 
 export interface KanbanStage {
@@ -64,6 +65,22 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
           <span className="font-semibold text-[13px]" style={{ color: 'hsl(var(--color-text-primary))' }}>
             {stage.label}
           </span>
+          {SLA_CONFIG[stage.id] && (
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-3.5 w-3.5 cursor-help opacity-40 hover:opacity-70 shrink-0" />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {(() => {
+                    const c = SLA_CONFIG[stage.id];
+                    if (c.useHours) return `⚠️ Atenção: ${c.warningH}h · 🔴 Crítico: ${c.criticalH}h`;
+                    return `⚠️ Atenção: ${c.warningD}d · 🔴 Crítico: ${c.criticalD}d`;
+                  })()}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <span
             className="text-xs rounded-full px-2 py-0.5 font-medium"
             style={{ background: 'hsl(var(--color-bg-subtle))', color: 'hsl(var(--color-text-secondary))' }}

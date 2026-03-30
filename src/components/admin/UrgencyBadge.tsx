@@ -3,7 +3,7 @@ import { differenceInHours, differenceInMinutes, differenceInDays } from "date-f
 
 export type UrgencyLevel = "normal" | "warning" | "critical";
 
-const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number; warningD?: number; criticalD?: number; useHours?: boolean }> = {
+export const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number; warningD?: number; criticalD?: number; useHours?: boolean }> = {
   novo: { warningH: 2, criticalH: 4, useHours: true },
   boas_vindas: { warningH: 2, criticalH: 6, useHours: true },
   em_contato: { warningD: 2, criticalD: 4 },
