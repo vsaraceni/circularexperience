@@ -1,7 +1,8 @@
 import { useDroppable } from "@dnd-kit/core";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Info } from "lucide-react";
 import LeadCard from "./LeadCard";
-import { getUrgencyLevel } from "./UrgencyBadge";
+import { getUrgencyLevel, SLA_CONFIG } from "./UrgencyBadge";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import type { Lead } from "./LeadList";
 
 export interface KanbanStage {
