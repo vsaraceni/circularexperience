@@ -41,6 +41,22 @@ export const STAGE_LABELS: Record<string, string> = {
   nutricao: "Nutrição",
 };
 
+const COMPOUND_PREFIXES = [
+  "maria", "ana", "joão", "jose", "josé", "luiz", "luis",
+  "pedro", "carlos", "paulo", "marco", "jean", "karl",
+];
+
+export function extractFirstName(fullName: string): string {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 1) return parts[0] || "";
+  const first = parts[0].toLowerCase();
+  if (COMPOUND_PREFIXES.includes(first) && parts.length >= 2) {
+    return `${parts[0]} ${parts[1]}`;
+  }
+  return parts[0];
+}
+
 export function replaceVariables(
   text: string,
   lead: { name: string; company?: string | null; cargo?: string | null },
@@ -48,7 +64,7 @@ export function replaceVariables(
   extra?: { data_envio_proposta?: string | null },
 ): string {
   let result = text;
-  result = result.replace(/\{\{nome\}\}/g, lead.name || "");
+  result = result.replace(/\{\{nome\}\}/g, extractFirstName(lead.name));
   result = result.replace(/\{\{empresa\}\}/g, lead.company || "");
   result = result.replace(/\{\{cargo\}\}/g, lead.cargo || "");
 
