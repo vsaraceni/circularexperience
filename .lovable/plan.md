@@ -1,27 +1,13 @@
 
 
-## Fix: Edições de templates não persistem + pergunta sobre botão
+## Variável `{{nome}}` → Primeiro Nome (com segurança para nomes compostos)
 
 ### Problema
 
-Todas as funções de mutação (`saveEdit`, `handleAdd`, `handleDelete`, `handleReorder`, `handleToggleActive`) invalidam a query key `["message_templates"]`, mas a página admin usa `useAllTemplatesAdmin()` que tem query key `["message_templates_admin"]`. Resultado: os dados salvam no banco, mas a lista na tela não atualiza — parece que a edição "não pegou".
+Hoje `{{nome}}` retorna o nome completo do lead. O ideal é retornar apenas o primeiro nome, mas nomes compostos brasileiros como "Maria Eduarda", "João Pedro", "Ana Clara" seriam cortados incorretamente se simplesmente fizermos `split(" ")[0]`.
 
-### Solução
+### Abordagem segura
 
-**Arquivo**: `src/pages/admin/Templates.tsx`
+Criar uma função `extractFirstName(fullName)` que:
 
-Trocar todas as 5 chamadas de `invalidateQueries` de:
-```ts
-queryClient.invalidateQueries({ queryKey: ["message_templates"] });
-```
-para:
-```ts
-queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
-```
-
-Linhas afetadas: 56, 74, 82, 96, 105.
-
-### Pergunta pendente
-
-O usuário começou a dizer algo sobre o botão "Nova Template" mas a mensagem foi cortada. Vou perguntar o que ele quis dizer após implementar o fix.
-
+1. Mantém uma lista de **prefixos compostos** comuns em português: `"Maria"`, `"Ana"`, `"João"`, `"José"`, `"Luiz"`, `"Luis
