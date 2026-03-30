@@ -499,14 +499,6 @@ const Proposals = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
-                    size="sm"
-                    className="h-9 px-4 rounded-lg font-medium"
-                    style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
-                    onClick={() => setShowLost(true)}
-                  >
-                    <Eye className="h-4 w-4 mr-1.5" aria-hidden="true" /> Ver Perdidos
-                  </Button>
-                )}
                 {showLost && (
                   <Button
                     variant="outline"
