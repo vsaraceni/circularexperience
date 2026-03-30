@@ -685,4 +685,37 @@ function ActionBtn({
   );
 }
 
+function BriefingField({ leadId, initialValue, onSaved }: { leadId: string; initialValue: string; onSaved: () => void }) {
+  const [text, setText] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const dirty = text !== initialValue;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await supabase.from("leads").update({ briefing_notes: text } as any).eq("id", leadId);
+      toast.success("Briefing salvo!");
+      onSaved();
+    } catch {
+      toast.error("Erro ao salvar briefing");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Textarea
+        placeholder="Notas de briefing para a call..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="min-h-[132px] text-sm font-mono leading-relaxed resize-y"
+      />
+      <Button size="sm" disabled={!dirty || saving} onClick={handleSave}>
+        {saving ? "Salvando..." : "Salvar briefing"}
+      </Button>
+    </div>
+  );
+}
+
 export default LeadDrawer;
