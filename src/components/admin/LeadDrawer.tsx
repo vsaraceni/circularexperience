@@ -404,7 +404,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                               <Textarea
                                 value={currentText}
                                 onChange={(e) => handleEditTemplate(t.id, e.target.value)}
-                                className="text-xs min-h-[80px] font-mono leading-relaxed resize-y"
+                                className="text-xs min-h-[132px] font-mono leading-relaxed resize-y"
                               />
 
                               {!isEdited && hasManualVariables(currentText) && (

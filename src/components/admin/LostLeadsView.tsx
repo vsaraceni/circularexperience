@@ -6,7 +6,8 @@ import { ptBR } from "date-fns/locale";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { RotateCcw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { RotateCcw, Trash2 } from "lucide-react";
 import type { Lead } from "./LeadList";
 
 interface LostLeadsViewProps {
@@ -25,9 +26,16 @@ const LOST_REASONS = [
   "Timing — pode voltar no futuro",
 ];
 
+const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
+
+const isTestLead = (email: string) =>
+  TEST_DOMAINS.some((d) => email.toLowerCase().endsWith(d));
+
 const LostLeadsView: React.FC<LostLeadsViewProps> = ({ leads, profiles, userId, onLeadUpdated }) => {
   const [filterReason, setFilterReason] = useState("all");
   const [reactivating, setReactivating] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const lostLeads = useMemo(() => {
     let result = leads.filter((l) => l.kanban_stage === "perdido");
@@ -60,6 +68,28 @@ const LostLeadsView: React.FC<LostLeadsViewProps> = ({ leads, profiles, userId, 
       toast.error("Erro ao reativar: " + (err.message || ""));
     } finally {
       setReactivating(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      // Delete related records first
+      await supabase.from("lead_activities").delete().eq("lead_id", deleteTarget.id);
+      await supabase.from("lead_follow_ups").delete().eq("lead_id", deleteTarget.id);
+      await supabase.from("proposal_submissions").delete().eq("lead_id", deleteTarget.id);
+      await supabase.from("notifications").delete().eq("lead_id", deleteTarget.id);
+      // Delete the lead
+      const { error } = await supabase.from("leads").delete().eq("id", deleteTarget.id);
+      if (error) throw error;
+      toast.success("Lead de teste excluído!");
+      onLeadUpdated();
+    } catch (err: any) {
+      toast.error("Erro ao excluir: " + (err.message || ""));
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -98,7 +128,7 @@ const LostLeadsView: React.FC<LostLeadsViewProps> = ({ leads, profiles, userId, 
                 <TableHead>Motivo</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Observação</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="w-[140px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -115,16 +145,29 @@ const LostLeadsView: React.FC<LostLeadsViewProps> = ({ leads, profiles, userId, 
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">{lead.lost_notes || "—"}</TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1 text-xs"
-                      disabled={reactivating === lead.id}
-                      onClick={() => handleReactivate(lead)}
-                    >
-                      <RotateCcw className="h-3 w-3" />
-                      Reativar
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 gap-1 text-xs"
+                        disabled={reactivating === lead.id}
+                        onClick={() => handleReactivate(lead)}
+                      >
+                        <RotateCcw className="h-3 w-3" />
+                        Reativar
+                      </Button>
+                      {isTestLead(lead.email) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(lead)}
+                          title="Excluir lead de teste"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -132,6 +175,24 @@ const LostLeadsView: React.FC<LostLeadsViewProps> = ({ leads, profiles, userId, 
           </Table>
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir lead de teste?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Este lead parece ser de teste ({deleteTarget?.email}). A exclusão é permanente e removerá todas as atividades, follow-ups e notificações associadas.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Excluindo..." : "Excluir permanentemente"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
