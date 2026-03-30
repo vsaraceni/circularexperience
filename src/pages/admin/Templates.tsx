@@ -53,7 +53,7 @@ const Templates = () => {
     if (error) { toast.error("Erro ao salvar"); return; }
     toast.success("Template atualizado!");
     cancelEdit();
-    queryClient.invalidateQueries({ queryKey: ["message_templates"] });
+    queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
   };
 
   const handleAdd = async () => {
@@ -71,7 +71,7 @@ const Templates = () => {
     toast.success("Template criado!");
     setAddDialog(false);
     setAddForm({ stage: "novo", channel: "whatsapp", title: "", subject: "", body: "" });
-    queryClient.invalidateQueries({ queryKey: ["message_templates"] });
+    queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
   };
 
   const handleDelete = async (id: string) => {
@@ -79,7 +79,7 @@ const Templates = () => {
     if (error) { toast.error("Erro ao remover"); return; }
     toast.success("Template removido!");
     setDeleteConfirm(null);
-    queryClient.invalidateQueries({ queryKey: ["message_templates"] });
+    queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
   };
 
   const handleReorder = async (t: MessageTemplate, direction: "up" | "down") => {
@@ -93,7 +93,7 @@ const Templates = () => {
       supabase.from("message_templates").update({ sort_order: other.sort_order }).eq("id", t.id),
       supabase.from("message_templates").update({ sort_order: t.sort_order }).eq("id", other.id),
     ]);
-    queryClient.invalidateQueries({ queryKey: ["message_templates"] });
+    queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
   };
 
   const handleToggleActive = async (t: MessageTemplate) => {
@@ -102,7 +102,7 @@ const Templates = () => {
       .update({ is_active: !(t.is_active ?? true) })
       .eq("id", t.id);
     if (error) { toast.error("Erro"); return; }
-    queryClient.invalidateQueries({ queryKey: ["message_templates"] });
+    queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
   };
 
   return (
