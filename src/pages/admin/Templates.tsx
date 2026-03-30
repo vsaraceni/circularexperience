@@ -122,6 +122,46 @@ const Templates = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+        {/* Variables Reference Panel */}
+        <Card className="border-dashed">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Variáveis disponíveis</h3>
+            <div className="space-y-2">
+              <div>
+                <p className="text-[11px] text-muted-foreground font-medium mb-1.5">Automáticas (preenchidas pelo sistema)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["{{nome}}", "{{empresa}}", "{{cargo}}", "{{nome_especialista}}", "{{cargo_especialista}}", "{{data_envio_proposta}}"].map((v) => (
+                    <Badge
+                      key={v}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-primary/10 text-xs font-mono transition-colors"
+                      onClick={() => { navigator.clipboard.writeText(v); toast.success(`"${v}" copiado!`); }}
+                    >
+                      {v}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] text-muted-foreground font-medium mb-1.5">Manuais (preenchidas pelo usuário antes de copiar)</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["{{dia1}}", "{{dia2}}", "{{horário}}", "{{mês}}", "{{prazo}}"].map((v) => (
+                    <Badge
+                      key={v}
+                      variant="outline"
+                      className="cursor-pointer hover:bg-accent text-xs font-mono transition-colors"
+                      onClick={() => { navigator.clipboard.writeText(v); toast.success(`"${v}" copiado!`); }}
+                    >
+                      {v}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground">Clique em qualquer variável para copiá-la.</p>
+          </CardContent>
+        </Card>
+
         {isLoading ? (
           <p className="text-muted-foreground text-center py-12">Carregando templates...</p>
         ) : (

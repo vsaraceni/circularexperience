@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, ExternalLink } from "lucide-react";
+import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, ExternalLink, MoreVertical } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
@@ -481,15 +481,23 @@ const Proposals = () => {
               </h1>
               <div className="flex items-center gap-2">
                 {viewMode === "kanban" && !showLost && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-4 rounded-lg font-medium"
-                    style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
-                    onClick={() => setShowLost(true)}
-                  >
-                    <Eye className="h-4 w-4 mr-1.5" aria-hidden="true" /> Ver Perdidos
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 p-0 rounded-lg"
+                        style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
+                      >
+                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowLost(true)}>
+                        <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 {showLost && (
                   <Button
