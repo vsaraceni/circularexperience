@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Copy } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Copy, Search } from "lucide-react";
+import { toast } from "sonner";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Proposal } from "@/pages/admin/Proposals";
@@ -14,6 +17,22 @@ interface RecentProposal {
   company_name: string;
   scope: string | null;
   considerations: string | null;
+  created_at: string | null;
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").trim();
+}
+
+function relativeDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "hoje";
+  if (days === 1) return "ontem";
+  if (days < 7) return `${days}d`;
+  if (days < 30) return `${Math.floor(days / 7)}sem`;
+  return `${Math.floor(days / 30)}m`;
 }
 
 interface ImportButtonProps {
@@ -24,38 +43,114 @@ interface ImportButtonProps {
 
 const ImportButton: React.FC<ImportButtonProps> = ({ field, proposals, onSelect }) => {
   const [open, setOpen] = useState(false);
-  const filtered = proposals.filter((p) => (field === "scope" ? p.scope : p.considerations));
+  const [search, setSearch] = useState("");
+  const [remoteResults, setRemoteResults] = useState<RecentProposal[]>([]);
+  const [searching, setSearching] = useState(false);
 
-  if (filtered.length === 0) return null;
+  const filtered = useMemo(() => {
+    const withContent = proposals.filter((p) => (field === "scope" ? p.scope : p.considerations));
+    if (!search.trim()) return withContent;
+    const term = search.toLowerCase();
+    return withContent.filter(
+      (p) =>
+        p.title.toLowerCase().includes(term) ||
+        p.company_name.toLowerCase().includes(term)
+    );
+  }, [proposals, field, search]);
+
+  // Remote fallback when local filter yields no results and search >= 3 chars
+  useEffect(() => {
+    if (search.length < 3 || filtered.length > 0) {
+      setRemoteResults([]);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      const col = field === "scope" ? "scope" : "considerations";
+      const { data } = await supabase
+        .from("proposals")
+        .select("id, title, company_name, scope, considerations, created_at")
+        .or(`title.ilike.%${search}%,company_name.ilike.%${search}%`)
+        .not(col, "is", null)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      setRemoteResults(data || []);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, filtered.length, field]);
+
+  const displayList = filtered.length > 0 ? filtered : remoteResults;
+
+  if (proposals.filter((p) => (field === "scope" ? p.scope : p.considerations)).length === 0) return null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1 text-muted-foreground">
-          <Copy className="h-3 w-3" />
-          Importar
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72 p-2" align="start">
-        <p className="text-xs font-medium text-muted-foreground mb-2">Últimas propostas</p>
-        <div className="space-y-1">
-          {filtered.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
-              onClick={() => {
-                onSelect((field === "scope" ? p.scope : p.considerations) || "");
-                setOpen(false);
-              }}
-            >
-              <span className="font-medium block truncate">{p.title}</span>
-              <span className="text-xs text-muted-foreground truncate block">{p.company_name}</span>
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+    <TooltipProvider delayDuration={400}>
+      <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs gap-1 text-muted-foreground">
+            <Copy className="h-3 w-3" />
+            Importar
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-0" align="start">
+          <div className="p-2 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por empresa ou título..."
+                className="h-8 pl-7 text-xs"
+                autoFocus
+              />
+            </div>
+          </div>
+          <ScrollArea className="max-h-[280px]">
+            <div className="p-1">
+              {displayList.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  {searching ? "Buscando..." : "Nenhuma proposta encontrada"}
+                </p>
+              )}
+              {displayList.map((p) => {
+                const content = (field === "scope" ? p.scope : p.considerations) || "";
+                const preview = stripHtml(content).slice(0, 120);
+                return (
+                  <Tooltip key={p.id}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="w-full text-left px-2 py-1.5 rounded-md text-sm hover:bg-accent transition-colors flex items-start justify-between gap-2"
+                        onClick={() => {
+                          onSelect(content);
+                          setOpen(false);
+                          setSearch("");
+                          toast.success("Conteúdo importado");
+                        }}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <span className="font-medium block truncate">{p.title}</span>
+                          <span className="text-xs text-muted-foreground truncate block">{p.company_name}</span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground shrink-0 mt-0.5">
+                          {relativeDate(p.created_at)}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    {preview && (
+                      <TooltipContent side="right" className="max-w-[240px] text-xs">
+                        {preview}{preview.length >= 120 ? "..." : ""}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </PopoverContent>
+      </Popover>
+    </TooltipProvider>
   );
 };
 
@@ -99,9 +194,9 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   useEffect(() => {
     supabase
       .from("proposals")
-      .select("id, title, company_name, scope, considerations")
+      .select("id, title, company_name, scope, considerations, created_at")
       .order("created_at", { ascending: false })
-      .limit(5)
+      .limit(15)
       .then(({ data }) => {
         if (data) setRecentProposals(data);
       });
