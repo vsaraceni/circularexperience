@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface Notification {
   id: string;
@@ -13,8 +14,26 @@ export interface Notification {
   created_at: string;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  new_lead: "🆕 Novo Lead",
+  new_lead_stale: "⏳ Lead sem ação",
+  stage_proposal: "📊 Proposta",
+  sla_breach: "🔴 SLA Crítico",
+  follow_up_due: "📅 Follow-up",
+  proposal_expiring: "📄 Proposta expirando",
+};
+
+function playNotificationSound() {
+  try {
+    const audio = new Audio("/notification.mp3");
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+  } catch {}
+}
+
 export function useNotifications(userId: string | undefined) {
   const qc = useQueryClient();
+  const isFirstLoad = useRef(true);
 
   const query = useQuery({
     queryKey: ["notifications", userId],
@@ -31,9 +50,11 @@ export function useNotifications(userId: string | undefined) {
     enabled: !!userId,
   });
 
-  // Realtime subscription
+  // Realtime subscription with sound + toast
   useEffect(() => {
     if (!userId) return;
+    isFirstLoad.current = true;
+
     const channel = supabase
       .channel("notifications_realtime")
       .on("postgres_changes", {
@@ -41,10 +62,35 @@ export function useNotifications(userId: string | undefined) {
         schema: "public",
         table: "notifications",
         filter: `user_id=eq.${userId}`,
-      }, () => {
+      }, (payload: any) => {
         qc.invalidateQueries({ queryKey: ["notifications", userId] });
+
+        // Skip sound/toast on first load
+        if (isFirstLoad.current) {
+          isFirstLoad.current = false;
+          return;
+        }
+
+        const n = payload.new;
+        if (n) {
+          playNotificationSound();
+
+          // Vibrate on mobile
+          if (navigator.vibrate) {
+            navigator.vibrate(200);
+          }
+
+          const label = TYPE_LABELS[n.type] || "🔔 Notificação";
+          toast(label, {
+            description: n.title,
+            duration: 6000,
+          });
+        }
       })
-      .subscribe();
+      .subscribe(() => {
+        // After subscribe, mark first load done after a short delay
+        setTimeout(() => { isFirstLoad.current = false; }, 2000);
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [userId, qc]);
@@ -54,7 +100,15 @@ export function useNotifications(userId: string | undefined) {
 
 export function useUnreadCount(userId: string | undefined) {
   const { data: notifications = [] } = useNotifications(userId);
-  return notifications.filter(n => !n.read).length;
+  const unread = notifications.filter(n => !n.read).length;
+
+  // Badge on tab title
+  useEffect(() => {
+    const baseTitle = "Pipeline Comercial";
+    document.title = unread > 0 ? `(${unread}) ${baseTitle}` : baseTitle;
+  }, [unread]);
+
+  return unread;
 }
 
 export function useMarkNotificationRead() {
