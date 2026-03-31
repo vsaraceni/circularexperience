@@ -1,137 +1,122 @@
 
 
-## Missões do Dia — Banner de Checklist Dinâmico no Kanban
+## Notificações Robustas — In-App (sino + som + toast) + Email
 
-### Visão geral
+### Estado atual
 
-Um banner horizontal fixo acima das colunas do Kanban com 5 "missões" calculadas automaticamente a partir dos dados reais do pipeline. Cada missão é um card compacto clicável com indicador de cor (verde/amarelo/vermelho), contagem e texto. Barra de progresso fina abaixo. Estado "Pipeline em dia" quando tudo resolvido.
+- **Sino in-app**: Existe (`NotificationBell`), com realtime via Supabase channel. Funciona, mas sem som e sem toast automático.
+- **Edge Function `check-notifications`**: Roda sob demanda (não agendada via cron). Cobre follow-ups vencidos e propostas expirando. **Não cobre** novo lead nem mudança de estágio.
+- **Email**: `send-lead-email` já envia email interno para `contato@movimentocircular.io` quando chega lead novo, mas não notifica cada vendedor individualmente.
+- **Realtime**: O hook `useNotifications` já escuta INSERTs na tabela `notifications` — qualquer insert no banco gera refresh automático no sino.
 
-### Análise de viabilidade vs PRD
+### O que falta
 
-O PRD pede 5 missões. Das 5, **3 funcionam com os dados atuais** e **2 precisam de novos campos no banco**:
-
-| Missão | Dados necessários | Status |
-|--------|-------------------|--------|
-| 1 — Leads novos sem ação | `kanban_stage = 'novo'` + `assigned_to` | Pronto |
-| 2 — Follow-up Boas-Vindas | `kanban_stage = 'boas_vindas'` + SLA existente | Pronto |
-| 3 — Aguardando agendamento (Em Contato) | `kanban_stage = 'em_contato'` + `assigned_to` | Pronto |
-| 4 — Calls amanhã/hoje | **`call_date` não existe na tabela leads** | Precisa migração |
-| 5 — Briefings incompletos | **`briefing` não existe na tabela leads** | Precisa migração |
-
-### Implementação em 2 fases
-
-**Fase 1 (esta entrega)**: Missões 1-3 + estrutura completa do banner + migração para `call_date` e `briefing_notes` + Missões 4-5.
+1. **Novos eventos**: novo lead + lead avançou para proposta + quebra de SLA
+2. **Som de alerta** ao receber notificação (desktop e mobile)
+3. **Toast automático** via realtime (notificação visual instantânea)
+4. **Badge no título da aba** (ex: `(3) Pipeline Comercial`)
+5. **Email por evento** para o vendedor responsável (usando Resend já configurado)
+6. **Agendar `check-notifications` via pg_cron** (hoje não roda automaticamente)
 
 ---
 
-### 1. Migração SQL — Novos campos na tabela `leads`
+### 1. Novos tipos de notificação na Edge Function `check-notifications`
+
+Adicionar ao `check-notifications/index.ts`:
+
+**a) Novo lead sem ação (> 30min)**
+- Query: leads com `kanban_stage = 'novo'` e `created_at < now() - 30min` sem notificação `new_lead` hoje
+- Notifica todos os admins (query `user_roles` para role = admin)
+
+**b) Lead avançou para Proposta**
+- Usar um **database trigger** na tabela `leads`: quando `kanban_stage` muda para `'proposta'`, inserir notificação + disparar email
+- Trigger chama uma nova Edge Function `notify-stage-change`
+
+**c) Quebra de SLA**
+- Adicionar ao `check-notifications`: para cada estágio com SLA, verificar leads que ultrapassaram o limite crítico
+- Notifica o `assigned_to` do lead
+
+### 2. Trigger para mudança de estágio (realtime imediato)
+
+Criar um **database trigger** `on_lead_stage_change` que dispara quando `kanban_stage` muda para `proposta`:
 
 ```sql
-ALTER TABLE public.leads
-  ADD COLUMN call_date timestamptz DEFAULT NULL,
-  ADD COLUMN briefing_notes text DEFAULT NULL;
+CREATE OR REPLACE FUNCTION notify_stage_change()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.kanban_stage = 'proposta' AND OLD.kanban_stage != 'proposta' THEN
+    INSERT INTO notifications (user_id, type, title, body, lead_id)
+    SELECT ur.user_id, 'stage_proposal',
+           'Lead avançou para Proposta: ' || COALESCE(NEW.company, NEW.name),
+           'Preparar proposta comercial',
+           NEW.id
+    FROM user_roles ur WHERE ur.role = 'admin';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
-- `call_date`: data/hora da call agendada (preenchida quando o usuário agenda via Google Calendar)
-- `briefing_notes`: texto livre do briefing (campo no Drawer, aba Resumo)
+Isso garante notificação **instantânea** via realtime (o INSERT no `notifications` já é capturado pelo channel existente).
 
-Atualizar a action `schedule_call` no `KanbanBoard.tsx` para gravar `call_date` junto com a mudança de estágio.
+### 3. Trigger para novo lead
 
----
+Trigger `on_new_lead_inserted` que insere notificação para todos os admins:
 
-### 2. Componente `MissionsBanner.tsx` (novo)
-
-**Arquivo**: `src/components/admin/MissionsBanner.tsx`
-
-Componente puro que recebe os leads filtrados por usuário e calcula as 5 missões:
-
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│ [ 3 ] Leads novos    [ 2 ] Boas-Vindas  [ 1 ] Agendamentos  ...   │
-│  sem ação (4h)         pendentes          pendentes                 │
-│ ████████████░░░░░░░░  2 de 5 resolvidas                            │
-└──────────────────────────────────────────────────────────────────────┘
+```sql
+-- Na inserção de lead, notificar admins
+INSERT INTO notifications (user_id, type, title, body, lead_id)
+SELECT ur.user_id, 'new_lead',
+       'Novo lead: ' || NEW.company || ' — ' || NEW.name,
+       COALESCE(NEW.cargo, '') || ' | ' || NEW.email,
+       NEW.id
+FROM user_roles ur WHERE ur.role = 'admin';
 ```
 
-**Lógica de cada missão:**
+### 4. Som + Toast automático no frontend
 
-1. **Leads novos sem ação**: `leads.filter(l => l.kanban_stage === 'novo' && (!l.assigned_to || l.assigned_to === userId))`. Mostra tempo do mais antigo via `stage_updated_at`.
+**Arquivo**: `src/hooks/useNotifications.ts`
 
-2. **Follow-up Boas-Vindas**: Leads em `boas_vindas` com SLA warning ou critical (reusa `getUrgencyLevel` existente).
+No callback do realtime INSERT:
+- Tocar um som curto (`/notification.mp3` — arquivo de ~2KB a incluir em `/public`)
+- Disparar `toast()` do Sonner com título e corpo da notificação
+- Vibrar no mobile (`navigator.vibrate(200)`)
 
-3. **Agendamentos pendentes**: Leads em `em_contato` atribuídos ao usuário.
+**Arquivo**: `src/components/admin/NotificationBell.tsx`
+- Adicionar ícones para os novos tipos: `new_lead: "🆕"`, `stage_proposal: "📊"`, `sla_breach: "🔴"`
 
-4. **Calls próximas**: Leads em `call_agendada` com `call_date` hoje (vermelho) ou amanhã (amarelo). Sem `call_date` = ignorado.
+### 5. Badge no título da aba
 
-5. **Briefings incompletos**: Leads em `call_agendada` com `briefing_notes` null ou vazio.
+**Arquivo**: `src/hooks/useNotifications.ts`
 
-**Visual de cada card missão:**
-- Borda esquerda colorida (3px): `#2FB2C0` (ok), `#F4A736` (atenção), `#EB626D` (urgente)
-- Número grande à esquerda ou checkmark verde quando resolvido
-- Texto descritivo à direita
-- Cursor pointer, clicável
-- Quando resolvido: checkmark + opacidade 50%
+Adicionar `useEffect` que atualiza `document.title`:
+```
+unread > 0 ? `(${unread}) Pipeline Comercial` : 'Pipeline Comercial'
+```
 
-**Barra de progresso:** `<div>` de 4px, cor `#2FB2C0`, largura proporcional a missões resolvidas.
+### 6. Email para o vendedor responsável
 
-**Estado "Pipeline em dia":** Quando 5/5 resolvidas, mostra "Pipeline em dia ✓" centralizado, banner low-profile com opacidade reduzida nos cards.
+**Arquivo**: `supabase/functions/check-notifications/index.ts`
 
----
+Após inserir notificações, para cada notificação com `assigned_to`, enviar email via Resend:
+- Assunto: título da notificação
+- Body: HTML simples com link para o CRM
+- Usar o email do perfil do vendedor (query `profiles.email`)
+- Rate limit: max 1 email por tipo/lead/dia (já coberto pela lógica de dedup existente)
 
-### 3. Ação ao clicar nas missões
+Para os triggers (new_lead, stage_proposal), o email será disparado pela Edge Function `notify-stage-change` chamada via `http_post` no trigger.
 
-Cada missão, ao ser clicada:
-- Faz scroll horizontal até a coluna correspondente no Kanban
-- Aplica um flash visual (highlight temporário de 2s) nos cards relevantes
+### 7. Agendar `check-notifications` via pg_cron
 
-**Implementação:** O `KanbanBoard` passará uma ref ou callback `scrollToStage(stageId)` para o banner. O scroll usa `element.scrollIntoView({ behavior: 'smooth' })` na coluna-alvo. O highlight é feito via CSS class temporária nos cards (borda pulsante por 2s).
+Usar `supabase insert tool` para criar cron job que roda a cada 15 minutos:
 
-Missão 5 (briefings): ao clicar, abre o Drawer do primeiro lead com briefing incompleto.
-
----
-
-### 4. Campo de briefing no Drawer
-
-**Arquivo**: `src/components/admin/LeadDrawer.tsx`
-
-Na aba Resumo, para leads em `call_agendada`, adicionar uma seção "Briefing" com:
-- Textarea (min-h-[132px]) para notas do briefing
-- Botão "Salvar" que grava em `leads.briefing_notes`
-- Indicador visual se está vazio (badge "Pendente" em amarelo)
-
----
-
-### 5. Gravar `call_date` ao agendar call
-
-**Arquivo**: `src/components/admin/KanbanBoard.tsx`
-
-Na action `schedule_call`, extrair a data escolhida no Google Calendar URL e gravá-la em `leads.call_date`. Se o usuário não informar data, usar `null`.
-
----
-
-### 6. Visão do admin — Botão "Ver time"
-
-**Arquivo**: `src/components/admin/MissionsBanner.tsx`
-
-Botão discreto no canto direito do banner. Ao clicar, abre um popover/dialog com tabela:
-
-| Usuário | Novos | Boas-Vindas | Agendamentos | Calls | Briefings |
-|---------|-------|-------------|--------------|-------|-----------|
-
-Cada célula colorida: verde (0), amarelo (1-2), vermelho (3+). Clicável para filtrar o Kanban por aquele usuário+coluna.
-
----
-
-### 7. Integração no Proposals.tsx
-
-**Arquivo**: `src/pages/admin/Proposals.tsx`
-
-Renderizar `<MissionsBanner>` entre o header/filtros e o Kanban, passando:
-- `leads` (filtrados ou todos, conforme escopo)
-- `userId`
-- `profiles` (para visão admin)
-- `onScrollToStage` callback
-- `onOpenLead` callback (para missão 5)
+```sql
+SELECT cron.schedule(
+  'check-notifications-job',
+  '*/15 * * * *',
+  $$ SELECT net.http_post(...) $$
+);
+```
 
 ---
 
@@ -139,18 +124,19 @@ Renderizar `<MissionsBanner>` entre o header/filtros e o Kanban, passando:
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migração SQL | `call_date` e `briefing_notes` na tabela leads |
-| `MissionsBanner.tsx` | **Novo** — componente do banner com 5 missões |
-| `Proposals.tsx` | Renderizar banner acima do Kanban |
-| `KanbanBoard.tsx` | Expor ref/callback para scroll + gravar `call_date` |
-| `LeadDrawer.tsx` | Campo briefing na aba Resumo para `call_agendada` |
-| `LeadList.tsx` | Adicionar `call_date` e `briefing_notes` à interface Lead |
+| Migração SQL | Triggers `on_new_lead` e `on_lead_stage_change` + função `notify_stage_change` |
+| `check-notifications/index.ts` | Adicionar SLA breach check + envio de email via Resend |
+| `useNotifications.ts` | Som, toast automático, badge no título da aba |
+| `NotificationBell.tsx` | Ícones para novos tipos |
+| `/public/notification.mp3` | Arquivo de som (~2KB) |
+| pg_cron (via insert tool) | Agendar check-notifications a cada 15min |
 
-### Design system
+### Resultado
 
-- Cores: mesmas do CRM existente (`#2FB2C0`, `#F4A736`, `#EB626D`, hsl vars)
-- Tipografia: `text-[13px]` para texto, número em `text-lg font-bold`
-- Border-radius: `rounded-lg`
-- Sem sombras pesadas — `border` sutil como os cards do Kanban
-- Responsivo: flex-wrap em telas menores
+- **Novo lead chega** → trigger insere notificação → realtime dispara som + toast + email para admins
+- **Lead avança para Proposta** → trigger → som + toast + email
+- **SLA breach** → cron a cada 15min → notificação + email
+- **Follow-up vencido** → cron → notificação + email
+- **Proposta expirando** → cron → notificação + email
+- **Mobile**: toast visível, vibração, badge no título
 
