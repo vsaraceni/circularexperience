@@ -14,6 +14,9 @@ interface NotificationBellProps {
 }
 
 const TYPE_ICONS: Record<string, string> = {
+  new_lead: "🆕",
+  new_lead_stale: "⏳",
+  stage_proposal: "📊",
   follow_up_due: "📅",
   sla_breach: "🔴",
   proposal_expiring: "📄",
