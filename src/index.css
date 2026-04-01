@@ -30,9 +30,9 @@
     --secondary: 186 61% 47%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Yellow/Gold - Accent (MC yellow) */
-    --accent: 45 100% 50%;
-    --accent-foreground: 215 25% 26.6667%;
+    /* Laranja - Accent (#F4A736) */
+    --accent: 36 90% 58%;
+    --accent-foreground: 0 0% 20%;
 
     --muted: 248 0.7% 96.8%;
     --muted-foreground: 257 4.6% 55.4%;
