@@ -433,9 +433,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           )}
           <div
             ref={scrollContainerRef}
-            className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4"
+            className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 flex-1"
             onWheel={handleWheel}
             onScroll={updateScrollState}
+            style={{ height: '100%' }}
           >
             {STAGES.map((stage) => {
               const stageLeads = leadsByStage[stage.id] || [];
