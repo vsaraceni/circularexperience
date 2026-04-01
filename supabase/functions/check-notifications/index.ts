@@ -349,9 +349,7 @@ Deno.serve(async (req) => {
       for (const adminId of adminIds) {
         const email = profileMap.get(adminId);
         if (!email) continue;
-
-        const adminNotifs = notifications.filter(n => n.user_id === adminId);
-        // Build sections filtered for this admin
+        // Build sections for this admin
         const adminSections: DigestSection[] = Object.values(digestSections).map(s => ({
           ...s,
           items: s.items, // all items go to all admins in digest
