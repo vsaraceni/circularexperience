@@ -70,6 +70,7 @@ interface UrgencyBadgeProps {
   stage: string;
   stageUpdatedAt: string | null;
   lastActivityAt: string | null;
+  hasPendingFollowUp?: boolean;
 }
 
 const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: string }> = {
