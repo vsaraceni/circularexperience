@@ -1,25 +1,26 @@
 
 
-## Otimizar tamanho dos filtros do Pipeline
-
-### Problema
-
-Os filtros ocupam espaço excessivo na linha: campo de busca muito largo (`max-w-[320px]`), selects com widths generosos (140-160px), e `h-9` + `text-sm` resultam em elementos maiores que o necessário para controles secundários.
+## Navegação lateral do Kanban — Setas flutuantes + Scroll via roda do mouse
 
 ### Mudanças
 
-**Arquivo**: `src/pages/admin/Proposals.tsx`
+**Arquivo**: `src/components/admin/KanbanBoard.tsx`
 
-| Elemento | Atual | Novo |
-|----------|-------|------|
-| Input busca | `max-w-[320px]`, `min-w-[200px]`, `h-9`, `text-sm` | `max-w-[220px]`, `min-w-[160px]`, `h-8`, `text-xs` |
-| Select Origem | `w-[150px]`, `h-9`, `text-sm` | `w-[130px]`, `h-8`, `text-xs` |
-| Select Responsável | `w-[160px]`, `h-9`, `text-sm` | `w-[140px]`, `h-8`, `text-xs` |
-| Select Período | `w-[150px]`, `h-9`, `text-sm` | `w-[130px]`, `h-8`, `text-xs` |
-| Select Status | `w-[140px]`, `h-9`, `text-sm` | `w-[130px]`, `h-8`, `text-xs` |
-| Search icon | `top-2.5`, `h-4 w-4` | `top-2`, `h-3.5 w-3.5` |
-| Clear button | `top-2.5` | `top-2` |
-| Gap entre filtros | `gap-3` | `gap-2` |
+1. **Ref no container** — Adicionar `useRef` no `div.flex.gap-4.overflow-x-auto` (linha 381)
 
-Reduz altura de 36px para 32px, fonte menor (`text-xs` = 12px vs `text-sm` = 14px), e larguras mais compactas. Os filtros ficam visualmente mais discretos, liberando espaço para o conteúdo principal (kanban).
+2. **Wheel handler** — `onWheel` no container: converte `deltaY` em `scrollLeft` (scroll horizontal com roda vertical do mouse), com `e.preventDefault()` para evitar scroll vertical da página
+
+3. **Setas flutuantes** — Dois botões `ChevronLeft` / `ChevronRight` posicionados `absolute` nas bordas esquerda/direita do container, centralizados verticalmente:
+   - Semi-transparentes com `backdrop-blur-sm`, `bg-white/80`, sombra suave
+   - `h-8 w-8`, `rounded-full`
+   - Scroll suave de ~290px (largura de uma coluna) por clique
+   - **Auto-hide**: monitorar `scrollLeft` via evento `scroll` — esconder seta esquerda quando no início, seta direita quando no final
+
+4. **Wrapper relativo** — Envolver o container de scroll + setas num `div relative` para posicionamento absoluto das setas
+
+### Detalhes técnicos
+
+- State: `canScrollLeft` e `canScrollRight` (booleans) atualizados via `onScroll` + `ResizeObserver`
+- Setas com `transition-opacity` para aparecer/desaparecer suavemente
+- `pointer-events-none` quando invisível para não bloquear drag-and-drop
 
