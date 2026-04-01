@@ -16,7 +16,7 @@ interface KanbanColumnProps {
   leads: Lead[];
   profiles?: { id: string; full_name: string | null }[];
   proposals: { id: string; lead_id?: string; investment: string }[];
-  followUpsByLead?: Record<string, { hasToday: boolean; hasOverdue: boolean }>;
+  followUpsByLead?: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean }>;
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
