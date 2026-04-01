@@ -385,7 +385,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   return (
     <TooltipProvider delayDuration={300}>
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
-        <div className="relative">
+        <div className="relative h-full flex flex-col">
           {canScrollLeft && (
             <button
               onClick={() => scrollBy(-290)}
