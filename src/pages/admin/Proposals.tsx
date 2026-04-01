@@ -597,7 +597,7 @@ const Proposals = () => {
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger
-                      className="w-[140px] h-9 rounded-lg text-sm"
+                      className="w-[130px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
