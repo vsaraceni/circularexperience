@@ -27,6 +27,7 @@ const TOOLTIP_MAP: Record<string, string> = {
   send_welcome: "Enviar e-mail de boas-vindas",
   linkedin: "Buscar no LinkedIn",
   copy_whatsapp: "Copiar telefone para WhatsApp",
+  move_to_contact: "Lead retornou contato — mover para Em Contato",
   schedule_call: "Agendar call e mover para Call Agendada",
   call_done: "Registrar call realizada e mover para Proposta",
   generate_proposal: "Criar proposta comercial",
