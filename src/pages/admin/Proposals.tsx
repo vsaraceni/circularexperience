@@ -622,7 +622,7 @@ const Proposals = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 w-9 p-0 rounded-lg"
+                        className="h-8 w-8 p-0 rounded-lg"
                         style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
                       >
                         <MoreVertical className="h-4 w-4" aria-hidden="true" />
