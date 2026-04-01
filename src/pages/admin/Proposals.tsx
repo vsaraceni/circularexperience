@@ -488,54 +488,22 @@ const Proposals = () => {
           />
         ) : (
           <>
-            {/* ===== PAGE HEADER ===== */}
-            <div className="flex items-center justify-between mb-5">
-              <h1 className="text-[22px] font-bold" style={{ color: 'hsl(var(--color-text-primary))' }}>
-                {showLost ? "Leads Perdidos" : viewMode === "list" ? "Propostas" : "Pipeline Comercial"}
-              </h1>
-              <div className="flex items-center gap-2">
-                {viewMode === "kanban" && !showLost && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-9 w-9 p-0 rounded-lg"
-                        style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
-                      >
-                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setShowLost(true)}>
-                        <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-                {showLost && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 px-4 rounded-lg font-medium"
-                    style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
-                    onClick={() => setShowLost(false)}
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-1.5" aria-hidden="true" /> Voltar ao Pipeline
-                  </Button>
-                )}
-                {!showLost && (
-                  <Button
-                    size="sm"
-                    className="h-9 px-4 rounded-lg font-medium"
-                    style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
-                    onClick={() => { setPrefill(undefined); setShowForm(true); }}
-                  >
-                    <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" /> Nova Proposta
-                  </Button>
-                )}
+            {showLost && (
+              <div className="flex items-center justify-between mb-5">
+                <h1 className="text-[22px] font-bold" style={{ color: 'hsl(var(--color-text-primary))' }}>
+                  Leads Perdidos
+                </h1>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-4 rounded-lg font-medium"
+                  style={{ borderColor: 'hsl(var(--color-brand))', color: 'hsl(var(--color-brand))' }}
+                  onClick={() => setShowLost(false)}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1.5" aria-hidden="true" /> Voltar ao Pipeline
+                </Button>
               </div>
-            </div>
+            )}
 
             {loading ? (
               <div className="flex justify-center py-12">
@@ -550,7 +518,7 @@ const Proposals = () => {
               />
             ) : viewMode === "kanban" ? (
               <>
-                {/* ===== FILTERS BAR ===== */}
+                {/* ===== FILTERS + ACTIONS BAR ===== */}
                 <div className="flex items-center gap-3 mb-3 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-[320px]">
                     <Search className="absolute left-3 top-2.5 h-4 w-4" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
@@ -602,7 +570,7 @@ const Proposals = () => {
                       <SelectValue placeholder="Responsável" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="all">Todos os responsáveis</SelectItem>
                       <SelectItem value="unassigned">Sem responsável</SelectItem>
                       {profiles.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
@@ -621,7 +589,7 @@ const Proposals = () => {
                       <SelectValue placeholder="Período" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="all">Todo o período</SelectItem>
                       <SelectItem value="7">Últimos 7 dias</SelectItem>
                       <SelectItem value="30">Últimos 30 dias</SelectItem>
                       <SelectItem value="90">Últimos 90 dias</SelectItem>
@@ -639,12 +607,42 @@ const Proposals = () => {
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="all">Todos os status</SelectItem>
                       <SelectItem value="vencidos">Vencidos</SelectItem>
                       <SelectItem value="atencao">⚠ Atenção</SelectItem>
                       <SelectItem value="no_prazo">No prazo</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Separador vertical */}
+                  <div className="h-6 w-px mx-1" style={{ background: 'hsl(var(--color-border))' }} />
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 p-0 rounded-lg"
+                        style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
+                      >
+                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowLost(true)}>
+                        <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Button
+                    size="sm"
+                    className="h-9 px-4 rounded-lg font-medium"
+                    style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
+                    onClick={() => { setPrefill(undefined); setShowForm(true); }}
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" /> Nova Proposta
+                  </Button>
                 </div>
                 <MissionsBanner
                   leads={filteredLeads}
