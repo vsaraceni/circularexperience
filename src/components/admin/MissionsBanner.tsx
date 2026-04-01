@@ -73,7 +73,7 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
         icon: <Inbox className="h-3.5 w-3.5" />, stageId: "novo",
       },
       {
-        id: "boas_vindas", label: "FU", count: boasVindas.length, resolved: boasVindas.length === 0,
+        id: "boas_vindas", label: "Follow-up", count: boasVindas.length, resolved: boasVindas.length === 0,
         color: boasVindas.length === 0 ? "#2FB2C0" : boasVindas.length >= 3 ? "#EB626D" : "#F4A736",
         icon: <AlertTriangle className="h-3.5 w-3.5" />, stageId: "boas_vindas",
       },
