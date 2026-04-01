@@ -68,7 +68,7 @@ const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactN
         { icon: <FileText className="h-3.5 w-3.5" />, label: "Elab. Proposta", action: "generate_proposal", primary: true },
       ];
       if (hasProposal) {
-        actions.push({ icon: <Send className="h-3.5 w-3.5" />, label: "Registrar Envio", action: "register_submission" });
+        actions.push({ icon: <Send className="h-3.5 w-3.5" />, label: "Proposta Enviada", action: "register_submission" });
       }
       return actions;
     }
