@@ -349,14 +349,15 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   </AccordionContent>
                 </AccordionItem>
 
-                {/* Block: Briefing (only for call_agendada) */}
-                {lead.kanban_stage === "call_agendada" && (
+                {/* Block: Briefing (all active stages) */}
+                {lead.kanban_stage !== "perdido" && lead.kanban_stage !== "fechado" && (
                   <AccordionItem value="briefing">
                     <AccordionTrigger className="text-sm font-semibold hover:no-underline">
                       <span className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         Briefing
-                        {(!(lead as any).briefing_notes || (lead as any).briefing_notes.trim() === "") && (
+                        {(lead.kanban_stage === "call_agendada" || lead.kanban_stage === "proposta") &&
+                          (!(lead as any).briefing_notes || (lead as any).briefing_notes.trim() === "") && (
                           <Badge className="text-[10px] h-4 px-1.5 ml-1" style={{ background: "#FFFDE7", color: "#F9A825", border: "none" }}>
                             Pendente
                           </Badge>
