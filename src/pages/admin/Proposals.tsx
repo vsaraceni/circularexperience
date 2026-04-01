@@ -579,7 +579,7 @@ const Proposals = () => {
                   </Select>
                   <Select value={filterPeriod} onValueChange={setFilterPeriod}>
                     <SelectTrigger
-                      className="w-[150px] h-9 rounded-lg text-sm"
+                      className="w-[130px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
