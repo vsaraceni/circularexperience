@@ -106,7 +106,8 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
     data: { lead },
   });
 
-  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null);
+  const hasPendingFollowUp = followUpStatus ? (followUpStatus.hasToday || !!followUpStatus.hasFuture) && !followUpStatus.hasOverdue : false;
+  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPendingFollowUp);
   const isCritical = urgencyLevel === "critical";
   const showLostIcon = LOST_STAGES.has(lead.kanban_stage);
   const nextAction = getNextActionLabel(lead, hasProposal);
