@@ -52,13 +52,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
   const followUpsByLead = useMemo(() => {
-    const map: Record<string, { hasToday: boolean; hasOverdue: boolean }> = {};
+    const map: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture: boolean }> = {};
     const today = new Date(); today.setHours(0, 0, 0, 0);
     allPendingFollowUps.forEach(f => {
       const due = new Date(f.due_date + "T00:00:00");
-      if (!map[f.lead_id]) map[f.lead_id] = { hasToday: false, hasOverdue: false };
+      if (!map[f.lead_id]) map[f.lead_id] = { hasToday: false, hasOverdue: false, hasFuture: false };
       if (due < today) map[f.lead_id].hasOverdue = true;
       else if (due.getTime() === today.getTime()) map[f.lead_id].hasToday = true;
+      else map[f.lead_id].hasFuture = true;
     });
     return map;
   }, [allPendingFollowUps]);
