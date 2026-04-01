@@ -154,10 +154,10 @@ export default {
 			},
 			'glow-accent': {
 				'0%, 100%': {
-					boxShadow: '0 0 20px hsl(45 100% 50% / 0.4), 0 0 40px hsl(35 100% 50% / 0.2)'
+					boxShadow: '0 0 20px hsl(36 90% 58% / 0.4), 0 0 40px hsl(36 90% 48% / 0.2)'
 				},
 				'50%': {
-					boxShadow: '0 0 35px hsl(45 100% 50% / 0.6), 0 0 60px hsl(35 100% 50% / 0.35)'
+					boxShadow: '0 0 35px hsl(36 90% 58% / 0.6), 0 0 60px hsl(36 90% 48% / 0.35)'
 				}
 			},
   			float: {

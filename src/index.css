@@ -22,17 +22,17 @@
     --popover: 0 0% 100%;
     --popover-foreground: 265 4% 12.9%;
 
-    /* Magenta - Primary brand color (MC vibrant) */
-    --primary: 271 52% 36%;
+    /* Roxo - Primary brand color (#5F2558) */
+    --primary: 307 44% 26%;
     --primary-foreground: 0 0% 100%;
 
-    /* Teal - Secondary color (MC teal) */
-    --secondary: 174 72% 40%;
+    /* Azul Turquesa - Secondary color (#2FB2C0) */
+    --secondary: 186 61% 47%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Yellow/Gold - Accent (MC yellow) */
-    --accent: 45 100% 50%;
-    --accent-foreground: 215 25% 26.6667%;
+    /* Laranja - Accent (#F4A736) */
+    --accent: 36 90% 58%;
+    --accent-foreground: 0 0% 20%;
 
     --muted: 248 0.7% 96.8%;
     --muted-foreground: 257 4.6% 55.4%;
@@ -42,16 +42,16 @@
 
     --border: 0 0% 88%;
     --input: 0 0% 88%;
-    --ring: 271 52% 36%;
+    --ring: 307 44% 26%;
 
     --radius: 0.625rem;
 
     /* === CRM Design System Tokens === */
 
-    /* Brand */
-    --color-brand: 271 52% 36%;
-    --color-brand-light: 271 47% 93%;
-    --color-brand-dark: 271 54% 27%;
+    /* Brand — Roxo #5F2558 */
+    --color-brand: 307 44% 26%;
+    --color-brand-light: 307 30% 93%;
+    --color-brand-dark: 307 44% 20%;
 
     /* Urgency */
     --color-urgent-ok: 122 39% 39%;
@@ -62,7 +62,7 @@
     /* Stage colors */
     --color-stage-new: 0 0% 62%;
     --color-stage-contact: 210 79% 46%;
-    --color-stage-call: 282 60% 38%;
+    --color-stage-call: 307 44% 26%;
     --color-stage-proposal: 122 39% 39%;
     --color-stage-nurture: 27 91% 48%;
     --color-stage-closed: 122 48% 34%;
@@ -83,16 +83,16 @@
     --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.14);
     --shadow-card-drag: 0 8px 24px rgba(0,0,0,0.18);
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
-    --gradient-secondary: linear-gradient(135deg, hsl(174 72% 40%) 0%, hsl(174 72% 30%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(307 44% 32%) 0%, hsl(307 44% 22%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(45 100% 50%) 0%, hsl(35 100% 50%) 100%);
+    /* Gradients — using brand roxo #5F2558 */
+    --gradient-primary: linear-gradient(135deg, hsl(307 44% 26%) 0%, hsl(307 44% 18%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(186 61% 47%) 0%, hsl(186 61% 37%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(307 44% 26%) 0%, hsl(307 44% 18%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(36 90% 58%) 0%, hsl(36 90% 48%) 100%);
 
     /* Shadows */
     --shadow-soft: 0 4px 24px -4px hsl(210 40% 15% / 0.1);
-    --shadow-glow-primary: 0 8px 32px -8px hsl(271 52% 36% / 0.4);
-    --shadow-glow-secondary: 0 8px 32px -8px hsl(174 72% 40% / 0.4);
+    --shadow-glow-primary: 0 8px 32px -8px hsl(307 44% 26% / 0.4);
+    --shadow-glow-secondary: 0 8px 32px -8px hsl(186 61% 47% / 0.4);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 265 4% 12.9%;
@@ -193,7 +193,7 @@
 
   /* Focus visible for accessibility */
   *:focus-visible {
-    outline: 2px solid hsl(271 52% 36%);
+    outline: 2px solid hsl(307 44% 26%);
     outline-offset: 2px;
   }
 }
@@ -297,7 +297,7 @@
     text-decoration: underline;
   }
   .proposal-html-content blockquote {
-    border-left: 3px solid hsl(271 52% 36% / 0.3);
+    border-left: 3px solid hsl(307 44% 26% / 0.3);
     padding-left: 1em;
     margin: 0.5em 0;
     font-style: italic;
