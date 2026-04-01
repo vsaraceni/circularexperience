@@ -24,6 +24,7 @@ interface MissionsBannerProps {
   followUpsByLead?: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean }>;
   onScrollToStage?: (stageId: string) => void;
   onOpenLead?: (lead: Lead) => void;
+  inline?: boolean;
 }
 
 function hasPendingFU(fu?: { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean }): boolean {
@@ -32,7 +33,7 @@ function hasPendingFU(fu?: { hasToday: boolean; hasOverdue: boolean; hasFuture?:
 }
 
 const MissionsBanner: React.FC<MissionsBannerProps> = ({
-  leads, userId, profiles = [], followUpsByLead = {}, onScrollToStage, onOpenLead,
+  leads, userId, profiles = [], followUpsByLead = {}, onScrollToStage, onOpenLead, inline = false,
 }) => {
   const [showTeam, setShowTeam] = useState(false);
 
@@ -142,6 +143,80 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
     n === 0 ? "#E8F5E9" : n <= 2 ? "#FFFDE7" : "#FDEDED";
   const cellTextColor = (n: number) =>
     n === 0 ? "#388E3C" : n <= 2 ? "#F9A825" : "#D32F2F";
+
+  if (inline) {
+    return (
+      <div className="flex items-center gap-1.5 flex-nowrap">
+        <span className="text-[11px] font-semibold whitespace-nowrap flex items-center gap-1" style={{ color: "hsl(var(--color-text-primary))" }}>
+          🎯
+        </span>
+        {allResolved ? (
+          <Badge
+            className="text-[10px] h-5 px-2 gap-1 whitespace-nowrap"
+            style={{ background: "#E8F5E9", color: "#388E3C", border: "none" }}
+          >
+            <CheckCircle2 className="h-3 w-3" /> Em dia
+          </Badge>
+        ) : (
+          missions.filter(m => !m.resolved).map((m) => (
+            <button
+              key={m.id}
+              onClick={() => handleMissionClick(m)}
+              className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium whitespace-nowrap transition-all cursor-pointer hover:opacity-80"
+              style={{
+                borderLeft: `2px solid ${m.color}`,
+                color: "hsl(var(--color-text-secondary))",
+              }}
+            >
+              <span className="font-bold" style={{ color: m.color }}>{m.count}</span>
+              {m.label}
+            </button>
+          ))
+        )}
+        <span className="text-[10px] font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>
+          {resolvedCount}/{missions.length}
+        </span>
+        {profiles.length > 1 && (
+          <Popover open={showTeam} onOpenChange={setShowTeam}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-5 text-[10px] gap-0.5 px-1" style={{ color: "hsl(var(--color-text-secondary))" }}>
+                <Users className="h-3 w-3" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="end">
+              <p className="text-xs font-semibold mb-2" style={{ color: "hsl(var(--color-text-primary))" }}>
+                Missões por usuário
+              </p>
+              <table className="text-[11px]">
+                <thead>
+                  <tr>
+                    <th className="text-left pr-3 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Usuário</th>
+                    <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Novos</th>
+                    <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Follow-up</th>
+                    <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Agendamento</th>
+                    <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Calls</th>
+                    <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Briefing</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamData.map((row) => (
+                    <tr key={row.name}>
+                      <td className="pr-3 py-0.5 font-medium" style={{ color: "hsl(var(--color-text-primary))" }}>{row.name}</td>
+                      {[row.novos, row.boasVindas, row.emContato, row.calls, row.briefings].map((n, i) => (
+                        <td key={i} className="px-2 py-0.5 text-center rounded" style={{ background: cellColor(n), color: cellTextColor(n) }}>
+                          {n}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

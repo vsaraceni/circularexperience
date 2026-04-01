@@ -34,19 +34,19 @@ interface KanbanBoardProps {
   userId: string;
   proposals: Proposal[];
   profiles?: { id: string; full_name: string | null }[];
+  sortMode?: "urgency" | "arrival" | "stale";
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  leads, userId, proposals, profiles, onLeadUpdated, onGenerateProposal, onSendWelcome,
+  leads, userId, proposals, profiles, sortMode = "urgency", onLeadUpdated, onGenerateProposal, onSendWelcome,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
-  const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -384,33 +384,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      {/* Sort pills */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-medium" style={{ color: 'hsl(var(--color-text-muted))' }}>Ordenar por:</span>
-        <div className="flex items-center gap-1.5">
-          {([
-            { key: "urgency" as const, icon: <AlertTriangle className="h-3 w-3" />, label: "Urgência" },
-            { key: "arrival" as const, icon: <ArrowDownAZ className="h-3 w-3" />, label: "Chegada" },
-            { key: "stale" as const, icon: <Clock className="h-3 w-3" />, label: "Parados" },
-          ]).map(pill => (
-            <button
-              key={pill.key}
-              onClick={() => setSortMode(pill.key)}
-              className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full transition-all"
-              style={{
-                background: sortMode === pill.key ? 'hsl(var(--color-brand))' : 'hsl(var(--color-bg-subtle))',
-                color: sortMode === pill.key ? 'white' : 'hsl(var(--color-text-secondary))',
-                border: sortMode === pill.key ? 'none' : '1px solid hsl(var(--color-border))',
-              }}
-            >
-              {pill.icon} {pill.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
-        <div className="relative">
+        <div className="relative h-full flex flex-col">
           {canScrollLeft && (
             <button
               onClick={() => scrollBy(-290)}
@@ -433,9 +408,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           )}
           <div
             ref={scrollContainerRef}
-            className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4"
+            className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 flex-1"
             onWheel={handleWheel}
             onScroll={updateScrollState}
+            style={{ height: '100%' }}
           >
             {STAGES.map((stage) => {
               const stageLeads = leadsByStage[stage.id] || [];

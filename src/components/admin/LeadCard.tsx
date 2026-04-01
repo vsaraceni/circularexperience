@@ -113,11 +113,15 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
   const nextAction = getNextActionLabel(lead, hasProposal);
   const actions = getStageActions(lead, hasProposal);
 
+  const borderLeftColor = urgencyLevel === "critical" ? '#D32F2F' : urgencyLevel === "warning" ? '#F4A736' : '#66BB6A';
+  const noSlaStages = new Set(["fechado", "perdido"]);
+  const showBorder = !noSlaStages.has(lead.kanban_stage);
+
   const style: React.CSSProperties = {
     opacity: isDragging ? 0.3 : 1,
     boxShadow: isDragging ? 'var(--shadow-card-drag)' : 'var(--shadow-card-rest)',
     transform: isDragging ? 'rotate(2deg)' : undefined,
-    borderLeft: isCritical ? '3px solid #D32F2F' : undefined,
+    borderLeft: showBorder ? `3px solid ${borderLeftColor}` : undefined,
     background: isCritical ? '#FFFAFA' : 'white',
   };
 

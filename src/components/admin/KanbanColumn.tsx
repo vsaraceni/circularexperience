@@ -108,7 +108,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
       {/* Body */}
       <div
         ref={setNodeRef}
-        className={`flex-1 p-3 space-y-3 rounded-b-xl min-h-[200px] overflow-y-auto max-h-[calc(100vh-240px)] transition-colors crm-scrollbar ${
+        className={`flex-1 p-3 space-y-3 rounded-b-xl min-h-[120px] overflow-y-auto transition-colors crm-scrollbar ${
           isOver ? "ring-2 ring-inset" : ""
         }`}
         style={{
