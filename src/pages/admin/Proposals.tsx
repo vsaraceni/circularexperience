@@ -560,7 +560,7 @@ const Proposals = () => {
                   </Select>
                   <Select value={filterOwner} onValueChange={setFilterOwner}>
                     <SelectTrigger
-                      className="w-[160px] h-9 rounded-lg text-sm"
+                      className="w-[140px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
