@@ -637,7 +637,7 @@ const Proposals = () => {
 
                   <Button
                     size="sm"
-                    className="h-9 px-4 rounded-lg font-medium"
+                    className="h-8 px-3 rounded-lg font-medium text-xs"
                     style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
                     onClick={() => { setPrefill(undefined); setShowForm(true); }}
                   >
