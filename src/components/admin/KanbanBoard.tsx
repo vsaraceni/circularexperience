@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowDownAZ, Clock, AlertTriangle } from "lucide-react";
+import { ArrowDownAZ, Clock, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { getUrgencyLevel } from "./UrgencyBadge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
