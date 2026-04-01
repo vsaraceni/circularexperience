@@ -77,6 +77,29 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     const el = scrollContainerRef.current;
     if (!el || Math.abs(e.deltaY) < 5) return;
+
+    // Find the nearest scrollable column under the cursor
+    let target = e.target as HTMLElement | null;
+    let scrollableCol: HTMLElement | null = null;
+    while (target && target !== el) {
+      if (target.classList.contains('crm-scrollbar') && target.scrollHeight > target.clientHeight) {
+        scrollableCol = target;
+        break;
+      }
+      target = target.parentElement;
+    }
+
+    if (scrollableCol) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollableCol;
+      const atTop = scrollTop <= 0 && e.deltaY < 0;
+      const atBottom = scrollTop + clientHeight >= scrollHeight - 1 && e.deltaY > 0;
+      if (!atTop && !atBottom) {
+        // Column can still scroll vertically — let native behavior handle it
+        return;
+      }
+    }
+
+    // No scrollable column or column at limit — scroll horizontally
     if (el.scrollWidth > el.clientWidth) {
       e.preventDefault();
       el.scrollLeft += e.deltaY;
