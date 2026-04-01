@@ -27,6 +27,7 @@ const TOOLTIP_MAP: Record<string, string> = {
   send_welcome: "Enviar e-mail de boas-vindas",
   linkedin: "Buscar no LinkedIn",
   copy_whatsapp: "Copiar telefone para WhatsApp",
+  move_to_contact: "Lead retornou contato — mover para Em Contato",
   schedule_call: "Agendar call e mover para Call Agendada",
   call_done: "Registrar call realizada e mover para Proposta",
   generate_proposal: "Criar proposta comercial",
@@ -35,7 +36,7 @@ const TOOLTIP_MAP: Record<string, string> = {
   close_won: "Fechar lead com sucesso",
 };
 
-const LOST_STAGES = new Set(["em_contato", "call_agendada", "proposta", "nutricao"]);
+const LOST_STAGES = new Set(["boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao"]);
 
 const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactNode; label: string; action: string; disabled?: boolean; primary?: boolean }[] => {
   switch (lead.kanban_stage) {
@@ -53,6 +54,7 @@ const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactN
       return [
         { icon: <Linkedin className="h-3.5 w-3.5" />, label: "LinkedIn", action: "linkedin", primary: true },
         { icon: <Copy className="h-3.5 w-3.5" />, label: "Copiar Zap", action: "copy_whatsapp" },
+        { icon: <CheckCircle className="h-3.5 w-3.5" />, label: "Em Contato", action: "move_to_contact" },
       ];
     case "em_contato":
       return [
@@ -67,7 +69,7 @@ const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactN
         { icon: <FileText className="h-3.5 w-3.5" />, label: "Elab. Proposta", action: "generate_proposal", primary: true },
       ];
       if (hasProposal) {
-        actions.push({ icon: <Send className="h-3.5 w-3.5" />, label: "Registrar Envio", action: "register_submission" });
+        actions.push({ icon: <Send className="h-3.5 w-3.5" />, label: "Proposta Enviada", action: "register_submission" });
       }
       return actions;
     }

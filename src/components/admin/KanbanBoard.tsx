@@ -326,6 +326,15 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         toast.success("Lead fechado! 🎉");
         onLeadUpdated();
         break;
+      case "move_to_contact":
+        await supabase.from("leads").update({ kanban_stage: "em_contato", stage_updated_at: now, last_activity_at: now }).eq("id", lead.id);
+        await supabase.from("lead_activities").insert({
+          lead_id: lead.id, user_id: userId,
+          activity_type: "em_contato", content: "Lead retornou contato",
+        });
+        toast.success("Lead movido para Em Contato!");
+        onLeadUpdated();
+        break;
       case "mark_lost":
         setLostLead(lead);
         break;
