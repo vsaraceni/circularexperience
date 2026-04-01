@@ -48,10 +48,10 @@
 
     /* === CRM Design System Tokens === */
 
-    /* Brand */
-    --color-brand: 271 52% 36%;
-    --color-brand-light: 271 47% 93%;
-    --color-brand-dark: 271 54% 27%;
+    /* Brand — Roxo #5F2558 */
+    --color-brand: 307 44% 26%;
+    --color-brand-light: 307 30% 93%;
+    --color-brand-dark: 307 44% 20%;
 
     /* Urgency */
     --color-urgent-ok: 122 39% 39%;
