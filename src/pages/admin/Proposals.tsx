@@ -650,6 +650,7 @@ const Proposals = () => {
                   leads={filteredLeads}
                   userId={user!.id}
                   profiles={profiles}
+                  followUpsByLead={followUpsByLead}
                   onScrollToStage={(stageId) => {
                     const el = document.querySelector(`[data-stage-id="${stageId}"]`);
                     if (el) {
