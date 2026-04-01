@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from "@dnd-kit/core";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ArrowDownAZ, Clock, AlertTriangle } from "lucide-react";
+import { ArrowDownAZ, Clock, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { getUrgencyLevel } from "./UrgencyBadge";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import KanbanColumn, { type KanbanStage } from "./KanbanColumn";
@@ -49,7 +49,39 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return;
+    updateScrollState();
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [updateScrollState]);
+
+  const scrollBy = useCallback((amount: number) => {
+    scrollContainerRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+  }, []);
+
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = scrollContainerRef.current;
+    if (!el || Math.abs(e.deltaY) < 5) return;
+    if (el.scrollWidth > el.clientWidth) {
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    }
+  }, []);
 
   const followUpsByLead = useMemo(() => {
     const map: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture: boolean }> = {};
@@ -378,24 +410,51 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
-          {STAGES.map((stage) => {
-            const stageLeads = leadsByStage[stage.id] || [];
-            const stageLeadIds = new Set(stageLeads.map((l) => l.id));
-            const stageProposals = proposals.filter((p) => p.lead_id && stageLeadIds.has(p.lead_id));
-            return (
-              <KanbanColumn
-                key={stage.id}
-                stage={stage}
-                leads={stageLeads}
-                profiles={profiles}
-                proposals={stageProposals}
-                followUpsByLead={followUpsByLead}
-                onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
-                onQuickAction={handleQuickAction}
-              />
-            );
-          })}
+        <div className="relative">
+          {canScrollLeft && (
+            <button
+              onClick={() => scrollBy(-290)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center transition-opacity duration-200 shadow-md"
+              style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(4px)', border: '1px solid hsl(var(--color-border))' }}
+              aria-label="Scroll esquerda"
+            >
+              <ChevronLeft className="h-4 w-4" style={{ color: 'hsl(var(--color-text-secondary))' }} />
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              onClick={() => scrollBy(290)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center transition-opacity duration-200 shadow-md"
+              style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(4px)', border: '1px solid hsl(var(--color-border))' }}
+              aria-label="Scroll direita"
+            >
+              <ChevronRight className="h-4 w-4" style={{ color: 'hsl(var(--color-text-secondary))' }} />
+            </button>
+          )}
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4"
+            onWheel={handleWheel}
+            onScroll={updateScrollState}
+          >
+            {STAGES.map((stage) => {
+              const stageLeads = leadsByStage[stage.id] || [];
+              const stageLeadIds = new Set(stageLeads.map((l) => l.id));
+              const stageProposals = proposals.filter((p) => p.lead_id && stageLeadIds.has(p.lead_id));
+              return (
+                <KanbanColumn
+                  key={stage.id}
+                  stage={stage}
+                  leads={stageLeads}
+                  profiles={profiles}
+                  proposals={stageProposals}
+                  followUpsByLead={followUpsByLead}
+                  onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
+                  onQuickAction={handleQuickAction}
+                />
+              );
+            })}
+          </div>
         </div>
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
