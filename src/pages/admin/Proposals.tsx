@@ -615,7 +615,7 @@ const Proposals = () => {
                   </Select>
 
                   {/* Separador vertical */}
-                  <div className="h-6 w-px mx-1" style={{ background: 'hsl(var(--color-border))' }} />
+                  <div className="h-5 w-px mx-0.5" style={{ background: 'hsl(var(--color-border))' }} />
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
