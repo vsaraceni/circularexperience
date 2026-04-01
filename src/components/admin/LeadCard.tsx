@@ -35,7 +35,7 @@ const TOOLTIP_MAP: Record<string, string> = {
   close_won: "Fechar lead com sucesso",
 };
 
-const LOST_STAGES = new Set(["em_contato", "call_agendada", "proposta", "nutricao"]);
+const LOST_STAGES = new Set(["boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao"]);
 
 const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactNode; label: string; action: string; disabled?: boolean; primary?: boolean }[] => {
   switch (lead.kanban_stage) {
