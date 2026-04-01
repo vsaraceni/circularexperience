@@ -15,6 +15,15 @@ const SLA_CONFIG: Record<string, { criticalH?: number; criticalD?: number; useHo
   nutricao: { criticalD: 10 },
 };
 
+const STAGE_LABELS: Record<string, string> = {
+  novo: "Novo",
+  boas_vindas: "Boas-Vindas",
+  em_contato: "Em Contato",
+  call_agendada: "Call Agendada",
+  proposta: "Proposta",
+  nutricao: "Nutrição",
+};
+
 async function sendEmailViaResend(to: string, subject: string, htmlBody: string) {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   if (!resendKey || !to) return;
@@ -35,13 +44,50 @@ async function sendEmailViaResend(to: string, subject: string, htmlBody: string)
   }
 }
 
-function buildEmailHtml(title: string, body: string): string {
+interface DigestSection {
+  emoji: string;
+  title: string;
+  items: { name: string; detail: string; leadId: string }[];
+}
+
+function buildDigestEmailHtml(sections: DigestSection[]): string {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+
+  const sectionHtml = sections
+    .filter(s => s.items.length > 0)
+    .map(s => `
+      <div style="margin-bottom:24px;">
+        <h3 style="color:#5F2558;font-size:16px;margin-bottom:8px;">${s.emoji} ${s.title} (${s.items.length})</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          ${s.items.map(item => `
+            <tr style="border-bottom:1px solid #f0ecea;">
+              <td style="padding:8px 0;font-size:13px;color:#333;">${item.name}</td>
+              <td style="padding:8px 0;font-size:12px;color:#666;text-align:right;">${item.detail}</td>
+            </tr>
+          `).join("")}
+        </table>
+      </div>
+    `).join("");
+
+  if (!sectionHtml) {
+    return `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px;">
+        <h2 style="color:#2FB2C0;margin-bottom:4px;">☀️ Bom dia!</h2>
+        <p style="color:#666;font-size:13px;margin-bottom:24px;">${dateStr}</p>
+        <p style="color:#333;font-size:14px;">Nenhuma pendência para hoje. Tudo em dia! 🎉</p>
+        <hr style="margin:24px 0;border:none;border-top:1px solid #f0ecea;">
+        <p style="font-size:11px;color:#999;">Circular Experience CRM</p>
+      </div>`;
+  }
+
   return `
-    <div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:24px;">
-      <h2 style="color:#2FB2C0;margin-bottom:12px;">${title}</h2>
-      <p style="color:#333;font-size:14px;line-height:1.6;">${body}</p>
-      <hr style="margin:24px 0;border:none;border-top:1px solid #eee;">
-      <p style="font-size:12px;color:#999;">Circular Experience CRM</p>
+    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px;">
+      <h2 style="color:#2FB2C0;margin-bottom:4px;">☀️ Bom dia! Seu resumo do dia</h2>
+      <p style="color:#666;font-size:13px;margin-bottom:24px;">${dateStr}</p>
+      ${sectionHtml}
+      <hr style="margin:24px 0;border:none;border-top:1px solid #f0ecea;">
+      <p style="font-size:11px;color:#999;">Circular Experience CRM — Resumo matinal automático</p>
     </div>`;
 }
 
@@ -51,6 +97,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Parse mode from body
+    let mode = "realtime";
+    try {
+      const body = await req.json();
+      if (body?.mode === "digest") mode = "digest";
+    } catch { /* no body = realtime */ }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
@@ -61,6 +114,14 @@ Deno.serve(async (req) => {
     const threeDaysStr = threeDaysFromNow.toISOString().split("T")[0];
 
     const notifications: { user_id: string; type: string; title: string; body: string; lead_id: string }[] = [];
+
+    // Digest mode collects items per section for consolidated email
+    const digestSections: Record<string, DigestSection> = {
+      sla: { emoji: "🔴", title: "SLA Crítico", items: [] },
+      follow_up: { emoji: "📅", title: "Follow-ups Pendentes", items: [] },
+      stale: { emoji: "⏳", title: "Leads Sem Ação", items: [] },
+      proposal: { emoji: "📄", title: "Propostas Expirando", items: [] },
+    };
 
     // Get all admin user IDs
     const { data: adminRoles } = await supabase
@@ -118,6 +179,12 @@ Deno.serve(async (req) => {
             body: f.note || "",
             lead_id: f.lead_id,
           });
+
+          digestSections.follow_up.items.push({
+            name: lead.company || lead.name,
+            detail: isOverdue ? `Atrasado (${f.due_date})` : "Hoje",
+            leadId: f.lead_id,
+          });
         }
       }
     }
@@ -149,12 +216,17 @@ Deno.serve(async (req) => {
             body: `Validade até ${p.valid_until}`,
             lead_id: p.lead_id || "",
           });
+
+          digestSections.proposal.items.push({
+            name: p.company_name,
+            detail: `Expira ${p.valid_until}`,
+            leadId: p.lead_id || "",
+          });
         }
       }
     }
 
-    // 3. SLA breach check — leads exceeding critical SLA time
-    // First get all pending (non-overdue) follow-ups to exempt those leads
+    // 3. SLA breach check
     const { data: pendingFollowUps } = await supabase
       .from("lead_follow_ups")
       .select("lead_id, due_date")
@@ -173,7 +245,6 @@ Deno.serve(async (req) => {
     if (activeLeads) {
       const now = new Date();
       for (const lead of activeLeads) {
-        // Skip leads with pending (non-overdue) follow-ups
         if (leadsWithPendingFU.has(lead.id)) continue;
 
         const config = SLA_CONFIG[lead.kanban_stage];
@@ -212,8 +283,14 @@ Deno.serve(async (req) => {
             user_id: targetUserId,
             type: "sla_breach",
             title: `SLA crítico: ${lead.company || lead.name}`,
-            body: `Lead parado em "${lead.kanban_stage}" além do limite`,
+            body: `Lead parado em "${STAGE_LABELS[lead.kanban_stage] || lead.kanban_stage}" além do limite`,
             lead_id: lead.id,
+          });
+
+          digestSections.sla.items.push({
+            name: lead.company || lead.name,
+            detail: STAGE_LABELS[lead.kanban_stage] || lead.kanban_stage,
+            leadId: lead.id,
           });
         }
       }
@@ -247,6 +324,12 @@ Deno.serve(async (req) => {
               body: `Novo lead aguardando há mais de 30min`,
               lead_id: lead.id,
             });
+
+            digestSections.stale.items.push({
+              name: lead.company || lead.name,
+              detail: "Aguardando ação",
+              leadId: lead.id,
+            });
           }
         }
       }
@@ -258,18 +341,35 @@ Deno.serve(async (req) => {
       if (error) {
         console.error("Error inserting notifications:", error);
       }
-
-      // Send emails for each notification
-      for (const n of notifications) {
-        const email = profileMap.get(n.user_id);
-        if (email) {
-          await sendEmailViaResend(email, n.title, buildEmailHtml(n.title, n.body));
-        }
-      }
     }
 
+    // Email logic depends on mode
+    if (mode === "digest") {
+      // Send ONE consolidated email per admin
+      for (const adminId of adminIds) {
+        const email = profileMap.get(adminId);
+        if (!email) continue;
+
+        const adminNotifs = notifications.filter(n => n.user_id === adminId);
+        // Build sections filtered for this admin
+        const adminSections: DigestSection[] = Object.values(digestSections).map(s => ({
+          ...s,
+          items: s.items, // all items go to all admins in digest
+        }));
+
+        const html = buildDigestEmailHtml(adminSections);
+        const totalItems = adminSections.reduce((sum, s) => sum + s.items.length, 0);
+        const subject = totalItems > 0
+          ? `☀️ Resumo do dia — ${totalItems} pendência${totalItems > 1 ? "s" : ""}`
+          : "☀️ Bom dia — Tudo em dia!";
+
+        await sendEmailViaResend(email, subject, html);
+      }
+    }
+    // In "realtime" mode: NO emails sent (notifications are in-app + push only)
+
     return new Response(
-      JSON.stringify({ success: true, created: notifications.length }),
+      JSON.stringify({ success: true, mode, created: notifications.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
