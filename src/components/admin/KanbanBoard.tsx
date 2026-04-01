@@ -87,8 +87,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     Object.keys(map).forEach((key) => {
       map[key].sort((a, b) => {
         if (sortMode === "urgency") {
-          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null);
-          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null);
+          const fuA = followUpsByLead[a.id];
+          const fuB = followUpsByLead[b.id];
+          const hasPendingA = fuA ? (fuA.hasToday || fuA.hasFuture) && !fuA.hasOverdue : false;
+          const hasPendingB = fuB ? (fuB.hasToday || fuB.hasFuture) && !fuB.hasOverdue : false;
+          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null, hasPendingA);
+          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null, hasPendingB);
           const diff = URGENCY_ORDER[la] - URGENCY_ORDER[lb];
           if (diff !== 0) return diff;
           const da = new Date(a.stage_updated_at || a.created_at || 0).getTime();
