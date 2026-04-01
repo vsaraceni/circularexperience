@@ -523,7 +523,7 @@ const Proposals = () => {
                   <div className="relative flex-1 min-w-[160px] max-w-[220px]">
                     <Search className="absolute left-2.5 top-2 h-3.5 w-3.5" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
                     <Input
-                      placeholder="Buscar por nome, empresa, email..."
+                      placeholder="Buscar..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-9 h-9 rounded-lg text-sm"
