@@ -607,12 +607,42 @@ const Proposals = () => {
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="all">Todos os status</SelectItem>
                       <SelectItem value="vencidos">Vencidos</SelectItem>
                       <SelectItem value="atencao">⚠ Atenção</SelectItem>
                       <SelectItem value="no_prazo">No prazo</SelectItem>
                     </SelectContent>
                   </Select>
+
+                  {/* Separador vertical */}
+                  <div className="h-6 w-px mx-1" style={{ background: 'hsl(var(--color-border))' }} />
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 w-9 p-0 rounded-lg"
+                        style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
+                      >
+                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setShowLost(true)}>
+                        <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Button
+                    size="sm"
+                    className="h-9 px-4 rounded-lg font-medium"
+                    style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
+                    onClick={() => { setPrefill(undefined); setShowForm(true); }}
+                  >
+                    <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" /> Nova Proposta
+                  </Button>
                 </div>
                 <MissionsBanner
                   leads={filteredLeads}
