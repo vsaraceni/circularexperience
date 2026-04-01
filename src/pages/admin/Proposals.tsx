@@ -389,12 +389,15 @@ const Proposals = () => {
   const proposalsByStatus = (status: string) =>
     proposals.filter((p) => (p.status || "rascunho") === status);
 
-  const isFilterActive = (filter: string, value: string) => value !== "all";
+  const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length;
 
   return (
-    <div className="min-h-screen" style={{ background: 'hsl(var(--color-bg-page))' }}>
+    <div className="h-screen overflow-hidden flex flex-col" style={{ background: 'hsl(var(--color-bg-page))' }}>
       {/* ===== NAVBAR — 3 ZONES ===== */}
-      <header className="bg-white border-b sticky top-0 z-40" style={{ borderColor: 'hsl(var(--color-border))', height: 56 }}>
+      <header className="bg-white border-b z-40 shrink-0" style={{ borderColor: 'hsl(var(--color-border))', height: 56 }}>
         <div className="w-full px-6 flex items-center justify-between h-14">
           {/* Zone Left — Logo + CRM + View Toggle */}
           <div className="flex items-center gap-3">
@@ -478,8 +481,8 @@ const Proposals = () => {
         </div>
       </header>
 
-      <main className={`mx-auto py-6 ${viewMode === "kanban" ? "px-6" : "container px-4 max-w-5xl"}`}>
-        {showForm || editing ? (
+      {showForm || editing ? (
+        <main className="flex-1 overflow-auto container px-4 max-w-5xl py-6">
           <ProposalForm
             proposal={editing}
             onSave={handleSave}
@@ -487,9 +490,11 @@ const Proposals = () => {
             prefill={prefill}
             authorDefaults={!editing ? authorDefaults : undefined}
           />
-        ) : (
-          <>
-            {showLost && (
+        </main>
+      ) : (
+        <>
+          {showLost && (
+            <main className="flex-1 overflow-auto px-6 py-5">
               <div className="flex items-center justify-between mb-5">
                 <h1 className="text-[22px] font-bold" style={{ color: 'hsl(var(--color-text-primary))' }}>
                   Leads Perdidos
@@ -504,148 +509,26 @@ const Proposals = () => {
                   <ArrowLeft className="h-4 w-4 mr-1.5" aria-hidden="true" /> Voltar ao Pipeline
                 </Button>
               </div>
-            )}
-
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'hsl(var(--color-brand))' }} />
-              </div>
-            ) : showLost ? (
               <LostLeadsView
                 leads={allLeads}
                 profiles={profiles}
                 userId={user!.id}
                 onLeadUpdated={fetchLeads}
               />
-            ) : viewMode === "kanban" ? (
-              <>
-                {/* ===== FILTERS + ACTIONS BAR ===== */}
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <div className="relative flex-1 min-w-[160px] max-w-[220px]">
-                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
-                    <Input
-                      placeholder="Buscar..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-8 h-8 rounded-lg text-xs"
-                      style={{ borderColor: 'hsl(var(--color-border))' }}
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm("")}
-                        className="absolute right-2.5 top-2 h-3.5 w-3.5 flex items-center justify-center"
-                        style={{ color: 'hsl(var(--color-text-muted))' }}
-                        aria-label="Limpar busca"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                  <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-                    <SelectTrigger
-                      className="w-[130px] h-8 rounded-lg text-xs"
-                      style={{
-                        borderColor: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
-                        color: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
-                        background: filterOrigem !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
-                      }}
-                    >
-                      <SelectValue placeholder="Todas as origens" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as origens</SelectItem>
-                      {origens.map((o) => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterOwner} onValueChange={setFilterOwner}>
-                    <SelectTrigger
-                      className="w-[140px] h-8 rounded-lg text-xs"
-                      style={{
-                        borderColor: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
-                        color: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
-                        background: filterOwner !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
-                      }}
-                    >
-                      <SelectValue placeholder="Responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os responsáveis</SelectItem>
-                      <SelectItem value="unassigned">Sem responsável</SelectItem>
-                      {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterPeriod} onValueChange={setFilterPeriod}>
-                    <SelectTrigger
-                      className="w-[130px] h-8 rounded-lg text-xs"
-                      style={{
-                        borderColor: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
-                        color: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
-                        background: filterPeriod !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
-                      }}
-                    >
-                      <SelectValue placeholder="Período" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todo o período</SelectItem>
-                      <SelectItem value="7">Últimos 7 dias</SelectItem>
-                      <SelectItem value="30">Últimos 30 dias</SelectItem>
-                      <SelectItem value="90">Últimos 90 dias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger
-                      className="w-[130px] h-8 rounded-lg text-xs"
-                      style={{
-                        borderColor: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
-                        color: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
-                        background: filterStatus !== "all" ? 'hsl(var(--color-brand-light))' : 'white',
-                      }}
-                    >
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      <SelectItem value="vencidos">Vencidos</SelectItem>
-                      <SelectItem value="atencao">⚠ Atenção</SelectItem>
-                      <SelectItem value="no_prazo">No prazo</SelectItem>
-                    </SelectContent>
-                  </Select>
+            </main>
+          )}
 
-                  {/* Separador vertical */}
-                  <div className="h-5 w-px mx-0.5" style={{ background: 'hsl(var(--color-border))' }} />
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 w-8 p-0 rounded-lg"
-                        style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
-                      >
-                        <MoreVertical className="h-4 w-4" aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setShowLost(true)}>
-                        <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  <Button
-                    size="sm"
-                    className="h-8 px-3 rounded-lg font-medium text-xs"
-                    style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
-                    onClick={() => { setPrefill(undefined); setShowForm(true); }}
-                  >
-                    <Plus className="h-4 w-4 mr-1.5" aria-hidden="true" /> Nova Proposta
-                  </Button>
-                </div>
+          {loading ? (
+            <div className="flex-1 flex justify-center items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'hsl(var(--color-brand))' }} />
+            </div>
+          ) : !showLost && viewMode === "kanban" ? (
+            <div className="flex-1 flex flex-col overflow-hidden px-4 pt-2">
+              {/* ===== UNIFIED BAR ===== */}
+              <div className="flex items-center gap-2 mb-2 shrink-0 flex-wrap">
+                {/* Left: Missions inline */}
                 <MissionsBanner
+                  inline
                   leads={filteredLeads}
                   userId={user!.id}
                   profiles={profiles}
@@ -656,23 +539,178 @@ const Proposals = () => {
                       el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
                       el.classList.add("ring-2", "ring-offset-2");
                       el.setAttribute("style", `${el.getAttribute("style") || ""};--tw-ring-color: #2FB2C0`);
-                      setTimeout(() => {
-                        el.classList.remove("ring-2", "ring-offset-2");
-                      }, 2000);
+                      setTimeout(() => { el.classList.remove("ring-2", "ring-offset-2"); }, 2000);
                     }
                   }}
                 />
+
+                {/* Separator */}
+                <div className="h-4 w-px" style={{ background: 'hsl(var(--color-border))' }} />
+
+                {/* Sort pills */}
+                <div className="flex items-center gap-1">
+                  {([
+                    { key: "urgency" as const, icon: <AlertTriangle className="h-3 w-3" />, label: "Urgência" },
+                    { key: "arrival" as const, icon: <ArrowDownAZ className="h-3 w-3" />, label: "Chegada" },
+                    { key: "stale" as const, icon: <Clock className="h-3 w-3" />, label: "Parados" },
+                  ]).map(pill => (
+                    <button
+                      key={pill.key}
+                      onClick={() => setSortMode(pill.key)}
+                      className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full transition-all"
+                      style={{
+                        background: sortMode === pill.key ? 'hsl(var(--color-brand))' : 'transparent',
+                        color: sortMode === pill.key ? 'white' : 'hsl(var(--color-text-muted))',
+                        border: sortMode === pill.key ? 'none' : '1px solid hsl(var(--color-border))',
+                      }}
+                    >
+                      {pill.icon} {pill.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Right side: spacer */}
+                <div className="flex-1" />
+
+                {/* Filter popover */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-[10px] rounded-lg gap-1 relative"
+                      style={{
+                        borderColor: activeFilterCount > 0 ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
+                        color: activeFilterCount > 0 ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-secondary))',
+                        background: activeFilterCount > 0 ? 'hsl(var(--color-brand-light))' : 'white',
+                      }}
+                    >
+                      <SlidersHorizontal className="h-3 w-3" />
+                      Filtros
+                      {activeFilterCount > 0 && (
+                        <span className="ml-0.5 h-4 min-w-[16px] rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{ background: 'hsl(var(--color-brand))' }}>
+                          {activeFilterCount}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-3 space-y-2.5" align="end">
+                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--color-text-primary))' }}>Filtros</p>
+                    <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+                      <SelectTrigger className="w-full h-8 rounded-lg text-xs" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <SelectValue placeholder="Todas as origens" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as origens</SelectItem>
+                        {origens.map((o) => (<SelectItem key={o} value={o}>{o}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterOwner} onValueChange={setFilterOwner}>
+                      <SelectTrigger className="w-full h-8 rounded-lg text-xs" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <SelectValue placeholder="Todos os responsáveis" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os responsáveis</SelectItem>
+                        <SelectItem value="unassigned">Sem responsável</SelectItem>
+                        {profiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                      <SelectTrigger className="w-full h-8 rounded-lg text-xs" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <SelectValue placeholder="Todo o período" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todo o período</SelectItem>
+                        <SelectItem value="7">Últimos 7 dias</SelectItem>
+                        <SelectItem value="30">Últimos 30 dias</SelectItem>
+                        <SelectItem value="90">Últimos 90 dias</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger className="w-full h-8 rounded-lg text-xs" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <SelectValue placeholder="Todos os status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os status</SelectItem>
+                        <SelectItem value="vencidos">Vencidos</SelectItem>
+                        <SelectItem value="atencao">⚠ Atenção</SelectItem>
+                        <SelectItem value="no_prazo">No prazo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {activeFilterCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full h-7 text-[10px]"
+                        style={{ color: 'hsl(var(--color-text-muted))' }}
+                        onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); }}
+                      >
+                        Limpar filtros
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Collapsible search */}
+                <div className="relative" style={{ width: searchFocused || searchTerm ? 180 : 32, transition: 'width 200ms ease' }}>
+                  <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 pointer-events-none" style={{ color: 'hsl(var(--color-text-muted))' }} />
+                  <Input
+                    placeholder="Buscar..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                    className="pl-7 h-7 rounded-lg text-[10px]"
+                    style={{ borderColor: 'hsl(var(--color-border))' }}
+                  />
+                  {searchTerm && (
+                    <button onClick={() => setSearchTerm("")} className="absolute right-2 top-1.5 h-3.5 w-3.5 flex items-center justify-center" style={{ color: 'hsl(var(--color-text-muted))' }}>✕</button>
+                  )}
+                </div>
+
+                {/* Separator */}
+                <div className="h-4 w-px" style={{ background: 'hsl(var(--color-border))' }} />
+
+                {/* More menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 w-7 p-0 rounded-lg" style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}>
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShowLost(true)}>
+                      <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button
+                  size="sm"
+                  className="h-7 px-2.5 rounded-lg font-medium text-[10px]"
+                  style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
+                  onClick={() => { setPrefill(undefined); setShowForm(true); }}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" /> Nova Proposta
+                </Button>
+              </div>
+
+              {/* ===== KANBAN BOARD (fills remaining space) ===== */}
+              <div className="flex-1 overflow-hidden">
                 <KanbanBoard
                   leads={filteredLeads}
                   userId={user!.id}
                   proposals={proposals}
                   profiles={profiles}
+                  sortMode={sortMode}
                   onLeadUpdated={fetchLeads}
                   onGenerateProposal={handleGenerateProposal}
                   onSendWelcome={handleSendWelcomeFromKanban}
                 />
-              </>
-            ) : (
+              </div>
+            </div>
+          ) : !showLost && viewMode === "list" ? (
+            <main className="flex-1 overflow-auto container px-4 max-w-5xl py-6">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full grid grid-cols-2">
                   <TabsTrigger value="rascunhos">
@@ -703,10 +741,10 @@ const Proposals = () => {
                   />
                 </TabsContent>
               </Tabs>
-            )}
-          </>
-        )}
-      </main>
+            </main>
+          ) : null}
+        </>
+      )}
     </div>
   );
 };
