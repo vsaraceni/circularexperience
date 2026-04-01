@@ -62,7 +62,7 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
 
     const briefingsIncompletos = activeLeads.filter(
       (l) =>
-        l.kanban_stage === "call_agendada" &&
+        (l.kanban_stage === "call_agendada" || l.kanban_stage === "proposta") &&
         (!(l as any).briefing_notes || (l as any).briefing_notes.trim() === "")
     );
 
