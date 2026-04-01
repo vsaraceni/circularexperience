@@ -1,46 +1,25 @@
 
 
-## Otimizar header do Pipeline — linha única + labels descritivos nos filtros
+## Otimizar tamanho dos filtros do Pipeline
+
+### Problema
+
+Os filtros ocupam espaço excessivo na linha: campo de busca muito largo (`max-w-[320px]`), selects com widths generosos (140-160px), e `h-9` + `text-sm` resultam em elementos maiores que o necessário para controles secundários.
 
 ### Mudanças
 
 **Arquivo**: `src/pages/admin/Proposals.tsx`
 
-#### 1. Remover título "Pipeline Comercial" e unificar numa única linha
+| Elemento | Atual | Novo |
+|----------|-------|------|
+| Input busca | `max-w-[320px]`, `min-w-[200px]`, `h-9`, `text-sm` | `max-w-[220px]`, `min-w-[160px]`, `h-8`, `text-xs` |
+| Select Origem | `w-[150px]`, `h-9`, `text-sm` | `w-[130px]`, `h-8`, `text-xs` |
+| Select Responsável | `w-[160px]`, `h-9`, `text-sm` | `w-[140px]`, `h-8`, `text-xs` |
+| Select Período | `w-[150px]`, `h-9`, `text-sm` | `w-[130px]`, `h-8`, `text-xs` |
+| Select Status | `w-[140px]`, `h-9`, `text-sm` | `w-[130px]`, `h-8`, `text-xs` |
+| Search icon | `top-2.5`, `h-4 w-4` | `top-2`, `h-3.5 w-3.5` |
+| Clear button | `top-2.5` | `top-2` |
+| Gap entre filtros | `gap-3` | `gap-2` |
 
-Eliminar o bloco `PAGE HEADER` (linhas 491-538) com o `<h1>` e os botões. Mover o botão "Nova Proposta", o dropdown "Ver Leads Perdidos" e os filtros para uma **única linha**. Usar um separador vertical (`border-left` de 24px) entre os filtros e os botões de ação à direita.
-
-Layout final:
-```text
-[🔍 Buscar...] [Origem ▾] [Responsável ▾] [Período ▾] [Status ▾]  |  [⋮] [+ Nova Proposta]
-```
-
-#### 2. Placeholders descritivos nos filtros (resolver "Todos" genérico)
-
-Trocar os `placeholder` e o item `"all"` de cada Select para incluir o nome do campo:
-
-| Filtro | Placeholder (valor "all") | Atual |
-|--------|--------------------------|-------|
-| Origem | `"Origem"` | `"Todas as origens"` → OK, mas quando selecionado `all` mostra "Todos" |
-| Responsável | `"Responsável"` | `"Todos"` |
-| Período | `"Período"` | `"Todos"` |
-| Status | `"Status"` | `"Todos"` |
-
-Concretamente: trocar o texto do `<SelectItem value="all">` para incluir o contexto:
-- Origem: `"Todas as origens"` (já está OK)
-- Responsável: `"Todos os responsáveis"`
-- Período: `"Todo o período"`
-- Status: `"Todos os status"`
-
-Isso garante que mesmo sem clicar, o usuário sabe **o que** cada dropdown filtra.
-
-#### 3. Separador visual
-
-Um `<div>` com `border-left: 1px solid hsl(var(--color-border))` e `height: 24px` entre o último filtro e os botões de ação, criando separação clara entre filtros e ações.
-
-### Impacto
-
-| Arquivo | Mudança |
-|---------|---------|
-| `Proposals.tsx` | Remover h1, unificar filtros+ações em 1 linha, labels descritivos, separador |
+Reduz altura de 36px para 32px, fonte menor (`text-xs` = 12px vs `text-sm` = 14px), e larguras mais compactas. Os filtros ficam visualmente mais discretos, liberando espaço para o conteúdo principal (kanban).
 
