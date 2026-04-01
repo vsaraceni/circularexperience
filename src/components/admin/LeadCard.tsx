@@ -53,6 +53,7 @@ const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactN
       return [
         { icon: <Linkedin className="h-3.5 w-3.5" />, label: "LinkedIn", action: "linkedin", primary: true },
         { icon: <Copy className="h-3.5 w-3.5" />, label: "Copiar Zap", action: "copy_whatsapp" },
+        { icon: <CheckCircle className="h-3.5 w-3.5" />, label: "Em Contato", action: "move_to_contact" },
       ];
     case "em_contato":
       return [
