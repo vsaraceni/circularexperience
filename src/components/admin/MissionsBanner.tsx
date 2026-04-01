@@ -73,12 +73,12 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
         icon: <Inbox className="h-3.5 w-3.5" />, stageId: "novo",
       },
       {
-        id: "boas_vindas", label: "FU", count: boasVindas.length, resolved: boasVindas.length === 0,
+        id: "boas_vindas", label: "Follow-up", count: boasVindas.length, resolved: boasVindas.length === 0,
         color: boasVindas.length === 0 ? "#2FB2C0" : boasVindas.length >= 3 ? "#EB626D" : "#F4A736",
         icon: <AlertTriangle className="h-3.5 w-3.5" />, stageId: "boas_vindas",
       },
       {
-        id: "em_contato", label: "Agend.", count: emContato.length, resolved: emContato.length === 0,
+        id: "em_contato", label: "Agendamento", count: emContato.length, resolved: emContato.length === 0,
         color: emContato.length === 0 ? "#2FB2C0" : emContato.length >= 3 ? "#EB626D" : "#F4A736",
         icon: <Calendar className="h-3.5 w-3.5" />, stageId: "em_contato",
       },
@@ -88,7 +88,7 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
         icon: <Calendar className="h-3.5 w-3.5" />, stageId: "call_agendada",
       },
       {
-        id: "briefings", label: "Brief.", count: briefingsIncompletos.length, resolved: briefingsIncompletos.length === 0,
+        id: "briefings", label: "Briefing", count: briefingsIncompletos.length, resolved: briefingsIncompletos.length === 0,
         color: briefingsIncompletos.length === 0 ? "#2FB2C0" : briefingsIncompletos.length >= 3 ? "#EB626D" : "#F4A736",
         icon: <FileSearch className="h-3.5 w-3.5" />, stageId: "call_agendada",
       },
@@ -213,10 +213,10 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
                     <tr>
                       <th className="text-left pr-3 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Usuário</th>
                       <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Novos</th>
-                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>FU</th>
-                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Agend.</th>
+                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Follow-up</th>
+                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Agendamento</th>
                       <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Calls</th>
-                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Brief.</th>
+                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Briefing</th>
                     </tr>
                   </thead>
                   <tbody>
