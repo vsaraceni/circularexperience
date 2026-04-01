@@ -88,7 +88,7 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
         icon: <Calendar className="h-3.5 w-3.5" />, stageId: "call_agendada",
       },
       {
-        id: "briefings", label: "Brief.", count: briefingsIncompletos.length, resolved: briefingsIncompletos.length === 0,
+        id: "briefings", label: "Briefing", count: briefingsIncompletos.length, resolved: briefingsIncompletos.length === 0,
         color: briefingsIncompletos.length === 0 ? "#2FB2C0" : briefingsIncompletos.length >= 3 ? "#EB626D" : "#F4A736",
         icon: <FileSearch className="h-3.5 w-3.5" />, stageId: "call_agendada",
       },
