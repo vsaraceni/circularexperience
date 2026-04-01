@@ -165,9 +165,7 @@ Deno.serve(async (req) => {
         const config = SLA_CONFIG[lead.kanban_stage];
         if (!config) continue;
 
-        const refDate = lead.kanban_stage === "nutricao"
-          ? (lead.last_activity_at || lead.stage_updated_at)
-          : lead.stage_updated_at;
+        const refDate = lead.last_activity_at || lead.stage_updated_at;
         if (!refDate) continue;
 
         const ref = new Date(refDate);
