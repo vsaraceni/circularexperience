@@ -91,8 +91,8 @@
 
     /* Shadows */
     --shadow-soft: 0 4px 24px -4px hsl(210 40% 15% / 0.1);
-    --shadow-glow-primary: 0 8px 32px -8px hsl(271 52% 36% / 0.4);
-    --shadow-glow-secondary: 0 8px 32px -8px hsl(174 72% 40% / 0.4);
+    --shadow-glow-primary: 0 8px 32px -8px hsl(307 44% 26% / 0.4);
+    --shadow-glow-secondary: 0 8px 32px -8px hsl(186 61% 47% / 0.4);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 265 4% 12.9%;
