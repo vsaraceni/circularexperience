@@ -438,6 +438,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         onOpenChange={(open) => !open && setSubmissionLead(null)}
         onConfirm={handleSubmissionConfirm}
         leadName={submissionLead?.company || submissionLead?.name || ""}
+        leadEmail={submissionLead?.email || ""}
+        leadCompany={submissionLead?.company || ""}
+        contactName={submissionLead?.name || ""}
       />
 
       <ContactDialog

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -18,9 +18,14 @@ interface SubmissionDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: (sentAt: Date, channels: string[], notes: string) => void;
   leadName: string;
+  leadEmail?: string;
+  leadCompany?: string;
+  contactName?: string;
 }
 
-const SubmissionDialog: React.FC<SubmissionDialogProps> = ({ open, onOpenChange, onConfirm, leadName }) => {
+const SubmissionDialog: React.FC<SubmissionDialogProps> = ({
+  open, onOpenChange, onConfirm, leadName, leadEmail, leadCompany, contactName,
+}) => {
   const [sentAt, setSentAt] = useState<Date>(new Date());
   const [emailChecked, setEmailChecked] = useState(false);
   const [whatsappChecked, setWhatsappChecked] = useState(false);
@@ -38,6 +43,18 @@ const SubmissionDialog: React.FC<SubmissionDialogProps> = ({ open, onOpenChange,
     setEmailChecked(false);
     setWhatsappChecked(false);
     setNotes("");
+  };
+
+  const openGmail = () => {
+    const to = encodeURIComponent(leadEmail || "");
+    const subject = encodeURIComponent(`[PROPOSTA] Circular Experience - ${leadCompany || leadName}`);
+    const body = encodeURIComponent(
+      `Olá ${contactName || leadName},\n\nSegue em anexo a proposta da Circular Experience.\n\nFicamos à disposição para quaisquer dúvidas.\n\nAbraços`
+    );
+    window.open(
+      `https://mail.google.com/mail/?view=cm&to=${to}&su=${subject}&body=${body}`,
+      "_blank"
+    );
   };
 
   return (
@@ -86,6 +103,19 @@ const SubmissionDialog: React.FC<SubmissionDialogProps> = ({ open, onOpenChange,
               </div>
             </div>
           </div>
+
+          {emailChecked && leadEmail && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={openGmail}
+            >
+              <Mail className="h-4 w-4" />
+              Abrir Gmail com dados preenchidos
+            </Button>
+          )}
+
           <div>
             <Label>Observação</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Detalhes opcionais..." rows={3} className="mt-1" />

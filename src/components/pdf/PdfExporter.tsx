@@ -38,7 +38,7 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ proposal }) => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `Circular-Experience-${proposal.company_name.replace(/\s+/g, "-")}.pdf`;
+      a.download = `Proposta - Circular Experience - ${proposal.company_name}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
