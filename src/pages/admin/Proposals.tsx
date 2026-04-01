@@ -521,7 +521,7 @@ const Proposals = () => {
                 {/* ===== FILTERS + ACTIONS BAR ===== */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <div className="relative flex-1 min-w-[160px] max-w-[220px]">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
+                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
                     <Input
                       placeholder="Buscar por nome, empresa, email..."
                       value={searchTerm}
