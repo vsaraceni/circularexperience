@@ -526,7 +526,7 @@ const Proposals = () => {
                       placeholder="Buscar..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 h-9 rounded-lg text-sm"
+                      className="pl-8 h-8 rounded-lg text-xs"
                       style={{ borderColor: 'hsl(var(--color-border))' }}
                     />
                     {searchTerm && (
