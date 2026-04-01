@@ -53,6 +53,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
+  const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
+  const [contactLead, setContactLead] = useState<Lead | null>(null);
 
   const updateScrollState = useCallback(() => {
     const el = scrollContainerRef.current;
