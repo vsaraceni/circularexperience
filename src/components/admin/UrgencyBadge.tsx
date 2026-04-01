@@ -79,13 +79,13 @@ const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: stri
   critical: { bg: "#FDEDED", color: "#D32F2F", icon: "🔴" },
 };
 
-const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, lastActivityAt }) => {
+const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, lastActivityAt, hasPendingFollowUp }) => {
   if (stage === "fechado" || stage === "perdido") return null;
 
-  const elapsed = formatElapsed(stage, stageUpdatedAt, lastActivityAt);
+  const elapsed = formatElapsed(stage, stageUpdatedAt, lastActivityAt, hasPendingFollowUp);
   if (!elapsed) return null;
 
-  const level = getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt);
+  const level = getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt, hasPendingFollowUp);
   const styles = LEVEL_STYLES[level];
 
   return (
