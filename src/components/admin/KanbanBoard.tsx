@@ -384,31 +384,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      {/* Sort pills */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-xs font-medium" style={{ color: 'hsl(var(--color-text-muted))' }}>Ordenar por:</span>
-        <div className="flex items-center gap-1.5">
-          {([
-            { key: "urgency" as const, icon: <AlertTriangle className="h-3 w-3" />, label: "Urgência" },
-            { key: "arrival" as const, icon: <ArrowDownAZ className="h-3 w-3" />, label: "Chegada" },
-            { key: "stale" as const, icon: <Clock className="h-3 w-3" />, label: "Parados" },
-          ]).map(pill => (
-            <button
-              key={pill.key}
-              onClick={() => setSortMode(pill.key)}
-              className="flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full transition-all"
-              style={{
-                background: sortMode === pill.key ? 'hsl(var(--color-brand))' : 'hsl(var(--color-bg-subtle))',
-                color: sortMode === pill.key ? 'white' : 'hsl(var(--color-text-secondary))',
-                border: sortMode === pill.key ? 'none' : '1px solid hsl(var(--color-border))',
-              }}
-            >
-              {pill.icon} {pill.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
         <div className="relative">
           {canScrollLeft && (
