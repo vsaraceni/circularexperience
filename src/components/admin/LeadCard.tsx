@@ -18,7 +18,7 @@ interface LeadCardProps {
   lead: Lead;
   profiles?: Profile[];
   hasProposal?: boolean;
-  followUpStatus?: { hasToday: boolean; hasOverdue: boolean };
+  followUpStatus?: { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean };
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
