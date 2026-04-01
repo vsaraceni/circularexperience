@@ -154,6 +154,17 @@ Deno.serve(async (req) => {
     }
 
     // 3. SLA breach check — leads exceeding critical SLA time
+    // First get all pending (non-overdue) follow-ups to exempt those leads
+    const { data: pendingFollowUps } = await supabase
+      .from("lead_follow_ups")
+      .select("lead_id, due_date")
+      .eq("completed", false)
+      .gte("due_date", today);
+
+    const leadsWithPendingFU = new Set(
+      (pendingFollowUps || []).map((f: any) => f.lead_id)
+    );
+
     const { data: activeLeads } = await supabase
       .from("leads")
       .select("id, name, company, kanban_stage, stage_updated_at, last_activity_at, assigned_to")
@@ -162,6 +173,9 @@ Deno.serve(async (req) => {
     if (activeLeads) {
       const now = new Date();
       for (const lead of activeLeads) {
+        // Skip leads with pending (non-overdue) follow-ups
+        if (leadsWithPendingFU.has(lead.id)) continue;
+
         const config = SLA_CONFIG[lead.kanban_stage];
         if (!config) continue;
 
