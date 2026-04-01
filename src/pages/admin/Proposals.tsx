@@ -532,7 +532,7 @@ const Proposals = () => {
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
-                        className="absolute right-3 top-2.5 h-4 w-4 flex items-center justify-center"
+                        className="absolute right-2.5 top-2 h-3.5 w-3.5 flex items-center justify-center"
                         style={{ color: 'hsl(var(--color-text-muted))' }}
                         aria-label="Limpar busca"
                       >
