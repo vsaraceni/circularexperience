@@ -378,24 +378,51 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={(e) => { handleDragEnd(e); setActiveLead(null); }}>
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
-          {STAGES.map((stage) => {
-            const stageLeads = leadsByStage[stage.id] || [];
-            const stageLeadIds = new Set(stageLeads.map((l) => l.id));
-            const stageProposals = proposals.filter((p) => p.lead_id && stageLeadIds.has(p.lead_id));
-            return (
-              <KanbanColumn
-                key={stage.id}
-                stage={stage}
-                leads={stageLeads}
-                profiles={profiles}
-                proposals={stageProposals}
-                followUpsByLead={followUpsByLead}
-                onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
-                onQuickAction={handleQuickAction}
-              />
-            );
-          })}
+        <div className="relative">
+          {canScrollLeft && (
+            <button
+              onClick={() => scrollBy(-290)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center transition-opacity duration-200 shadow-md"
+              style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(4px)', border: '1px solid hsl(var(--color-border))' }}
+              aria-label="Scroll esquerda"
+            >
+              <ChevronLeft className="h-4 w-4" style={{ color: 'hsl(var(--color-text-secondary))' }} />
+            </button>
+          )}
+          {canScrollRight && (
+            <button
+              onClick={() => scrollBy(290)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full flex items-center justify-center transition-opacity duration-200 shadow-md"
+              style={{ background: 'hsl(var(--background) / 0.85)', backdropFilter: 'blur(4px)', border: '1px solid hsl(var(--color-border))' }}
+              aria-label="Scroll direita"
+            >
+              <ChevronRight className="h-4 w-4" style={{ color: 'hsl(var(--color-text-secondary))' }} />
+            </button>
+          )}
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4"
+            onWheel={handleWheel}
+            onScroll={updateScrollState}
+          >
+            {STAGES.map((stage) => {
+              const stageLeads = leadsByStage[stage.id] || [];
+              const stageLeadIds = new Set(stageLeads.map((l) => l.id));
+              const stageProposals = proposals.filter((p) => p.lead_id && stageLeadIds.has(p.lead_id));
+              return (
+                <KanbanColumn
+                  key={stage.id}
+                  stage={stage}
+                  leads={stageLeads}
+                  profiles={profiles}
+                  proposals={stageProposals}
+                  followUpsByLead={followUpsByLead}
+                  onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
+                  onQuickAction={handleQuickAction}
+                />
+              );
+            })}
+          </div>
         </div>
         <DragOverlay dropAnimation={null}>
           {activeLead ? (
