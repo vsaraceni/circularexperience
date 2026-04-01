@@ -110,7 +110,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       });
     });
     return map;
-  }, [activeLeads, sortMode]);
+  }, [activeLeads, sortMode, followUpsByLead]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;

@@ -45,9 +45,11 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
   const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
   const leadsWithProposals = new Set(proposals.filter((p) => p.lead_id).map((p) => p.lead_id));
 
-  const criticalCount = leads.filter((l) =>
-    getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "critical"
-  ).length;
+  const criticalCount = leads.filter((l) => {
+    const fu = followUpsByLead[l.id];
+    const hasPending = fu ? (fu.hasToday || !!fu.hasFuture) && !fu.hasOverdue : false;
+    return getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null, hasPending) === "critical";
+  }).length;
 
   return (
     <div className="flex flex-col min-w-[260px] max-w-[280px] shrink-0" data-stage-id={stage.id}>
