@@ -78,7 +78,7 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
         icon: <AlertTriangle className="h-3.5 w-3.5" />, stageId: "boas_vindas",
       },
       {
-        id: "em_contato", label: "Agend.", count: emContato.length, resolved: emContato.length === 0,
+        id: "em_contato", label: "Agendamento", count: emContato.length, resolved: emContato.length === 0,
         color: emContato.length === 0 ? "#2FB2C0" : emContato.length >= 3 ? "#EB626D" : "#F4A736",
         icon: <Calendar className="h-3.5 w-3.5" />, stageId: "em_contato",
       },
