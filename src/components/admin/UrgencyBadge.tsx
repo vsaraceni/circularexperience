@@ -15,8 +15,10 @@ export const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number;
 export function getUrgencyLevel(
   stage: string,
   stageUpdatedAt: string | null,
-  lastActivityAt: string | null
+  lastActivityAt: string | null,
+  hasPendingFollowUp?: boolean
 ): UrgencyLevel {
+  if (hasPendingFollowUp) return "normal";
   if (stage === "fechado" || stage === "perdido") return "normal";
 
   const config = SLA_CONFIG[stage];
