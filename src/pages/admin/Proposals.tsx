@@ -519,7 +519,7 @@ const Proposals = () => {
             ) : viewMode === "kanban" ? (
               <>
                 {/* ===== FILTERS + ACTIONS BAR ===== */}
-                <div className="flex items-center gap-3 mb-3 flex-wrap">
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <div className="relative flex-1 min-w-[200px] max-w-[320px]">
                     <Search className="absolute left-3 top-2.5 h-4 w-4" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
                     <Input
