@@ -570,7 +570,7 @@ const Proposals = () => {
                       <SelectValue placeholder="Responsável" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="all">Todos os responsáveis</SelectItem>
                       <SelectItem value="unassigned">Sem responsável</SelectItem>
                       {profiles.map((p) => (
                         <SelectItem key={p.id} value={p.id}>{p.full_name || p.id.slice(0, 8)}</SelectItem>
