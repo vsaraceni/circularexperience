@@ -41,13 +41,12 @@ interface KanbanBoardProps {
 }
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  leads, userId, proposals, profiles, onLeadUpdated, onGenerateProposal, onSendWelcome,
+  leads, userId, proposals, profiles, sortMode = "urgency", onLeadUpdated, onGenerateProposal, onSendWelcome,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
-  const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
