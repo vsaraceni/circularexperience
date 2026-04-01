@@ -34,6 +34,7 @@ interface KanbanBoardProps {
   userId: string;
   proposals: Proposal[];
   profiles?: { id: string; full_name: string | null }[];
+  sortMode?: "urgency" | "arrival" | "stale";
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
