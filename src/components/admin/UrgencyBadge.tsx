@@ -43,7 +43,8 @@ export function getUrgencyLevel(
   return "normal";
 }
 
-function formatElapsed(stage: string, stageUpdatedAt: string | null, lastActivityAt: string | null): string {
+function formatElapsed(stage: string, stageUpdatedAt: string | null, lastActivityAt: string | null, hasPendingFollowUp?: boolean): string {
+  if (hasPendingFollowUp) return "✅ FU";
   const config = SLA_CONFIG[stage];
   if (!config) return "";
 
