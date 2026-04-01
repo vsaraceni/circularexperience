@@ -213,10 +213,10 @@ const MissionsBanner: React.FC<MissionsBannerProps> = ({
                     <tr>
                       <th className="text-left pr-3 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Usuário</th>
                       <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Novos</th>
-                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>FU</th>
-                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Agend.</th>
+                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Follow-up</th>
+                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Agendamento</th>
                       <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Calls</th>
-                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Brief.</th>
+                      <th className="px-2 pb-1 font-medium" style={{ color: "hsl(var(--color-text-muted))" }}>Briefing</th>
                     </tr>
                   </thead>
                   <tbody>
