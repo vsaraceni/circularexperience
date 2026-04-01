@@ -18,7 +18,7 @@ interface LeadCardProps {
   lead: Lead;
   profiles?: Profile[];
   hasProposal?: boolean;
-  followUpStatus?: { hasToday: boolean; hasOverdue: boolean };
+  followUpStatus?: { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean };
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
@@ -106,7 +106,8 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
     data: { lead },
   });
 
-  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null);
+  const hasPendingFollowUp = followUpStatus ? (followUpStatus.hasToday || !!followUpStatus.hasFuture) && !followUpStatus.hasOverdue : false;
+  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPendingFollowUp);
   const isCritical = urgencyLevel === "critical";
   const showLostIcon = LOST_STAGES.has(lead.kanban_stage);
   const nextAction = getNextActionLabel(lead, hasProposal);
@@ -165,6 +166,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
             stage={lead.kanban_stage}
             stageUpdatedAt={lead.stage_updated_at || null}
             lastActivityAt={lead.last_activity_at || null}
+            hasPendingFollowUp={hasPendingFollowUp}
           />
           {followUpStatus?.hasOverdue && (
             <Tooltip>

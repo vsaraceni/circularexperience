@@ -74,6 +74,19 @@ const Proposals = () => {
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
+  const followUpsByLead = useMemo(() => {
+    const map: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture: boolean }> = {};
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    allPendingFollowUps.forEach(f => {
+      const due = new Date(f.due_date + "T00:00:00");
+      if (!map[f.lead_id]) map[f.lead_id] = { hasToday: false, hasOverdue: false, hasFuture: false };
+      if (due < todayDate) map[f.lead_id].hasOverdue = true;
+      else if (due.getTime() === todayDate.getTime()) map[f.lead_id].hasToday = true;
+      else map[f.lead_id].hasFuture = true;
+    });
+    return map;
+  }, [allPendingFollowUps]);
+
   const userInitials = useMemo(() => {
     if (!authorDefaults.author_name) return "?";
     return authorDefaults.author_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
@@ -637,6 +650,7 @@ const Proposals = () => {
                   leads={filteredLeads}
                   userId={user!.id}
                   profiles={profiles}
+                  followUpsByLead={followUpsByLead}
                   onScrollToStage={(stageId) => {
                     const el = document.querySelector(`[data-stage-id="${stageId}"]`);
                     if (el) {

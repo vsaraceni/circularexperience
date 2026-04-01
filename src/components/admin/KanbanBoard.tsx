@@ -52,13 +52,14 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
   const followUpsByLead = useMemo(() => {
-    const map: Record<string, { hasToday: boolean; hasOverdue: boolean }> = {};
+    const map: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture: boolean }> = {};
     const today = new Date(); today.setHours(0, 0, 0, 0);
     allPendingFollowUps.forEach(f => {
       const due = new Date(f.due_date + "T00:00:00");
-      if (!map[f.lead_id]) map[f.lead_id] = { hasToday: false, hasOverdue: false };
+      if (!map[f.lead_id]) map[f.lead_id] = { hasToday: false, hasOverdue: false, hasFuture: false };
       if (due < today) map[f.lead_id].hasOverdue = true;
       else if (due.getTime() === today.getTime()) map[f.lead_id].hasToday = true;
+      else map[f.lead_id].hasFuture = true;
     });
     return map;
   }, [allPendingFollowUps]);
@@ -86,8 +87,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     Object.keys(map).forEach((key) => {
       map[key].sort((a, b) => {
         if (sortMode === "urgency") {
-          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null);
-          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null);
+          const fuA = followUpsByLead[a.id];
+          const fuB = followUpsByLead[b.id];
+          const hasPendingA = fuA ? (fuA.hasToday || fuA.hasFuture) && !fuA.hasOverdue : false;
+          const hasPendingB = fuB ? (fuB.hasToday || fuB.hasFuture) && !fuB.hasOverdue : false;
+          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null, hasPendingA);
+          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null, hasPendingB);
           const diff = URGENCY_ORDER[la] - URGENCY_ORDER[lb];
           if (diff !== 0) return diff;
           const da = new Date(a.stage_updated_at || a.created_at || 0).getTime();
@@ -105,7 +110,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       });
     });
     return map;
-  }, [activeLeads, sortMode]);
+  }, [activeLeads, sortMode, followUpsByLead]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
