@@ -24,6 +24,7 @@ interface MissionsBannerProps {
   followUpsByLead?: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean }>;
   onScrollToStage?: (stageId: string) => void;
   onOpenLead?: (lead: Lead) => void;
+  inline?: boolean;
 }
 
 function hasPendingFU(fu?: { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean }): boolean {
