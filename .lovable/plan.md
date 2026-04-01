@@ -1,44 +1,46 @@
 
 
-## Renomear PDF + Botão "Enviar Proposta" abre Gmail
+## Otimizar header do Pipeline — linha única + labels descritivos nos filtros
 
-### 1. Nome do arquivo PDF
+### Mudanças
 
-**Arquivo**: `src/components/pdf/PdfExporter.tsx` (linha 41)
+**Arquivo**: `src/pages/admin/Proposals.tsx`
 
-Atual: `Circular-Experience-${proposal.company_name.replace(/\s+/g, "-")}.pdf`
+#### 1. Remover título "Pipeline Comercial" e unificar numa única linha
 
-Novo: `Proposta - Circular Experience - ${proposal.company_name}.pdf`
+Eliminar o bloco `PAGE HEADER` (linhas 491-538) com o `<h1>` e os botões. Mover o botão "Nova Proposta", o dropdown "Ver Leads Perdidos" e os filtros para uma **única linha**. Usar um separador vertical (`border-left` de 24px) entre os filtros e os botões de ação à direita.
 
-Sim, espaços funcionam em nomes de arquivo — navegadores tratam normalmente.
-
-### 2. Botão "Enviar Proposta" → abrir Gmail com dados preenchidos
-
-**Limitação importante**: Não é possível anexar PDF via `mailto:` ou link do Gmail — navegadores bloqueiam anexos por segurança. O que podemos fazer:
-
-- Abrir o Gmail (web) com destinatário, assunto e corpo pré-preenchidos via URL `https://mail.google.com/mail/?view=cm&...`
-- O usuário anexa o PDF manualmente (já terá baixado)
-
-**Implementação**: Quando o usuário clicar em "Registrar Envio" e selecionar "E-mail", adicionar um botão **"Abrir Gmail"** no `SubmissionDialog` que monta a URL:
-
-```
-https://mail.google.com/mail/?view=cm
-  &to={lead.email}
-  &su=[PROPOSTA] Circular Experience - {lead.company}
-  &body=Olá {lead.name},...
+Layout final:
+```text
+[🔍 Buscar...] [Origem ▾] [Responsável ▾] [Período ▾] [Status ▾]  |  [⋮] [+ Nova Proposta]
 ```
 
-**Alternativa mais fluida**: Adicionar um botão direto no card do lead (estágio `proposta`, quando `hasProposal`) com ícone de e-mail que abre o Gmail sem precisar passar pelo dialog de registro.
+#### 2. Placeholders descritivos nos filtros (resolver "Todos" genérico)
 
-### Arquivos impactados
+Trocar os `placeholder` e o item `"all"` de cada Select para incluir o nome do campo:
+
+| Filtro | Placeholder (valor "all") | Atual |
+|--------|--------------------------|-------|
+| Origem | `"Origem"` | `"Todas as origens"` → OK, mas quando selecionado `all` mostra "Todos" |
+| Responsável | `"Responsável"` | `"Todos"` |
+| Período | `"Período"` | `"Todos"` |
+| Status | `"Status"` | `"Todos"` |
+
+Concretamente: trocar o texto do `<SelectItem value="all">` para incluir o contexto:
+- Origem: `"Todas as origens"` (já está OK)
+- Responsável: `"Todos os responsáveis"`
+- Período: `"Todo o período"`
+- Status: `"Todos os status"`
+
+Isso garante que mesmo sem clicar, o usuário sabe **o que** cada dropdown filtra.
+
+#### 3. Separador visual
+
+Um `<div>` com `border-left: 1px solid hsl(var(--color-border))` e `height: 24px` entre o último filtro e os botões de ação, criando separação clara entre filtros e ações.
+
+### Impacto
 
 | Arquivo | Mudança |
 |---------|---------|
-| `PdfExporter.tsx` | Alterar nome do download (1 linha) |
-| `SubmissionDialog.tsx` | Adicionar botão "Abrir no Gmail" que monta URL com to/subject/body pré-preenchidos |
-| `KanbanBoard.tsx` | Passar `lead.email` e `lead.company` ao SubmissionDialog |
-
-### Nota sobre anexo
-
-Infelizmente **nenhum navegador** permite anexar arquivos automaticamente via link — é uma restrição de segurança. O fluxo seria: baixar PDF → abrir Gmail → anexar manualmente. Podemos gerar o PDF automaticamente junto com a abertura do Gmail para agilizar.
+| `Proposals.tsx` | Remover h1, unificar filtros+ações em 1 linha, labels descritivos, separador |
 
