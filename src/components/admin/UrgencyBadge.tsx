@@ -22,7 +22,7 @@ export function getUrgencyLevel(
   const config = SLA_CONFIG[stage];
   if (!config) return "normal";
 
-  const refDate = stage === "nutricao" ? (lastActivityAt || stageUpdatedAt) : stageUpdatedAt;
+  const refDate = lastActivityAt || stageUpdatedAt;
   if (!refDate) return "normal";
 
   const now = new Date();
