@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Bell, CheckCheck } from "lucide-react";
+import { Bell, BellRing, BellOff, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllRead } from "@/hooks/useNotifications";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface NotificationBellProps {
   userId: string;
@@ -28,6 +30,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead 
   const unreadCount = useUnreadCount(userId);
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllRead();
+  const { permission, isSubscribed, loading, subscribe, unsubscribe } = usePushSubscription(userId);
 
   const handleClick = (n: typeof notifications[0]) => {
     if (!n.read) {
@@ -38,6 +41,22 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead 
       setOpen(false);
     }
   };
+
+  const handleTogglePush = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+      toast("Notificações push desativadas");
+    } else {
+      const ok = await subscribe();
+      if (ok) {
+        toast.success("Notificações push ativadas!");
+      } else if (permission === "denied") {
+        toast.error("Permissão bloqueada no navegador. Altere nas configurações do site.");
+      }
+    }
+  };
+
+  const showPushToggle = permission !== "preview" && permission !== "unsupported";
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -54,16 +73,40 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead 
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between px-4 py-2 border-b border-border">
           <span className="text-sm font-semibold">Notificações</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1"
-              onClick={() => markAllRead.mutate(userId)}
-            >
-              <CheckCheck className="h-3 w-3" /> Marcar todas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {showPushToggle && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={handleTogglePush}
+                disabled={loading || permission === "denied"}
+                title={
+                  isSubscribed
+                    ? "Push ativo — clique para desativar"
+                    : permission === "denied"
+                    ? "Permissão bloqueada no navegador"
+                    : "Ativar notificações push"
+                }
+              >
+                {isSubscribed ? (
+                  <BellRing className="h-3.5 w-3.5 text-primary" />
+                ) : (
+                  <BellOff className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </Button>
+            )}
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => markAllRead.mutate(userId)}
+              >
+                <CheckCheck className="h-3 w-3" /> Marcar todas
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-[300px]">
           {notifications.length === 0 ? (
