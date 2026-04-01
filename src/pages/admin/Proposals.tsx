@@ -542,7 +542,7 @@ const Proposals = () => {
                   </div>
                   <Select value={filterOrigem} onValueChange={setFilterOrigem}>
                     <SelectTrigger
-                      className="w-[150px] h-9 rounded-lg text-sm"
+                      className="w-[130px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
