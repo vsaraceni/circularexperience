@@ -1,62 +1,63 @@
 
 
-## Importar Escopo/Considerações — Popover com busca e lista inteligente
+## Diagnóstico: SLA nunca reseta — leads ficam "atrasados" para sempre
 
-### Problema atual
+### Causa raiz
 
-O `ImportButton` carrega apenas 5 propostas recentes (`limit(5)`) sem busca. Insuficiente quando o catálogo cresce.
+O bug está na função `getUrgencyLevel` em `UrgencyBadge.tsx` (linha 25):
 
-### Estratégia
-
-Combinar **busca por texto** + **lista pré-carregada das 15 mais recentes** num popover mais amplo com scroll. Sem complexidade de "mais copiadas" (exigiria tracking de uso — overhead desnecessário neste momento).
-
-### Implementação
-
-**Arquivo**: `src/components/admin/ProposalForm.tsx` — refatorar o `ImportButton`
-
-1. **Ampliar query inicial** de `limit(5)` para `limit(15)` — carrega as 15 mais recentes com `scope` ou `considerations` preenchidos
-
-2. **Adicionar campo de busca** no topo do popover:
-   - Input com placeholder "Buscar por empresa ou título..."
-   - Filtra localmente a lista já carregada (client-side filter por `title` e `company_name`, case-insensitive)
-   - Se o texto de busca tiver 3+ caracteres e não houver resultados locais, faz query ao banco com `ilike` para buscar além das 15 pré-carregadas
-
-3. **Layout do popover melhorado**:
-   - Largura: `w-80` (320px, era 272px)
-   - ScrollArea com `max-h-[280px]` para comportar a lista maior
-   - Input de busca fixo no topo (fora do scroll)
-   - Cada item mostra: título (truncate), empresa (muted), e data relativa (ex: "há 3 dias")
-   - Preview do conteúdo: ao hover, mostrar tooltip com os primeiros 120 chars do campo (strip HTML tags)
-
-4. **Feedback visual ao importar**:
-   - Após selecionar, fechar popover + toast sutil "Conteúdo importado"
-
-### Fluxo
-
-```text
-┌─────────────────────────────────┐
-│ 🔍 Buscar por empresa ou título │
-├─────────────────────────────────┤
-│ Proposta — Ambev          3d    │
-│ Ambev S.A.                      │
-│─────────────────────────────────│
-│ Proposta — Natura         1sem  │
-│ Natura &Co                      │
-│─────────────────────────────────│
-│ ...                  (scroll)   │
-└─────────────────────────────────┘
+```ts
+const refDate = stage === "nutricao" ? (lastActivityAt || stageUpdatedAt) : stageUpdatedAt;
 ```
+
+**Apenas o estágio "nutrição" usa `last_activity_at` como referência.** Todos os outros estágios usam `stage_updated_at`, que só muda quando o lead **troca de estágio**.
+
+Quando Lívia agenda um follow-up, o hook `useCreateFollowUp` atualiza `last_activity_at` no banco — mas o SLA ignora esse campo. O relógio do SLA continua contando desde que o lead entrou no estágio, independente de qualquer ação feita.
+
+**Resultado**: lead com 6 dias em "Boas-Vindas" mostra 🔴 6d mesmo após 10 follow-ups agendados. As missões herdam o mesmo cálculo, então também nunca resolvem.
+
+### Correção
+
+**Arquivo**: `src/components/admin/UrgencyBadge.tsx`
+
+Mudar a lógica de `refDate` para usar `lastActivityAt || stageUpdatedAt` em **todos** os estágios, não apenas "nutrição":
+
+```ts
+// ANTES (linha 25):
+const refDate = stage === "nutricao" ? (lastActivityAt || stageUpdatedAt) : stageUpdatedAt;
+
+// DEPOIS:
+const refDate = lastActivityAt || stageUpdatedAt;
+```
+
+Aplicar a mesma mudança na função `formatElapsed` (linha 48), que tem a mesma lógica duplicada.
+
+### Por que isso é seguro
+
+- `last_activity_at` já é atualizado em **todas as ações** relevantes: follow-up agendado/concluído, nota adicionada, stage movido, proposta enviada, contato registrado, etc.
+- Quando o lead muda de estágio, `handleDragEnd` já atualiza `last_activity_at = now` junto com `stage_updated_at = now`, então o relógio reinicia naturalmente.
+- Se um lead nunca teve atividade (`last_activity_at` é null), o fallback para `stageUpdatedAt` mantém o comportamento atual.
+
+### Efeito cascata (auto-resolvido)
+
+| Componente | Status |
+|-----------|--------|
+| `UrgencyBadge` (cards) | ✅ Corrigido — reseta com qualquer ação |
+| `KanbanColumn` (contagem "atrasados") | ✅ Corrigido — usa `getUrgencyLevel` |
+| `MissionsBanner` ("Follow-up pendente") | ✅ Corrigido — usa `getUrgencyLevel` |
+| `KanbanBoard` (ordenação por urgência) | ✅ Corrigido — usa `getUrgencyLevel` |
+| `check-notifications` (SLA breach) | ⚠️ Edge function tem sua própria lógica SQL — revisar se usa a mesma referência |
+
+### Verificação adicional: Edge Function
+
+**Arquivo**: `supabase/functions/check-notifications/index.ts`
+
+Verificar se a query de SLA breach no cron usa `stage_updated_at` ou `last_activity_at`. Se usar apenas `stage_updated_at`, alinhar com a mesma lógica (usar `COALESCE(last_activity_at, stage_updated_at)`).
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `ProposalForm.tsx` | Refatorar `ImportButton`: busca, limit 15, ScrollArea, preview, toast |
-
-### Notas técnicas
-
-- A busca remota (fallback) usa `.ilike('title', `%${term}%`)` com `.or()` para `company_name`
-- Strip HTML no preview via `text.replace(/<[^>]*>/g, '').slice(0, 120)`
-- Data relativa via cálculo simples (dias/semanas) sem lib externa
-- Sem necessidade de migração SQL — usa a mesma tabela `proposals`
+| `UrgencyBadge.tsx` | 2 linhas: `refDate` em `getUrgencyLevel` e `formatElapsed` |
+| `check-notifications/index.ts` | Alinhar query SQL de SLA com `COALESCE(last_activity_at, stage_updated_at)` |
 
