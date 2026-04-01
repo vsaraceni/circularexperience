@@ -519,20 +519,20 @@ const Proposals = () => {
             ) : viewMode === "kanban" ? (
               <>
                 {/* ===== FILTERS + ACTIONS BAR ===== */}
-                <div className="flex items-center gap-3 mb-3 flex-wrap">
-                  <div className="relative flex-1 min-w-[200px] max-w-[320px]">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <div className="relative flex-1 min-w-[160px] max-w-[220px]">
+                    <Search className="absolute left-2.5 top-2 h-3.5 w-3.5" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
                     <Input
-                      placeholder="Buscar por nome, empresa, email..."
+                      placeholder="Buscar..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 h-9 rounded-lg text-sm"
+                      className="pl-8 h-8 rounded-lg text-xs"
                       style={{ borderColor: 'hsl(var(--color-border))' }}
                     />
                     {searchTerm && (
                       <button
                         onClick={() => setSearchTerm("")}
-                        className="absolute right-3 top-2.5 h-4 w-4 flex items-center justify-center"
+                        className="absolute right-2.5 top-2 h-3.5 w-3.5 flex items-center justify-center"
                         style={{ color: 'hsl(var(--color-text-muted))' }}
                         aria-label="Limpar busca"
                       >
@@ -542,7 +542,7 @@ const Proposals = () => {
                   </div>
                   <Select value={filterOrigem} onValueChange={setFilterOrigem}>
                     <SelectTrigger
-                      className="w-[150px] h-9 rounded-lg text-sm"
+                      className="w-[130px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterOrigem !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
@@ -560,7 +560,7 @@ const Proposals = () => {
                   </Select>
                   <Select value={filterOwner} onValueChange={setFilterOwner}>
                     <SelectTrigger
-                      className="w-[160px] h-9 rounded-lg text-sm"
+                      className="w-[140px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterOwner !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
@@ -579,7 +579,7 @@ const Proposals = () => {
                   </Select>
                   <Select value={filterPeriod} onValueChange={setFilterPeriod}>
                     <SelectTrigger
-                      className="w-[150px] h-9 rounded-lg text-sm"
+                      className="w-[130px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterPeriod !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
@@ -597,7 +597,7 @@ const Proposals = () => {
                   </Select>
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger
-                      className="w-[140px] h-9 rounded-lg text-sm"
+                      className="w-[130px] h-8 rounded-lg text-xs"
                       style={{
                         borderColor: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))',
                         color: filterStatus !== "all" ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-primary))',
@@ -615,14 +615,14 @@ const Proposals = () => {
                   </Select>
 
                   {/* Separador vertical */}
-                  <div className="h-6 w-px mx-1" style={{ background: 'hsl(var(--color-border))' }} />
+                  <div className="h-5 w-px mx-0.5" style={{ background: 'hsl(var(--color-border))' }} />
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 w-9 p-0 rounded-lg"
+                        className="h-8 w-8 p-0 rounded-lg"
                         style={{ borderColor: 'hsl(var(--color-border))', color: 'hsl(var(--color-text-secondary))' }}
                       >
                         <MoreVertical className="h-4 w-4" aria-hidden="true" />
@@ -637,7 +637,7 @@ const Proposals = () => {
 
                   <Button
                     size="sm"
-                    className="h-9 px-4 rounded-lg font-medium"
+                    className="h-8 px-3 rounded-lg font-medium text-xs"
                     style={{ background: 'hsl(var(--color-brand))', color: 'white' }}
                     onClick={() => { setPrefill(undefined); setShowForm(true); }}
                   >
