@@ -33,7 +33,7 @@ function hasPendingFU(fu?: { hasToday: boolean; hasOverdue: boolean; hasFuture?:
 }
 
 const MissionsBanner: React.FC<MissionsBannerProps> = ({
-  leads, userId, profiles = [], followUpsByLead = {}, onScrollToStage, onOpenLead,
+  leads, userId, profiles = [], followUpsByLead = {}, onScrollToStage, onOpenLead, inline = false,
 }) => {
   const [showTeam, setShowTeam] = useState(false);
 
