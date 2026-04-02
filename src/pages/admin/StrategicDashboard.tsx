@@ -45,6 +45,8 @@ const StrategicDashboard = () => {
     sdrMetrics,
     closerMetrics,
     leads,
+    funnelData,
+    dailyActions,
   } = useStrategicDashboard();
 
   if (loading) {
