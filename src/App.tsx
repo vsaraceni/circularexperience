@@ -11,6 +11,7 @@ import ProposalView from "./pages/ProposalView";
 import PrintablePresentation from "./pages/PrintablePresentation";
 import Dashboard from "./pages/admin/Dashboard";
 import Templates from "./pages/admin/Templates";
+import StrategicDashboard from "./pages/admin/StrategicDashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { SLA_CONFIG, getUrgencyLevel } from "@/components/admin/UrgencyBadge";
-import { differenceInHours, differenceInDays, subDays } from "date-fns";
+import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
+import { differenceInDays, subDays } from "date-fns";
 
 export interface DashboardLead {
   id: string;

@@ -42,7 +42,6 @@ const StrategicDashboard = () => {
     pipelineTotal,
     alerts,
     pipelineCounts,
-    profiles,
     sdrMetrics,
     closerMetrics,
     leads,
