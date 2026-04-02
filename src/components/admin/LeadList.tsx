@@ -41,6 +41,7 @@ export interface Lead {
   company_description?: string | null;
   call_date?: string | null;
   briefing_notes?: string | null;
+  colaboradores?: string | null;
 }
 
 interface AuthorDefaults {

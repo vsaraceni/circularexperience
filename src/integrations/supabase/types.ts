@@ -141,6 +141,7 @@ export type Database = {
           call_date: string | null
           cargo: string | null
           closed_at: string | null
+          colaboradores: string | null
           company: string | null
           company_description: string | null
           company_website: string | null
@@ -169,6 +170,7 @@ export type Database = {
           call_date?: string | null
           cargo?: string | null
           closed_at?: string | null
+          colaboradores?: string | null
           company?: string | null
           company_description?: string | null
           company_website?: string | null
@@ -197,6 +199,7 @@ export type Database = {
           call_date?: string | null
           cargo?: string | null
           closed_at?: string | null
+          colaboradores?: string | null
           company?: string | null
           company_description?: string | null
           company_website?: string | null
