@@ -262,8 +262,9 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                       {lead.telefone && (
                         <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={lead.telefone} whatsapp={lead.telefone} />
                       )}
-                      {lead.cargo && <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo} />}
                       <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
+                      <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo || "—"} />
+                      <InfoRow icon={<Building2 className="h-4 w-4" />} label="Porte" value={formatColaboradores(lead.colaboradores)} />
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><User className="h-4 w-4" /></span>
                         <span className="text-muted-foreground text-xs w-16 shrink-0">Responsável</span>
