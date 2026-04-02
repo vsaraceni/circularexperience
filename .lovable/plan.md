@@ -1,38 +1,39 @@
 
-## Campos de Qualificação — `colaboradores` no CRM
 
-### Estado atual
+## Exibir Cargo e Porte no Drawer — Diagnóstico e Correção
 
-- Coluna `colaboradores` **já existe** no banco (verificado no schema)
-- `cargo` já existe e já é exibido no Drawer (condicional)
-- Interface `Lead` em `LeadList.tsx` **não tem** `colaboradores`
-- Drawer exibe cargo só quando preenchido — PRD pede sempre visível com `—`
+### Diagnóstico
+
+O código do Drawer **já exibe** Cargo e Porte (linhas 280-281 de `LeadDrawer.tsx`), e a query em `Proposals.tsx` usa `select("*")` — portanto os dados chegam ao componente. 
+
+Porém há dois problemas reais:
+
+1. **Mapa de `COLABORADORES_LABELS` incompleto** — O banco contém valores `até_100` e `acima_de_2000` que não estão no mapa. Caem no fallback `replace(/_/g, " ")`, que produz texto aceitável mas inconsistente com o padrão formatado.
+
+2. **Cargo exibido sem formatação** — Valores como `sustentabilidade_/_esg` aparecem crus. O PRD pede `replace(/_/g, " ")` + capitalizar primeira letra.
+
+3. **Dashboard usa select parcial** — A query em `Dashboard.tsx` (linha 87) seleciona apenas campos específicos, **sem** `cargo`, `colaboradores`, `email`, `telefone`, etc. Se o Kanban for algum dia renderizado a partir desses dados, os campos ficarão nulos.
 
 ### Mudanças
 
-**1. `LeadList.tsx`** — Adicionar `colaboradores?: string | null` à interface `Lead`
-
-**2. `LeadDrawer.tsx`** — Seção "Dados do Lead":
-- Cargo: remover condicional, sempre exibir (valor ou `—`)
-- Novo campo "Porte" com ícone `Building2`, valor formatado de `colaboradores`
-- Posição: Cargo após Origem, Porte após Cargo, antes de Responsável
-
-**3. Helper de formatação** (inline no Drawer):
+**1. `LeadDrawer.tsx`** — Atualizar `COLABORADORES_LABELS`:
 ```
-1_a_10 → 1 a 10
-11_a_50 → 11 a 50
-51_a_100 → 51 a 100
-101_a_500 → 101 a 500
-501_a_2000 → 501 a 2.000
-mais_de_2000 → Mais de 2.000
-null → —
+"até_100": "Até 100",
+"acima_de_2000": "Acima de 2.000",
 ```
+Adicionar esses dois ao mapa existente (linhas 48-55).
 
-Para cargo: `value.replace(/_/g, ' ')` + capitalizar primeira letra, ou `—` se vazio.
+**2. `LeadDrawer.tsx`** — Formatar `cargo`:
+- Linha 280: trocar `lead.cargo || "—"` por formatação:
+  ```ts
+  lead.cargo ? lead.cargo.replace(/_/g, " ").replace(/^./, c => c.toUpperCase()) : "—"
+  ```
 
-**Nenhuma migration necessária** — coluna já existe.
+**3. `Dashboard.tsx`** — Expandir select (linha 87):
+- Adicionar `email, telefone, cargo, colaboradores, welcome_sent, welcome_sent_at, mensagem, stage_updated_at, last_activity_at, linkedin_added, whatsapp_sent, lost_notes, company_website, company_description, call_date, briefing_notes` ao select — ou simplificar para `select("*")`.
 
 | Arquivo | Mudança |
-|---|---|
-| `LeadList.tsx` | Interface `Lead` += `colaboradores` |
-| `LeadDrawer.tsx` | Exibir Cargo (sempre) + Porte (novo) |
+|---------|---------|
+| `LeadDrawer.tsx` | Completar mapa colaboradores + formatar cargo |
+| `Dashboard.tsx` | Expandir select para incluir todos os campos |
+
