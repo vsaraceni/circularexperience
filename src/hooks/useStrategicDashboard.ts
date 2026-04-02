@@ -376,7 +376,6 @@ export function useStrategicDashboard() {
   // Daily actions: prescriptive list
   const dailyActions = useMemo(() => {
     const actions: { priority: number; icon: string; text: string; leadId?: string }[] = [];
-    const pendingFollowUpLeadIds = new Set(followUps.map((f) => f.lead_id));
     const now = new Date();
 
     // Leads novos sem ação
