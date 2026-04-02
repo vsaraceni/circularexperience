@@ -49,9 +49,11 @@ const COLABORADORES_LABELS: Record<string, string> = {
   "1_a_10": "1 a 10",
   "11_a_50": "11 a 50",
   "51_a_100": "51 a 100",
+  "até_100": "Até 100",
   "101_a_500": "101 a 500",
   "501_a_2000": "501 a 2.000",
   "mais_de_2000": "Mais de 2.000",
+  "acima_de_2000": "Acima de 2.000",
 };
 
 const formatColaboradores = (value?: string | null): string => {
