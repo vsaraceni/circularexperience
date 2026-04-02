@@ -51,6 +51,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/painel"
+            element={
+              <ProtectedRoute requireAdmin>
+                <StrategicDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
