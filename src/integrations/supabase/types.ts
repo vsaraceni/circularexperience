@@ -313,28 +313,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          badge_initials: string | null
           cargo: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           id: string
           phone: string | null
+          role_label: string | null
         }
         Insert: {
+          badge_initials?: string | null
           cargo?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
+          role_label?: string | null
         }
         Update: {
+          badge_initials?: string | null
           cargo?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          role_label?: string | null
         }
         Relationships: []
       }
