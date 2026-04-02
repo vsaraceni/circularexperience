@@ -1,49 +1,38 @@
-## Campos de Qualificação — Implementação
 
-### Análise do PRD vs estado atual
+## Campos de Qualificação — `colaboradores` no CRM
 
-O PRD pede 2 colunas novas: `cargo` e `colaboradores`. Porém **`cargo` já existe** na tabela `leads` e já é exibido no Drawer. A única mudança real é:
+### Estado atual
 
-1. **Nova coluna `colaboradores`** (porte da empresa)
-2. **Exibir `colaboradores` no CRM** com formatação adequada
-3. **Sempre exibir cargo e colaboradores** (hoje cargo é condicional — só aparece se preenchido; o PRD pede exibir `—` quando vazio)
-
-O PRD também menciona que leads de Meta Ads trazem cargo/colaboradores colapsados no campo `mensagem`. Isso implica que o fluxo de ingestão de leads do Meta Ads (que não passa pela LP) precisará parsear esses campos. Porém o PRD diz que isso fica fora do escopo — os campos chegam preenchidos separadamente.
+- Coluna `colaboradores` **já existe** no banco (verificado no schema)
+- `cargo` já existe e já é exibido no Drawer (condicional)
+- Interface `Lead` em `LeadList.tsx` **não tem** `colaboradores`
+- Drawer exibe cargo só quando preenchido — PRD pede sempre visível com `—`
 
 ### Mudanças
 
-**1. Migration SQL**
-- `ALTER TABLE leads ADD COLUMN IF NOT EXISTS colaboradores TEXT;`
-- `CREATE INDEX IF NOT EXISTS idx_leads_colaboradores ON leads (colaboradores);`
+**1. `LeadList.tsx`** — Adicionar `colaboradores?: string | null` à interface `Lead`
 
-**2. Interface Lead (LeadList.tsx)**
-- Adicionar `colaboradores?: string | null` à interface `Lead`
+**2. `LeadDrawer.tsx`** — Seção "Dados do Lead":
+- Cargo: remover condicional, sempre exibir (valor ou `—`)
+- Novo campo "Porte" com ícone `Building2`, valor formatado de `colaboradores`
+- Posição: Cargo após Origem, Porte após Cargo, antes de Responsável
 
-**3. LeadDrawer.tsx — Seção "Dados do Lead"**
-- Cargo: mudar de condicional (`{lead.cargo && ...}`) para sempre visível, com `—` quando vazio
-- Colaboradores: nova `InfoRow` com ícone `Building2`, label "Porte", valor formatado
-- Posição: após Origem, antes de Responsável (conforme PRD)
-- Helper de formatação inline para `colaboradores`:
+**3. Helper de formatação** (inline no Drawer):
+```
+1_a_10 → 1 a 10
+11_a_50 → 11 a 50
+51_a_100 → 51 a 100
+101_a_500 → 101 a 500
+501_a_2000 → 501 a 2.000
+mais_de_2000 → Mais de 2.000
+null → —
+```
 
-| Valor bruto | Exibido |
-|---|---|
-| `1_a_10` | 1 a 10 |
-| `501_a_2000` | 501 a 2.000 |
-| `mais_de_2000` | Mais de 2.000 |
-| `null` | — |
+Para cargo: `value.replace(/_/g, ' ')` + capitalizar primeira letra, ou `—` se vazio.
 
-**4. send-lead-email (Edge Function)** — Sem mudança necessária agora. Leads da LP já enviam `cargo` separado. Quando Meta Ads for integrado, o parsing será feito nessa função.
-
-### O que NÃO muda
-- Lógica de status, follow-ups, atividades
-- Campo `mensagem`
-- Fluxo de email de boas-vindas
-- RLS (novas colunas herdam políticas existentes)
-
-### Arquivos impactados
+**Nenhuma migration necessária** — coluna já existe.
 
 | Arquivo | Mudança |
 |---|---|
-| Migration SQL | Nova coluna `colaboradores` + índice |
 | `LeadList.tsx` | Interface `Lead` += `colaboradores` |
-| `LeadDrawer.tsx` | Exibir Cargo (sempre) + Porte (novo) na seção Dados do Lead |
+| `LeadDrawer.tsx` | Exibir Cargo (sempre) + Porte (novo) |
