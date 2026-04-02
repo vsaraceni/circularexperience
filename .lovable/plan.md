@@ -1,74 +1,49 @@
+## Campos de Qualificação — Implementação
 
+### Análise do PRD vs estado atual
 
-## Evolução Notificações — Email matinal + Web Push (Service Worker)
+O PRD pede 2 colunas novas: `cargo` e `colaboradores`. Porém **`cargo` já existe** na tabela `leads` e já é exibido no Drawer. A única mudança real é:
 
-### Parte 1: Email matinal consolidado
+1. **Nova coluna `colaboradores`** (porte da empresa)
+2. **Exibir `colaboradores` no CRM** com formatação adequada
+3. **Sempre exibir cargo e colaboradores** (hoje cargo é condicional — só aparece se preenchido; o PRD pede exibir `—` quando vazio)
 
-**Edge Function: `check-notifications/index.ts`**
+O PRD também menciona que leads de Meta Ads trazem cargo/colaboradores colapsados no campo `mensagem`. Isso implica que o fluxo de ingestão de leads do Meta Ads (que não passa pela LP) precisará parsear esses campos. Porém o PRD diz que isso fica fora do escopo — os campos chegam preenchidos separadamente.
 
-- Aceitar `mode` no body: `"digest"` | `"realtime"` (default `"realtime"`)
-- **`realtime`** (cada 15min): cria notificações in-app, NÃO envia email
-- **`digest`** (8h BRT): coleta todas as pendências, monta 1 email HTML consolidado por admin com seções (SLA Crítico, Follow-ups, Leads parados, Propostas expirando), envia via Resend
-- Email de novo lead (send-lead-email) continua imediato — sem mudança
+### Mudanças
 
-**Cron jobs (SQL)**:
-- Atualizar job `*/15` para enviar `body: '{"mode":"realtime"}'`
-- Atualizar job hourly para schedule `0 11 * * 1-5` (8h BRT) com `body: '{"mode":"digest"}'`
+**1. Migration SQL**
+- `ALTER TABLE leads ADD COLUMN IF NOT EXISTS colaboradores TEXT;`
+- `CREATE INDEX IF NOT EXISTS idx_leads_colaboradores ON leads (colaboradores);`
 
-### Parte 2: Web Push — Service Worker + Push API
+**2. Interface Lead (LeadList.tsx)**
+- Adicionar `colaboradores?: string | null` à interface `Lead`
 
-**Infraestrutura necessária:**
+**3. LeadDrawer.tsx — Seção "Dados do Lead"**
+- Cargo: mudar de condicional (`{lead.cargo && ...}`) para sempre visível, com `—` quando vazio
+- Colaboradores: nova `InfoRow` com ícone `Building2`, label "Porte", valor formatado
+- Posição: após Origem, antes de Responsável (conforme PRD)
+- Helper de formatação inline para `colaboradores`:
 
-1. **VAPID keys** — Gerar par de chaves (pública/privada). Pública vai no frontend, privada como secret na edge function
-2. **Tabela `push_subscriptions`** — `id, user_id, endpoint, p256dh, auth, created_at` com RLS para o próprio usuário
-3. **Service Worker** (`public/sw.js`) — Escuta evento `push`, exibe `self.registration.showNotification()` com título/body/ícone. Escuta `notificationclick` para abrir/focar a aba do CRM
-4. **Edge Function: `send-push-notification`** — Recebe `user_id`, `title`, `body`. Busca subscriptions do user, envia via Web Push protocol (biblioteca `web-push` para Deno)
-5. **DB trigger em `notifications` INSERT** — Chama `send-push-notification` para cada notificação criada, garantindo push em todos os cenários (realtime, digest, novo lead)
+| Valor bruto | Exibido |
+|---|---|
+| `1_a_10` | 1 a 10 |
+| `501_a_2000` | 501 a 2.000 |
+| `mais_de_2000` | Mais de 2.000 |
+| `null` | — |
 
-**Frontend:**
+**4. send-lead-email (Edge Function)** — Sem mudança necessária agora. Leads da LP já enviam `cargo` separado. Quando Meta Ads for integrado, o parsing será feito nessa função.
 
-6. **`useNotifications.ts`** — Ao inicializar, verificar `'serviceWorker' in navigator && 'PushManager' in window`. Se suportado, registrar SW e solicitar permissão
-7. **`NotificationBell.tsx`** — Botão "Ativar notificações" quando permissão não concedida. Status visual (🔔 ativo / 🔕 inativo)
-8. **Hook `usePushSubscription`** — Gerencia subscribe/unsubscribe, salva subscription no DB via Supabase
+### O que NÃO muda
+- Lógica de status, follow-ups, atividades
+- Campo `mensagem`
+- Fluxo de email de boas-vindas
+- RLS (novas colunas herdam políticas existentes)
 
-**Guarda para preview Lovable:**
-- Service worker NÃO registra em iframes nem em hosts `id-preview--` (conforme diretriz PWA)
-- Push só funciona na versão publicada
+### Arquivos impactados
 
-### Fluxo completo
-
-```text
-Novo lead chega → send-lead-email (email imediato) ✓
-                → trigger notify_new_lead → INSERT notifications
-                → trigger send-push-notification → Web Push ao admin
-                → Realtime channel → som + toast + badge aba
-
-A cada 15min   → check-notifications(realtime) → INSERT notifications (sem email)
-                → trigger send-push-notification → Web Push
-                → Realtime → som + toast
-
-8h BRT (seg-sex) → check-notifications(digest) → INSERT notifications + 1 email consolidado
-                  → trigger send-push-notification → Web Push
-```
-
-### Resumo de mudanças
-
-| Recurso | Mudança |
-|---------|---------|
-| `check-notifications/index.ts` | Aceitar `mode`, template digest HTML, condicionar email |
-| Cron jobs (SQL) | Ajustar schedules e payloads |
-| Nova tabela `push_subscriptions` | Armazenar subscriptions por usuário |
-| `public/sw.js` | Service worker para push events |
-| Nova edge function `send-push-notification` | Enviar web push via VAPID |
-| Novo trigger em `notifications` | Chamar push function em cada INSERT |
-| `useNotifications.ts` | Registrar SW, solicitar permissão |
-| `NotificationBell.tsx` | Botão ativar notificações |
-| Novo hook `usePushSubscription.ts` | Gerenciar subscription no DB |
-| Secrets | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` |
-
-### Limitações
-
-- Push funciona apenas na versão publicada (não no preview do editor)
-- Safari iOS requer que o site seja adicionado à Home Screen (PWA) para push
-- O usuário precisa aceitar permissão do browser uma vez
-
+| Arquivo | Mudança |
+|---|---|
+| Migration SQL | Nova coluna `colaboradores` + índice |
+| `LeadList.tsx` | Interface `Lead` += `colaboradores` |
+| `LeadDrawer.tsx` | Exibir Cargo (sempre) + Porte (novo) na seção Dados do Lead |
