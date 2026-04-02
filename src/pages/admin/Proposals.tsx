@@ -431,8 +431,8 @@ const Proposals = () => {
             </div>
           </div>
 
-          {/* Zone Center — Dashboard */}
-          <div className="flex items-center">
+          {/* Zone Center — Dashboard + Painel */}
+          <div className="flex items-center gap-1">
             <button
               onClick={() => navigate("/admin/dashboard")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-gray-100"
@@ -440,6 +440,14 @@ const Proposals = () => {
             >
               <BarChart3 className="h-4 w-4" />
               Dashboard
+            </button>
+            <button
+              onClick={() => navigate("/painel")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-gray-100"
+              style={{ color: 'hsl(var(--color-text-secondary))' }}
+            >
+              <Activity className="h-4 w-4" />
+              Painel
             </button>
           </div>
 
