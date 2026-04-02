@@ -49,9 +49,11 @@ const COLABORADORES_LABELS: Record<string, string> = {
   "1_a_10": "1 a 10",
   "11_a_50": "11 a 50",
   "51_a_100": "51 a 100",
+  "até_100": "Até 100",
   "101_a_500": "101 a 500",
   "501_a_2000": "501 a 2.000",
   "mais_de_2000": "Mais de 2.000",
+  "acima_de_2000": "Acima de 2.000",
 };
 
 const formatColaboradores = (value?: string | null): string => {
@@ -277,7 +279,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                         <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={lead.telefone} whatsapp={lead.telefone} />
                       )}
                       <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
-                      <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo || "—"} />
+                      <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo ? lead.cargo.replace(/_/g, " ").replace(/^./, c => c.toUpperCase()) : "—"} />
                       <InfoRow icon={<Building2 className="h-4 w-4" />} label="Porte" value={formatColaboradores(lead.colaboradores)} />
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><User className="h-4 w-4" /></span>

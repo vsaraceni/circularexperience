@@ -84,7 +84,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchAll = async () => {
       const [leadsRes, proposalsRes, subsRes, profilesRes] = await Promise.all([
-        supabase.from("leads").select("id, name, company, kanban_stage, status, origem, assigned_to, lost_reason, created_at, closed_at").neq("status", "archived"),
+        supabase.from("leads").select("*").neq("status", "archived"),
         supabase.from("proposals").select("id, investment, lead_id, status"),
         supabase.from("proposal_submissions").select("id"),
         supabase.from("profiles").select("id, full_name"),
