@@ -338,6 +338,85 @@ export function useStrategicDashboard() {
     };
   }, [activeLeads, profiles, proposals]);
 
+  // Conversion funnel: rate from each stage to the next
+  const funnelData = useMemo(() => {
+    const stageOrder = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+    const stageLabels: Record<string, string> = {
+      novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
+      call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado",
+    };
+
+    // Count leads that have REACHED each stage (current or beyond)
+    const reachedStage = (stage: string) => {
+      const idx = stageOrder.indexOf(stage);
+      return activeLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length + 
+             lostLeads.filter((l) => {
+               // Lost leads also passed through stages
+               const lostIdx = stageOrder.indexOf(l.kanban_stage);
+               return lostIdx >= idx;
+             }).length;
+    };
+
+    return stageOrder.map((stage, i) => {
+      const reached = reachedStage(stage);
+      const current = (pipelineCounts[stage] || []).length;
+      const prevReached = i > 0 ? reachedStage(stageOrder[i - 1]) : reached;
+      const conversionRate = prevReached > 0 ? Math.round((reached / prevReached) * 100) : 100;
+
+      return {
+        stage,
+        label: stageLabels[stage],
+        current,
+        reached,
+        conversionRate,
+      };
+    });
+  }, [activeLeads, lostLeads, pipelineCounts]);
+
+  // Daily actions: prescriptive list
+  const dailyActions = useMemo(() => {
+    const actions: { priority: number; icon: string; text: string; leadId?: string }[] = [];
+    const now = new Date();
+
+    // Leads novos sem ação
+    const novosLeads = pipelineCounts["novo"] || [];
+    if (novosLeads.length > 0) {
+      actions.push({ priority: 1, icon: "🆕", text: `${novosLeads.length} lead(s) novo(s) aguardando primeiro contato` });
+    }
+
+    // Follow-ups vencidos
+    const overdueFollowUps = followUps.filter((f) => new Date(f.due_date) < now);
+    if (overdueFollowUps.length > 0) {
+      actions.push({ priority: 2, icon: "⏰", text: `${overdueFollowUps.length} follow-up(s) vencido(s)` });
+    }
+
+    // Protocolos BV incompletos
+    const bvIncomplete = activeLeads.filter(
+      (l) => ["boas_vindas", "em_contato"].includes(l.kanban_stage) &&
+             (!l.welcome_sent || !l.linkedin_added || !l.whatsapp_sent)
+    );
+    if (bvIncomplete.length > 0) {
+      actions.push({ priority: 3, icon: "📋", text: `${bvIncomplete.length} protocolo(s) BV incompleto(s)` });
+    }
+
+    // Calls sem briefing
+    const callsNoBriefing = (pipelineCounts["call_agendada"] || []).filter((l) => !l.briefing_notes);
+    if (callsNoBriefing.length > 0) {
+      actions.push({ priority: 4, icon: "📝", text: `${callsNoBriefing.length} call(s) sem briefing preenchido` });
+    }
+
+    // Leads em proposta/nutrição parados
+    const staleLeads = activeLeads.filter(
+      (l) => ["proposta", "nutricao"].includes(l.kanban_stage) &&
+             l.last_activity_at && differenceInDays(now, new Date(l.last_activity_at)) > 3
+    );
+    if (staleLeads.length > 0) {
+      actions.push({ priority: 5, icon: "💤", text: `${staleLeads.length} lead(s) parado(s) há mais de 3 dias` });
+    }
+
+    return actions.sort((a, b) => a.priority - b.priority);
+  }, [activeLeads, pipelineCounts, followUps]);
+
   return {
     loading,
     leads: activeLeads,
@@ -352,5 +431,7 @@ export function useStrategicDashboard() {
     profiles,
     sdrMetrics,
     closerMetrics,
+    funnelData,
+    dailyActions,
   };
 }

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, ExternalLink, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal } from "lucide-react";
+import { Plus, LogOut, LayoutGrid, List, Search, Eye, BarChart3, ArrowLeft, ExternalLink, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal, Activity } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
@@ -431,8 +431,8 @@ const Proposals = () => {
             </div>
           </div>
 
-          {/* Zone Center — Dashboard */}
-          <div className="flex items-center">
+          {/* Zone Center — Dashboard + Painel */}
+          <div className="flex items-center gap-1">
             <button
               onClick={() => navigate("/admin/dashboard")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-gray-100"
@@ -440,6 +440,14 @@ const Proposals = () => {
             >
               <BarChart3 className="h-4 w-4" />
               Dashboard
+            </button>
+            <button
+              onClick={() => navigate("/painel")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors hover:bg-gray-100"
+              style={{ color: 'hsl(var(--color-text-secondary))' }}
+            >
+              <Activity className="h-4 w-4" />
+              Painel
             </button>
           </div>
 

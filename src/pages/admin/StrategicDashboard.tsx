@@ -45,6 +45,8 @@ const StrategicDashboard = () => {
     sdrMetrics,
     closerMetrics,
     leads,
+    funnelData,
+    dailyActions,
   } = useStrategicDashboard();
 
   if (loading) {
@@ -273,6 +275,98 @@ const StrategicDashboard = () => {
                 <p className="text-xs text-amber-600 font-medium">
                   📊 Taxa de conversão abaixo da meta
                 </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        {/* Conversion Funnel + Daily Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Funnel */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Funil de Conversão
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {funnelData.map((item, i) => {
+                  const maxReached = Math.max(...funnelData.map((f) => f.reached), 1);
+                  const barWidth = Math.max((item.reached / maxReached) * 100, 8);
+
+                  return (
+                    <div key={item.stage} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-20 text-right truncate">
+                        {item.label}
+                      </span>
+                      <div className="flex-1 relative">
+                        <div
+                          className="h-7 rounded-md flex items-center px-2 transition-all"
+                          style={{
+                            width: `${barWidth}%`,
+                            background: `hsl(var(--primary) / ${0.15 + (i * 0.12)})`,
+                          }}
+                        >
+                          <span className="text-xs font-semibold text-foreground">
+                            {item.reached}
+                          </span>
+                        </div>
+                      </div>
+                      {i > 0 && (
+                        <span
+                          className={`text-xs font-medium w-12 text-right ${
+                            item.conversionRate >= 60
+                              ? "text-green-600"
+                              : item.conversionRate >= 30
+                              ? "text-amber-500"
+                              : "text-destructive"
+                          }`}
+                        >
+                          {item.conversionRate}%
+                        </span>
+                      )}
+                      {i === 0 && <span className="w-12" />}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-3">
+                % = taxa de conversão da etapa anterior → atual
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Daily Actions */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-secondary" />
+                Ações do Dia
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dailyActions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                  Nenhuma ação pendente! 🎉
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {dailyActions.map((action, i) => (
+                    <button
+                      key={i}
+                      onClick={() => navigate("/admin/propostas")}
+                      className="w-full text-left flex items-start gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="text-lg mt-0.5">{action.icon}</span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{action.text}</p>
+                      </div>
+                      <ArrowLeft className="h-4 w-4 text-muted-foreground rotate-180 mt-1" />
+                    </button>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
