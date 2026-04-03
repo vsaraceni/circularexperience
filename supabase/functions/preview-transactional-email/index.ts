@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
         subject: resolvedSubject,
         html,
         status: 'ready',
+        editableFields: entry.editableFields,
+        currentOverrides: allOverrides[name] || {},
       })
     } catch (err) {
       console.error('Failed to render template for preview', {
