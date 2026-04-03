@@ -12,6 +12,7 @@ import PrintablePresentation from "./pages/PrintablePresentation";
 import Dashboard from "./pages/admin/Dashboard";
 import Templates from "./pages/admin/Templates";
 import StrategicDashboard from "./pages/admin/StrategicDashboard";
+import Pipeline from "./pages/admin/Pipeline";
 import Unsubscribe from "./pages/Unsubscribe";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -26,6 +27,14 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin/pipeline"
+            element={
+              <ProtectedRoute>
+                <Pipeline />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/proposta/:slug" element={<ProposalView />} />
           <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
           <Route

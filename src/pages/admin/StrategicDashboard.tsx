@@ -1,10 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  ArrowLeft,
   Activity,
   AlertTriangle,
   Zap,
@@ -16,9 +14,9 @@ import {
   Clock,
   Briefcase,
   Phone,
+  ArrowLeft,
 } from "lucide-react";
-import { LogoImage } from "@/components/LogoImage";
-import logo from "@/assets/movimento-circular-logo.png";
+import CrmNavbar from "@/components/admin/CrmNavbar";
 import { useStrategicDashboard, type DashboardAlert } from "@/hooks/useStrategicDashboard";
 
 const STAGES_META = [
@@ -61,53 +59,7 @@ const StrategicDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground sticky top-0 z-40">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <LogoImage src={logo} alt="Movimento Circular" className="h-9 brightness-0 invert" />
-            <span className="text-lg font-bold">Painel Estratégico</span>
-          </div>
-          <div className="flex items-center gap-6">
-            {/* Health Score Ring */}
-            <div className="flex items-center gap-2">
-              <HealthRing score={healthScore} size={40} />
-              <div className="text-xs leading-tight">
-                <div className="font-semibold">Health</div>
-                <div className="opacity-80">{healthScore}%</div>
-              </div>
-            </div>
-
-            {/* Quick stats */}
-            <div className="hidden md:flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <Zap className="h-4 w-4" />
-                <span className="font-medium">{velocity7d}</span>
-                <span className="opacity-70 text-xs">fechados/7d</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Activity className="h-4 w-4" />
-                <span className="font-medium">{activitiesToday}</span>
-                <span className="opacity-70 text-xs">ações hoje</span>
-              </div>
-              {criticalAlerts > 0 && (
-                <Badge variant="destructive" className="animate-pulse">
-                  {criticalAlerts} alertas
-                </Badge>
-              )}
-            </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary-foreground hover:bg-primary-foreground/10"
-              onClick={() => navigate("/admin/propostas")}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" /> Pipeline
-            </Button>
-          </div>
-        </div>
-      </header>
+      <CrmNavbar currentModule="painel" />
 
       <main className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
         {/* Pipeline Cards */}

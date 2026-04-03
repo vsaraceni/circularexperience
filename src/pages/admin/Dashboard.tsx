@@ -1,14 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Users, Target, Send, TrendingUp, DollarSign } from "lucide-react";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, FunnelChart, Funnel, LabelList } from "recharts";
-import logo from "@/assets/movimento-circular-logo.png";
-import { LogoImage } from "@/components/LogoImage";
+import { Users, Target, Send, TrendingUp, DollarSign } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import CrmNavbar from "@/components/admin/CrmNavbar";
 
 const STAGES = [
   { key: "novo", label: "Novo" },
@@ -71,7 +67,6 @@ interface Proposal {
 }
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [submissions, setSubmissions] = useState<{ id: string }[]>([]);
@@ -188,17 +183,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <LogoImage src={logo} alt="Movimento Circular" className="h-10" />
-            <span className="text-lg font-bold text-foreground">Dashboard</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/admin/propostas")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Pipeline
-          </Button>
-        </div>
-      </header>
+      <CrmNavbar currentModule="dashboard" />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Filters */}
