@@ -323,19 +323,20 @@ export function useStrategicDashboard() {
       novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
       call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado",
     };
+    // Use campaign-filtered leads when a campaign is active, otherwise all leads
+    const funnelLeads = activeCampaign ? campaignLeads : [...activeLeads, ...lostLeads];
     const reachedStage = (stage: string) => {
       const idx = stageOrder.indexOf(stage);
-      return activeLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length +
-        lostLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length;
+      return funnelLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length;
     };
     return stageOrder.map((stage, i) => {
       const reached = reachedStage(stage);
-      const current = (pipelineCounts[stage] || []).length;
+      const current = funnelLeads.filter((l) => l.kanban_stage === stage).length;
       const prevReached = i > 0 ? reachedStage(stageOrder[i - 1]) : reached;
-      const conversionRate = prevReached > 0 ? Math.round((reached / prevReached) * 100) : 100;
+      const conversionRate = prevReached > 0 ? Math.round((reached / prevReached) * 100) : 0;
       return { stage, label: stageLabels[stage], current, reached, conversionRate };
     });
-  }, [activeLeads, lostLeads, pipelineCounts]);
+  }, [activeLeads, lostLeads, campaignLeads, activeCampaign]);
 
   // Daily actions
   const dailyActions = useMemo(() => {
