@@ -184,25 +184,25 @@ export function useStrategicDashboard() {
     const total = campaignLeads.length;
     const activeCL = campaignLeads.filter((l) => l.status !== "lost");
 
-    // Em contato: leads que avançaram além de boas_vindas / total
-    const emContatoCount = activeCL.filter((l) => ADVANCED_STAGES.em_contato.includes(l.kanban_stage)).length;
+    // Em contato: leads que passaram de boas_vindas (reached em_contato+) / total
+    const emContatoCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "em_contato")).length;
     const emContatoPct = total > 0 ? Math.round((emContatoCount / total) * 100) : 0;
 
     // Agendamentos: leads call_agendada+ / em_contato+
     const agendBase = emContatoCount;
-    const agendCount = activeCL.filter((l) => ADVANCED_STAGES.call_agendada.includes(l.kanban_stage)).length;
+    const agendCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "call_agendada")).length;
     const agendPct = agendBase > 0 ? Math.round((agendCount / agendBase) * 100) : 0;
 
     // Propostas: leads proposta+ / call_agendada+
     const propBase = agendCount;
-    const propCount = activeCL.filter((l) => ADVANCED_STAGES.proposta.includes(l.kanban_stage)).length;
+    const propCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "proposta")).length;
     const propPct = propBase > 0 ? Math.round((propCount / propBase) * 100) : 0;
 
-    // Deals
-    const dealsCount = activeCL.filter((l) => l.kanban_stage === "fechado").length;
+    // Deals (only actually closed, not lost)
+    const dealsCount = campaignLeads.filter((l) => l.kanban_stage === "fechado").length;
 
     // Revenue
-    const closedLeadIds = new Set(activeCL.filter((l) => l.kanban_stage === "fechado").map((l) => l.id));
+    const closedLeadIds = new Set(campaignLeads.filter((l) => l.kanban_stage === "fechado").map((l) => l.id));
     const dealsValue = proposals
       .filter((p) => p.lead_id && closedLeadIds.has(p.lead_id))
       .reduce((sum, p) => sum + parseInvestment(p.investment), 0);
