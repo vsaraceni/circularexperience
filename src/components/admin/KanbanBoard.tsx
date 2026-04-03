@@ -342,6 +342,32 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           lead_id: lead.id, user_id: userId,
           activity_type: "call_agendada", content: "Call agendada via Google Calendar",
         });
+        // Send proposal alert email (fire-and-forget)
+        (async () => {
+          try {
+            const ownerId = lead.assigned_to || userId;
+            const { data: ownerProfile } = await supabase.from("profiles").select("email").eq("id", ownerId).single();
+            if (ownerProfile?.email) {
+              supabase.functions.invoke("send-transactional-email", {
+                body: {
+                  templateName: "call-scheduled-alert",
+                  recipientEmail: ownerProfile.email,
+                  idempotencyKey: `call-alert-${lead.id}-${Date.now()}`,
+                  templateData: {
+                    leadName: lead.name,
+                    company: lead.company || '',
+                    cargo: lead.cargo || '',
+                    telefone: lead.telefone || '',
+                    email: lead.email,
+                    workEmail: lead.work_email || '',
+                    briefingNotes: lead.briefing_notes || '',
+                    leadId: lead.id,
+                  },
+                },
+              }).catch(e => console.error("Call alert email error:", e));
+            }
+          } catch (e) { console.error("Call alert email error:", e); }
+        })();
         // Meta CAPI — fire-and-forget
         console.log("CAPI disparado para lead:", lead.email, "call_agendada");
         supabase.functions.invoke("send-meta-capi-event", {
