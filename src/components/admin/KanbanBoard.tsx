@@ -208,6 +208,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       // Send Meta CAPI event for tracked stages (fire-and-forget)
       if (newStage === "call_agendada" || newStage === "fechado") {
+        console.log("CAPI disparado para lead:", lead.email, newStage);
         supabase.functions.invoke("send-meta-capi-event", {
           body: {
             lead_id: leadId,
@@ -311,6 +312,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           activity_type: "call_agendada", content: "Call agendada via Google Calendar",
         });
         // Meta CAPI — fire-and-forget
+        console.log("CAPI disparado para lead:", lead.email, "call_agendada");
         supabase.functions.invoke("send-meta-capi-event", {
           body: { lead_id: lead.id, email: lead.email, work_email: lead.work_email || undefined, telefone: lead.telefone || undefined, fb_lead_id: lead.fb_lead_id || undefined, stage: "call_agendada" },
         }).catch((err) => console.error("Meta CAPI error:", err));
@@ -342,6 +344,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           activity_type: "fechado", content: "Lead fechado com sucesso!",
         });
         // Meta CAPI — fire-and-forget
+        console.log("CAPI disparado para lead:", lead.email, "fechado");
         supabase.functions.invoke("send-meta-capi-event", {
           body: { lead_id: lead.id, email: lead.email, work_email: lead.work_email || undefined, telefone: lead.telefone || undefined, fb_lead_id: lead.fb_lead_id || undefined, stage: "fechado" },
         }).catch((err) => console.error("Meta CAPI error:", err));
