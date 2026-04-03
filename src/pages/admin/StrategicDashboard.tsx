@@ -33,15 +33,6 @@ import { toast } from "sonner";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-const STAGES_META = [
-  { key: "novo", label: "Novo", icon: "🆕" },
-  { key: "boas_vindas", label: "Boas-Vindas", icon: "👋" },
-  { key: "em_contato", label: "Em Contato", icon: "💬" },
-  { key: "call_agendada", label: "Call", icon: "📞" },
-  { key: "proposta", label: "Proposta", icon: "📄" },
-  { key: "nutricao", label: "Nutrição", icon: "🌱" },
-  { key: "fechado", label: "Fechado", icon: "🎉" },
-];
 
 const StrategicDashboard = () => {
   const navigate = useNavigate();
