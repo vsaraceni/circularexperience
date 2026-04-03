@@ -15,15 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import {
   TrendingUp,
-  Users,
   CheckCircle2,
-  Clock,
   Briefcase,
   Phone,
   ArrowLeft,
   Settings,
   Target,
-  Calendar,
   DollarSign,
   Hash,
   Percent,
