@@ -37,10 +37,8 @@ import { ptBR } from "date-fns/locale";
 const StrategicDashboard = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAuth();
-  const {
+    const {
     loading,
-    stageHealth,
-    pipelineCounts,
     sdrMetrics,
     closerMetrics,
     funnelData,
