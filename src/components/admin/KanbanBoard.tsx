@@ -208,6 +208,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       // Send Meta CAPI event for tracked stages (fire-and-forget)
       if (newStage === "call_agendada" || newStage === "fechado") {
+        console.log("CAPI disparado para lead:", lead.email, newStage);
         supabase.functions.invoke("send-meta-capi-event", {
           body: {
             lead_id: leadId,
