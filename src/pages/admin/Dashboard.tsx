@@ -66,6 +66,10 @@ interface Proposal {
   status: string;
 }
 
+const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
+const isTestEmail = (email: string) =>
+  TEST_DOMAINS.some((d) => email.toLowerCase().endsWith(d));
+
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -84,7 +88,7 @@ const Dashboard = () => {
         supabase.from("proposal_submissions").select("id"),
         supabase.from("profiles").select("id, full_name"),
       ]);
-      if (leadsRes.data) setLeads(leadsRes.data);
+      if (leadsRes.data) setLeads(leadsRes.data.filter(l => !isTestEmail(l.email)));
       if (proposalsRes.data) setProposals(proposalsRes.data);
       if (subsRes.data) setSubmissions(subsRes.data);
       if (profilesRes.data) setProfiles(profilesRes.data);

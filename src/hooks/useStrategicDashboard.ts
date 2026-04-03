@@ -109,6 +109,10 @@ function parseInvestment(text: string | null): number {
   return isNaN(val) ? 0 : val;
 }
 
+const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
+const isTestEmail = (email: string) =>
+  TEST_DOMAINS.some((d) => email.toLowerCase().endsWith(d));
+
 export function useStrategicDashboard() {
   const [leads, setLeads] = useState<DashboardLead[]>([]);
   const [, setActivities] = useState<DashboardActivity[]>([]);
@@ -130,7 +134,7 @@ export function useStrategicDashboard() {
       supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
     ]);
 
-    if (leadsRes.data) setLeads(leadsRes.data as DashboardLead[]);
+    if (leadsRes.data) setLeads((leadsRes.data as DashboardLead[]).filter(l => !isTestEmail(l.email)));
     if (activitiesRes.data) setActivities(activitiesRes.data as DashboardActivity[]);
     if (profilesRes.data) setProfiles(profilesRes.data as DashboardProfile[]);
     if (proposalsRes.data) setProposals(proposalsRes.data as DashboardProposal[]);
