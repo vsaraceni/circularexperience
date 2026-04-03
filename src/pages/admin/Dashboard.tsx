@@ -4,11 +4,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Users, Target, Send, TrendingUp, DollarSign } from "lucide-react";
+import { Users, Target, Send, TrendingUp, DollarSign } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, ResponsiveContainer, Tooltip, FunnelChart, Funnel, LabelList } from "recharts";
-import logo from "@/assets/movimento-circular-logo.png";
-import { LogoImage } from "@/components/LogoImage";
+import CrmNavbar from "@/components/admin/CrmNavbar";
 
 const STAGES = [
   { key: "novo", label: "Novo" },
