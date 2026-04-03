@@ -59,6 +59,8 @@ Deno.serve(async (req) => {
     html: string
     status: 'ready' | 'preview_data_required' | 'render_failed'
     errorMessage?: string
+    editableFields?: Record<string, { label: string; default: string; placeholder: string }>
+    currentOverrides?: Record<string, any>
   }> = []
 
   for (const name of templateNames) {
