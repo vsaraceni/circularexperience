@@ -117,61 +117,6 @@ const StrategicDashboard = () => {
           </div>
         )}
 
-        {/* Pipeline Cards */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            Pipeline
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-            {STAGES_META.map((stage) => {
-              const count = (pipelineCounts[stage.key] || []).length;
-              const health = stageHealth[stage.key];
-              const hasLeads = health && health.total > 0;
-              const healthPct = hasLeads ? Math.round((health.healthy / health.total) * 100) : 0;
-              const hasCritical = health && health.critical > 0;
-
-              return (
-                <Card
-                  key={stage.key}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    hasCritical ? "border-destructive/50 shadow-destructive/10" : ""
-                  }`}
-                  onClick={() => navigate(`/admin/pipeline?stage=${stage.key}`)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-lg">{stage.icon}</span>
-                      <span className="text-2xl font-bold text-foreground">{count}</span>
-                    </div>
-                    <p className="text-xs font-medium text-muted-foreground truncate mb-2">
-                      {stage.label}
-                    </p>
-                    {hasLeads ? (
-                      <div className="flex items-center gap-1.5">
-                        <Progress value={healthPct} className="h-1.5 flex-1" />
-                        <span
-                          className={`text-[10px] font-medium ${
-                            healthPct >= 80 ? "text-green-600" : healthPct >= 50 ? "text-amber-500" : "text-destructive"
-                          }`}
-                        >
-                          {healthPct}%
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground text-center">—</p>
-                    )}
-                    {health && (health.warning > 0 || health.critical > 0) && (
-                      <div className="flex gap-1 mt-1.5">
-                        {health.warning > 0 && <span className="text-[10px] text-amber-500">⚠️{health.warning}</span>}
-                        {health.critical > 0 && <span className="text-[10px] text-destructive">🔴{health.critical}</span>}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
 
         {/* SDR + Closer panels (50/50) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
