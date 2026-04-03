@@ -433,6 +433,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     try {
       await supabase.from("leads").update({
         kanban_stage: "perdido", lost_reason: reason, lost_notes: notes,
+        lost_at_stage: lostLead.kanban_stage,
         stage_updated_at: now, last_activity_at: now,
       }).eq("id", lostLead.id);
       await supabase.from("lead_activities").insert({

@@ -22,6 +22,7 @@ export interface DashboardLead {
   lost_reason: string | null;
   call_date: string | null;
   briefing_notes: string | null;
+  lost_at_stage: string | null;
 }
 
 export interface DashboardProfile {
