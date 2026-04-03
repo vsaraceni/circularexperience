@@ -95,28 +95,31 @@ Deno.serve(async (req) => {
     console.log("Meta status:", metaRes.status);
     console.log("Meta body:", metaBody);
 
-    if (!metaRes.ok) {
-      return new Response(
-        JSON.stringify({ error: "Meta API error", details: metaBody }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    let metaResult: unknown;
+    try { metaResult = JSON.parse(metaBody); } catch { metaResult = metaBody; }
+
+    // Update lead with meta tracking info (only on success)
+    if (metaRes.ok) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, serviceKey);
+
+      await supabase
+        .from("leads")
+        .update({
+          meta_last_event_sent: mapping.event_name,
+          meta_last_event_at: new Date().toISOString(),
+        })
+        .eq("id", lead_id);
     }
 
-    // Update lead with meta tracking info
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    await supabase
-      .from("leads")
-      .update({
-        meta_last_event_sent: mapping.event_name,
-        meta_last_event_at: new Date().toISOString(),
-      })
-      .eq("id", lead_id);
-
     return new Response(
-      JSON.stringify({ success: true, event_name: mapping.event_name }),
+      JSON.stringify({
+        success: metaRes.ok,
+        meta_status: metaRes.status,
+        meta_body: metaResult,
+        event_name: mapping.event_name,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
