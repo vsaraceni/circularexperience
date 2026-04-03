@@ -54,7 +54,7 @@ interface AuthorDefaults {
 }
 
 const Proposals = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -473,9 +473,11 @@ const Proposals = () => {
                     <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />
                   </div>
                 )}
-                <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
-                  <EmailTemplateEditor />
-                </div>
+                {isAdmin && (
+                  <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
+                    <EmailTemplateEditor />
+                  </div>
+                )}
                 <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">
                   <ExternalLink className="h-4 w-4" aria-hidden="true" /> Ir para o Site
                 </DropdownMenuItem>

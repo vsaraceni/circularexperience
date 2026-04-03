@@ -6,21 +6,22 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasRole, setHasRole] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkAdminRole = async (userId: string) => {
+    const checkRole = async (userId: string) => {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .eq("role", "admin")
         .maybeSingle();
 
       if (!isMounted) return;
-      setIsAdmin(!error && !!data);
+      setHasRole(!error && !!data);
+      setIsAdmin(!error && data?.role === "admin");
       setLoading(false);
     };
 
@@ -33,9 +34,10 @@ export function useAuth() {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        void checkAdminRole(nextSession.user.id);
+        void checkRole(nextSession.user.id);
       } else {
         setIsAdmin(false);
+        setHasRole(false);
         setLoading(false);
       }
     });
@@ -47,9 +49,10 @@ export function useAuth() {
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        void checkAdminRole(currentSession.user.id);
+        void checkRole(currentSession.user.id);
       } else {
         setIsAdmin(false);
+        setHasRole(false);
         setLoading(false);
       }
     });
@@ -79,5 +82,5 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, session, isAdmin, loading, signIn, signUp, signOut };
+  return { user, session, isAdmin, hasRole, loading, signIn, signUp, signOut };
 }
