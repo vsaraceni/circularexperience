@@ -49,7 +49,6 @@ const StrategicDashboard = () => {
   const {
     loading,
     stageHealth,
-    pipelineTotal,
     pipelineCounts,
     sdrMetrics,
     closerMetrics,
