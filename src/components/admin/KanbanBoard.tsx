@@ -218,6 +218,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             fb_lead_id: lead.fb_lead_id || undefined,
             stage: newStage,
           },
+        }).then((response) => {
+          console.log("CAPI response:", JSON.stringify(response));
         }).catch((err) => console.error("Meta CAPI error:", err));
       }
 
