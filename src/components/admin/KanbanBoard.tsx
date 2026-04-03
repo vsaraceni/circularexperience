@@ -341,6 +341,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           lead_id: lead.id, user_id: userId,
           activity_type: "fechado", content: "Lead fechado com sucesso!",
         });
+        // Meta CAPI — fire-and-forget
+        supabase.functions.invoke("send-meta-capi-event", {
+          body: { lead_id: lead.id, email: lead.email, work_email: lead.work_email || undefined, telefone: lead.telefone || undefined, fb_lead_id: lead.fb_lead_id || undefined, stage: "fechado" },
+        }).catch((err) => console.error("Meta CAPI error:", err));
         toast.success("Lead fechado! 🎉");
         onLeadUpdated();
         break;
