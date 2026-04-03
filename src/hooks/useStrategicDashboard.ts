@@ -76,6 +76,19 @@ export interface CampaignKPI {
 
 const ACTIVE_STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
 
+const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+
+function maxReachedStage(lead: DashboardLead): string {
+  if (lead.kanban_stage === "perdido") return lead.lost_at_stage || "boas_vindas";
+  return lead.kanban_stage;
+}
+
+function hasReachedAtLeast(lead: DashboardLead, stage: string): boolean {
+  const idx = STAGE_ORDER.indexOf(stage);
+  const reachedIdx = STAGE_ORDER.indexOf(maxReachedStage(lead));
+  return reachedIdx >= idx;
+}
+
 const ADVANCED_STAGES: Record<string, string[]> = {
   em_contato: ["em_contato", "call_agendada", "proposta", "nutricao", "fechado"],
   call_agendada: ["call_agendada", "proposta", "nutricao", "fechado"],
