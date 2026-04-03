@@ -1,57 +1,115 @@
 
 
-## Corrigir Email Matinal — Replicar Missões do Dia
+## Implementação: Email 2 (Alerta de Proposta) + Email 3 (Performance WhatsApp) + Refinamento Visual
 
-### Problemas identificados
+### Visão Geral
 
-1. **Conteúdo do email não reflete as Missões do Dia**: A edge function `check-notifications` usa critérios diferentes (SLA breach, follow-ups vencidos, leads parados 30min, propostas expirando) enquanto o banner Missões do Dia monitora: Novos, Follow-up (boas-vindas sem FU), Agendamento (em contato), Calls próximas, Briefings incompletos.
+Três entregas:
+1. **Email de alerta** quando lead vai para "Call Agendada" — enviado ao dono do lead
+2. **Resumo de performance** no final do dia — formato WhatsApp copiável, agrupado por operador
+3. **Refinamento visual** de todos os templates com paleta Movimento Circular e remetente "Muti CRM"
 
-2. **Email vai para Spam/Promoções**: O domínio de envio é `contato@lovable.movimentocircular.io` via Resend, mas o domínio verificado no Lovable é `notify.escolas.movimentocircular.io`. Isso faz com que os emails tenham má reputação e caiam em abas secundárias do Gmail.
+---
 
-3. **Sem botão CTA**: O email atual não tem link para o CRM.
+### 1. Template `call-scheduled-alert.tsx`
 
-### Solução
+Novo template React Email em `_shared/transactional-email-templates/`:
+- **Remetente**: Muti CRM
+- **Subject**: "🔔 Nova proposta solicitada — {empresa ou nome}"
+- **Conteúdo**: dados do lead (nome, empresa, cargo, telefone, email), seção de briefing (ou aviso "sem briefing"), prazo "2 dias úteis" como lembrete
+- **CTA**: botão "Elaborar Proposta" apontando para o CRM
+- **Visual**: paleta Movimento Circular — header roxo (#5F2558), botão turquesa (#2FB2C0), fundo branco, destaques em laranja (#F4A736)
 
-Reescrever a lógica de digest na edge function `check-notifications` para replicar exatamente os 5 indicadores do banner Missões do Dia, migrar o envio para o sistema de email nativo do Lovable (domínio já verificado), e adicionar um botão CTA.
+### 2. Gatilho no KanbanBoard.tsx
 
-### O que muda
+Adicionar chamada fire-and-forget a `send-transactional-email` nos dois pontos onde lead muda para `call_agendada`:
+- `handleDragEnd` (linha ~210)
+- `handleQuickAction` case `schedule_call` (linha ~311)
 
-**1. Reescrever seções do digest (edge function `check-notifications`)**
+Lógica:
+1. Buscar email do `assigned_to` via `profiles`
+2. Invocar `send-transactional-email` com template `call-scheduled-alert`, dados do lead e idempotencyKey `call-alert-{leadId}-{timestamp}`
 
-Substituir as 4 seções atuais (SLA, follow-ups, stale, proposals) pelas 5 missões reais:
-- **Novos** — leads em `kanban_stage = 'novo'`
-- **Follow-up** — leads em `boas_vindas` com SLA vencido e sem follow-up pendente futuro
-- **Agendamento** — leads em `em_contato`
-- **Calls** — leads em `call_agendada` com `call_date` hoje ou amanhã
-- **Briefing** — leads em `call_agendada` ou `proposta` sem `briefing_notes`
+### 3. Template `daily-performance.tsx`
 
-**2. Novo template HTML do email**
+Novo template React Email:
+- **Remetente**: Muti CRM
+- **Subject**: "📊 Performance do dia — {data}"
+- **Conteúdo**: bloco de texto pré-formatado com emojis, pronto para copiar e colar no WhatsApp
+- **Formato por operador**:
+```text
+📊 *Performance — segunda, 3 de abril*
 
-Replicar o visual compacto do banner com contadores coloridos (verde = 0, amarelo = poucos, vermelho = 3+), uma barra de progresso, e no final um botão "Vamos resolver isso!" linkando para `https://circularexperience.lovable.app/admin`.
+👤 *João Silva*
+↗️ Avanços de fase: 5
+📅 Agendamentos: 2
+📄 Propostas: 1
+🤝 Deals: 0
 
-Quando tudo estiver em dia: mensagem "Tudo em dia! 🎉" sem botão.
+👤 *Maria Santos*
+↗️ Avanços de fase: 3
+...
 
-**3. Migrar envio para Lovable Email**
+🏆 *Total do time*
+↗️ 8 | 📅 3 | 📄 2 | 🤝 1
+```
+- Botão "Copiar para WhatsApp" (deep link ou instrução)
+- Visual alinhado à paleta da marca
 
-Substituir a chamada direta ao Resend pela infraestrutura nativa do Lovable (domínio `notify.escolas.movimentocircular.io` já verificado). Isso resolve o problema de deliverability/spam no Gmail.
+### 4. Lógica de performance no `check-notifications`
 
-Passos internos:
-- Configurar infraestrutura de email (`setup_email_infra`)
-- Criar template transacional de digest matinal
-- Scaffold do `send-transactional-email`
-- Alterar `check-notifications` para invocar `send-transactional-email` em vez de chamar Resend diretamente
+Adicionar modo `"daily-performance"`:
+- Consultar `lead_activities` do dia agrupado por `user_id`
+- Contar: `stage_mudou` (avanços), `call_agendada` (agendamentos), `proposta_enviada` (propostas), `fechado` (deals)
+- Cruzar com `profiles` para nome do operador
+- Enviar via `send-transactional-email` com template `daily-performance`
 
-**4. Manter cron existente**
+### 5. Cron para performance (18h BRT = 21h UTC)
 
-O cron `check-notifications-hourly` (11h UTC = 8h BRT, seg-sex) continua igual — só muda o conteúdo e o método de envio.
+Inserir novo cron job via migração SQL:
+```sql
+SELECT cron.schedule(
+  'daily-performance-report',
+  '0 21 * * 1-5',
+  $$SELECT ... invoke check-notifications com mode=daily-performance$$
+);
+```
+
+### 6. Refinamento visual de todos os templates
+
+**Remetente**: Alterar `SITE_NAME` em `send-transactional-email/index.ts` de `"circularexperience"` para `"Muti CRM"`
+
+**Template `daily-digest.tsx`** — refinar com a paleta completa:
+- Header com faixa roxo (#5F2558) e texto branco
+- Barra de progresso turquesa (#2FB2C0)
+- Missões com cores semânticas: verde (#2FB2C0) para zero, laranja (#F4A736) para poucos, rosa (#EB626D) para 3+
+- Fundo de seções em cinza claro (#F0ECEA)
+- Botão CTA roxo (#5F2558) com hover
+- Tipografia Inter
+- Logo/marca no topo
+
+**Mesma paleta nos novos templates** (`call-scheduled-alert` e `daily-performance`).
+
+### 7. Registro no `registry.ts`
+
+Importar e registrar os 2 novos templates no mapa `TEMPLATES`.
+
+### 8. Deploy
+
+Fazer deploy de `send-transactional-email` e `check-notifications` após alterações.
+
+---
 
 ### Arquivos afetados
 
 | Arquivo | Ação |
 |---------|------|
-| `supabase/functions/check-notifications/index.ts` | Reescrever lógica de digest + migrar envio |
-| `supabase/functions/_shared/transactional-email-templates/daily-digest.tsx` | Criar template React Email |
-| `supabase/functions/_shared/transactional-email-templates/registry.ts` | Registrar novo template |
-| `supabase/functions/send-transactional-email/index.ts` | Scaffold (se não existir) |
-| Página de unsubscribe (rota no app) | Criar (requisito do sistema de email) |
+| `_shared/transactional-email-templates/call-scheduled-alert.tsx` | Criar |
+| `_shared/transactional-email-templates/daily-performance.tsx` | Criar |
+| `_shared/transactional-email-templates/daily-digest.tsx` | Refinar visual |
+| `_shared/transactional-email-templates/registry.ts` | Registrar 2 templates |
+| `supabase/functions/send-transactional-email/index.ts` | Alterar SITE_NAME para "Muti CRM" |
+| `supabase/functions/check-notifications/index.ts` | Adicionar modo daily-performance |
+| `src/components/admin/KanbanBoard.tsx` | Adicionar envio de alerta ao mover para call_agendada |
+| Migração SQL | Cron job 21h UTC seg-sex para performance |
 
