@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaigns: {
+        Row: {
+          created_at: string | null
+          ends_at: string
+          goals: Json
+          id: string
+          is_active: boolean
+          name: string
+          starts_at: string
+        }
+        Insert: {
+          created_at?: string | null
+          ends_at: string
+          goals?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          starts_at: string
+        }
+        Update: {
+          created_at?: string | null
+          ends_at?: string
+          goals?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          starts_at?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
