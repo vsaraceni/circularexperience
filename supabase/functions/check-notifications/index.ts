@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
     try {
       const body = await req.json();
       if (body?.mode === "digest") mode = "digest";
+      if (body?.mode === "daily-performance") mode = "daily-performance";
     } catch { /* no body = realtime */ }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -257,6 +258,92 @@ Deno.serve(async (req) => {
           console.log(`Digest sent to ${email}`);
         } catch (e) {
           console.error(`Error sending digest to ${email}:`, e);
+        }
+      }
+    }
+
+    // Daily performance mode: aggregate activities by operator
+    if (mode === "daily-performance") {
+      const startOfDay = todayStr + "T00:00:00Z";
+      const endOfDay = todayStr + "T23:59:59Z";
+
+      const { data: activities } = await supabase
+        .from("lead_activities")
+        .select("user_id, activity_type")
+        .gte("created_at", startOfDay)
+        .lte("created_at", endOfDay);
+
+      // Aggregate by user
+      const userStats: Record<string, { stageChanges: number; appointments: number; proposals: number; deals: number }> = {};
+      for (const a of (activities || [])) {
+        if (!a.user_id) continue;
+        if (!userStats[a.user_id]) userStats[a.user_id] = { stageChanges: 0, appointments: 0, proposals: 0, deals: 0 };
+        if (a.activity_type === "stage_mudou") userStats[a.user_id].stageChanges++;
+        if (a.activity_type === "call_agendada") userStats[a.user_id].appointments++;
+        if (a.activity_type === "proposta_enviada") userStats[a.user_id].proposals++;
+        if (a.activity_type === "fechado") userStats[a.user_id].deals++;
+      }
+
+      // Get profile names
+      const userIdsWithActivity = Object.keys(userStats);
+      const { data: operatorProfiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIdsWithActivity.length > 0 ? userIdsWithActivity : ['none']);
+
+      const profileNameMap = new Map((operatorProfiles || []).map((p: any) => [p.id, p.full_name || p.email || 'Sem nome']));
+
+      const operators = userIdsWithActivity.map(uid => ({
+        name: profileNameMap.get(uid) || 'Sem nome',
+        ...userStats[uid],
+      }));
+
+      const totalStageChanges = operators.reduce((s, o) => s + o.stageChanges, 0);
+      const totalAppointments = operators.reduce((s, o) => s + o.appointments, 0);
+      const totalProposals = operators.reduce((s, o) => s + o.proposals, 0);
+      const totalDeals = operators.reduce((s, o) => s + o.deals, 0);
+
+      const dateStr = now.toLocaleDateString("pt-BR", {
+        weekday: "long", day: "numeric", month: "long",
+        timeZone: "America/Sao_Paulo",
+      });
+
+      // Build WhatsApp text
+      let whatsappText = `📊 *Performance — ${dateStr}*\n`;
+      for (const op of operators) {
+        whatsappText += `\n👤 *${op.name}*\n`;
+        whatsappText += `↗️ Avanços: ${op.stageChanges}\n`;
+        whatsappText += `📅 Agendamentos: ${op.appointments}\n`;
+        whatsappText += `📄 Propostas: ${op.proposals}\n`;
+        whatsappText += `🤝 Deals: ${op.deals}\n`;
+      }
+      whatsappText += `\n🏆 *Total do time*\n`;
+      whatsappText += `↗️ ${totalStageChanges} | 📅 ${totalAppointments} | 📄 ${totalProposals} | 🤝 ${totalDeals}`;
+
+      // Send to all admins
+      for (const adminId of adminIds) {
+        const email = profileMap.get(adminId);
+        if (!email) continue;
+        try {
+          await supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "daily-performance",
+              recipientEmail: email,
+              idempotencyKey: `daily-perf-${adminId}-${todayStr}`,
+              templateData: {
+                operators,
+                dateStr,
+                totalStageChanges,
+                totalAppointments,
+                totalProposals,
+                totalDeals,
+                whatsappText,
+              },
+            },
+          });
+          console.log(`Performance report sent to ${email}`);
+        } catch (e) {
+          console.error(`Error sending performance to ${email}:`, e);
         }
       }
     }

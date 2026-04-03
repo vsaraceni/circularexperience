@@ -4,7 +4,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = "Circular Experience"
+const SITE_NAME = "Muti CRM"
 const CRM_URL = "https://circularexperience.lovable.app/admin/dashboard"
 
 interface Mission {
@@ -40,54 +40,60 @@ const DailyDigestEmail = ({
       </Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Header */}
-          <Heading style={h1}>☀️ Bom dia!</Heading>
-          <Text style={dateText}>{dateStr}</Text>
-
-          {/* Progress bar */}
-          <Section style={progressContainer}>
-            <Text style={progressLabel}>
-              🎯 Missões: {resolvedCount}/{totalMissions}
-            </Text>
-            <Section style={progressBarOuter}>
-              <Section style={{ ...progressBarInner, width: `${progressPercent}%` }} />
-            </Section>
+          {/* Header bar */}
+          <Section style={headerBar}>
+            <Text style={headerText}>☀️ {SITE_NAME}</Text>
           </Section>
 
-          {allResolved ? (
-            <Section style={allResolvedBox}>
-              <Heading style={allResolvedHeading}>🎉 Tudo em dia!</Heading>
-              <Text style={allResolvedText}>
-                Pipeline sem pendências. Continue assim!
-              </Text>
-            </Section>
-          ) : (
-            <Section style={missionsContainer}>
-              {missions.map((m, i) => (
-                <Section key={i} style={{
-                  ...missionRow,
-                  borderLeftColor: m.color,
-                  backgroundColor: m.count === 0 ? '#f0faf0' : m.count >= 3 ? '#fef2f2' : '#fffbeb',
-                }}>
-                  <Text style={missionLabel}>{m.label}</Text>
-                  <Text style={{ ...missionCount, color: m.color }}>
-                    {m.count === 0 ? '✅' : m.count}
-                  </Text>
-                </Section>
-              ))}
-            </Section>
-          )}
+          <Section style={contentPadding}>
+            <Heading style={h1}>Bom dia!</Heading>
+            <Text style={dateText}>{dateStr}</Text>
 
-          {!allResolved && (
-            <Section style={ctaContainer}>
-              <Button style={ctaButton} href={CRM_URL}>
-                🚀 Vamos resolver isso!
-              </Button>
+            {/* Progress bar */}
+            <Section style={progressContainer}>
+              <Text style={progressLabel}>
+                🎯 Missões: {resolvedCount}/{totalMissions}
+              </Text>
+              <Section style={progressBarOuter}>
+                <Section style={{ ...progressBarInner, width: `${progressPercent}%` }} />
+              </Section>
             </Section>
-          )}
+
+            {allResolved ? (
+              <Section style={allResolvedBox}>
+                <Heading style={allResolvedHeading}>🎉 Tudo em dia!</Heading>
+                <Text style={allResolvedText}>
+                  Pipeline sem pendências. Continue assim!
+                </Text>
+              </Section>
+            ) : (
+              <Section style={missionsContainer}>
+                {missions.map((m, i) => (
+                  <Section key={i} style={{
+                    ...missionRow,
+                    borderLeftColor: m.color,
+                    backgroundColor: m.count === 0 ? '#e8f8f5' : m.count >= 3 ? '#fef2f2' : '#fffbeb',
+                  }}>
+                    <Text style={missionLabel}>{m.label}</Text>
+                    <Text style={{ ...missionCount, color: m.count === 0 ? '#2FB2C0' : m.color }}>
+                      {m.count === 0 ? '✅' : m.count}
+                    </Text>
+                  </Section>
+                ))}
+              </Section>
+            )}
+
+            {!allResolved && (
+              <Section style={ctaContainer}>
+                <Button style={ctaButton} href={CRM_URL}>
+                  🚀 Vamos resolver isso!
+                </Button>
+              </Section>
+            )}
+          </Section>
 
           <Hr style={hr} />
-          <Text style={footer}>{SITE_NAME} CRM — Resumo matinal automático</Text>
+          <Text style={footer}>{SITE_NAME} — Resumo matinal automático</Text>
         </Container>
       </Body>
     </Html>
@@ -116,27 +122,43 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-// Styles
+// Styles — Movimento Circular palette
 const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', Arial, sans-serif" }
-const container = { padding: '32px 24px', maxWidth: '560px', margin: '0 auto' }
+const container = { padding: '0', maxWidth: '560px', margin: '0 auto' }
+
+const headerBar = {
+  backgroundColor: '#5F2558',
+  padding: '16px 24px',
+  borderRadius: '8px 8px 0 0',
+}
+const headerText = {
+  color: '#ffffff',
+  fontSize: '14px',
+  fontWeight: '600' as const,
+  margin: '0',
+  letterSpacing: '0.5px',
+}
+
+const contentPadding = { padding: '24px 24px 0' }
+
 const h1 = { fontSize: '24px', fontWeight: '700' as const, color: '#5F2558', margin: '0 0 4px' }
 const dateText = { fontSize: '13px', color: '#666', margin: '0 0 24px' }
 
 const progressContainer = { marginBottom: '24px' }
 const progressLabel = { fontSize: '13px', fontWeight: '600' as const, color: '#333', margin: '0 0 8px' }
 const progressBarOuter = {
-  width: '100%', height: '6px', backgroundColor: '#f0f0f0', borderRadius: '3px', overflow: 'hidden' as const,
+  width: '100%', height: '8px', backgroundColor: '#f0ecea', borderRadius: '4px', overflow: 'hidden' as const,
 }
 const progressBarInner = {
-  height: '6px', backgroundColor: '#2FB2C0', borderRadius: '3px', minWidth: '1px',
+  height: '8px', backgroundColor: '#2FB2C0', borderRadius: '4px', minWidth: '1px',
 }
 
 const allResolvedBox = {
-  backgroundColor: '#E8F5E9', borderRadius: '12px', padding: '24px', textAlign: 'center' as const,
-  margin: '0 0 24px',
+  backgroundColor: '#e8f8f5', borderRadius: '12px', padding: '24px', textAlign: 'center' as const,
+  margin: '0 0 24px', border: '1px solid #b2dfdb',
 }
-const allResolvedHeading = { fontSize: '20px', color: '#388E3C', margin: '0 0 8px', fontWeight: '700' as const }
-const allResolvedText = { fontSize: '14px', color: '#388E3C', margin: '0' }
+const allResolvedHeading = { fontSize: '20px', color: '#2FB2C0', margin: '0 0 8px', fontWeight: '700' as const }
+const allResolvedText = { fontSize: '14px', color: '#00796b', margin: '0' }
 
 const missionsContainer = { marginBottom: '24px' }
 const missionRow = {
@@ -154,5 +176,5 @@ const ctaButton = {
   display: 'inline-block',
 }
 
-const hr = { borderTop: '1px solid #f0ecea', margin: '24px 0', borderBottom: 'none', borderLeft: 'none', borderRight: 'none' }
-const footer = { fontSize: '11px', color: '#999', margin: '0' }
+const hr = { borderTop: '1px solid #f0ecea', margin: '0 24px', borderBottom: 'none', borderLeft: 'none', borderRight: 'none' }
+const footer = { fontSize: '11px', color: '#999', margin: '16px 24px 24px' }
