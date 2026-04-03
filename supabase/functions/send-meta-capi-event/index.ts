@@ -91,11 +91,13 @@ Deno.serve(async (req) => {
       body: JSON.stringify(payload),
     });
 
+    const metaBody = await metaRes.text();
+    console.log("Meta status:", metaRes.status);
+    console.log("Meta body:", metaBody);
+
     if (!metaRes.ok) {
-      const errText = await metaRes.text();
-      console.error("Meta CAPI error:", errText);
       return new Response(
-        JSON.stringify({ error: "Meta API error", details: errText }),
+        JSON.stringify({ error: "Meta API error", details: metaBody }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
