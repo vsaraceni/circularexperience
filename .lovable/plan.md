@@ -1,46 +1,56 @@
 
 
-## Ajustes: Roles de Usuário + Central de Templates de Email
+## Tornar Templates Transacionais Editáveis pelo Admin
 
-### Item 1 — Definir roles (admin vs usuário)
+### Problema
+Os 3 templates transacionais (Digest, Alerta, Performance) são 100% código — o admin não pode ajustar nem o texto de saudação, assunto ou CTA.
 
-**Situação atual:** Todos os 3 usuários (vinicius@movimentocircular.io, alinye@movimentocircular.io, livia@atinaedu.com.br) têm role `admin`.
+### Solução
+Criar um sistema de **overrides de texto** armazenados no banco, onde o admin edita campos-chave de cada template pela Central de Emails, sem tocar em código.
 
-**Ação:** Alterar o role de Alinye e Lívia de `admin` para `user` na tabela `user_roles`, mantendo apenas Vinicius como admin.
+### Como funciona
 
-> **Nota:** O email no banco é `vinicius@movimentocircular.io` (não `@atinaedu.com.br`). Confirme se é esse o usuário correto.
+1. **Nova tabela `email_template_overrides`**
+   - `template_name` (PK, text) — ex: `daily-digest`
+   - `overrides` (jsonb) — ex: `{"greeting": "Bom dia, time!", "cta_text": "Resolver agora"}`
+   - `updated_at` (timestamp)
 
-**Impacto:** Alinye e Lívia continuarão acessando o CRM (o `ProtectedRoute` com `requireAdmin` controla acesso). Precisaremos revisar se as rotas admin devem ser acessíveis a `user` também — caso contrário, elas perderão acesso ao Kanban. Se a intenção é que todos acessem o CRM mas só o admin veja configurações, ajustaremos o `ProtectedRoute` para permitir `user` nas rotas operacionais.
+2. **Campos editáveis por template**
 
-### Item 2 — Central de Templates de Email no dropdown do avatar
+| Template | Campos editáveis |
+|----------|-----------------|
+| daily-digest | greeting, cta_text, resolved_title, resolved_text, footer |
+| call-scheduled-alert | title, subtitle, cta_text, no_briefing_warning, footer |
+| daily-performance | title, footer |
 
-**Atualmente:** O dropdown do avatar tem um botão "Email de Boas-Vindas" que abre um editor do template de boas-vindas (salvo no banco, tabela `email_templates`).
+3. **Fluxo de envio**
+   - `send-transactional-email` e `check-notifications` buscam overrides do banco antes de renderizar
+   - Passam os overrides como props adicionais para o componente React Email
+   - Cada template usa o override se existir, senão mantém o default hardcoded
 
-**Proposta:** Substituir por um item "Configurar Emails" que abre um Dialog com abas/tabs mostrando todos os templates:
+4. **UI na Central de Emails**
+   - Substituir "Somente visualização" por formulário com os campos editáveis
+   - Cada campo mostra placeholder com o valor default do código
+   - Botão "Salvar" grava no banco
+   - Preview ao vivo: após salvar, recarrega o iframe com os novos textos
 
-| Template | Tipo | Editável? |
-|----------|------|-----------|
-| Email de Boas-Vindas | DB (`email_templates`) | Sim — editor existente |
-| Digest Matinal (Missões) | React Email (code) | Preview apenas |
-| Alerta de Proposta | React Email (code) | Preview apenas |
-| Performance Diária | React Email (code) | Preview apenas |
+5. **Preview transacional com overrides**
+   - `preview-transactional-email` também busca overrides do banco para renderizar o preview fidedigno
 
-- Os 3 templates transacionais são renderizados via a edge function `preview-transactional-email` existente, que retorna o HTML renderizado
-- Cada aba mostra o preview em iframe + informações (assunto, destinatário, gatilho)
-- O template de boas-vindas mantém o editor atual completo
-
-### Detalhes técnicos
-
-**Arquivos afetados:**
+### Arquivos afetados
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/admin/EmailTemplateEditor.tsx` | Refatorar: transformar em central de emails com Tabs |
-| `src/pages/admin/Proposals.tsx` | Trocar label do menu de "Email de Boas-Vindas" para "Configurar Emails" |
-| Dados `user_roles` | UPDATE para mudar roles de Alinye e Lívia |
+| Migração SQL | Criar tabela `email_template_overrides` com RLS |
+| `daily-digest.tsx` | Aceitar props de override com fallback |
+| `call-scheduled-alert.tsx` | Aceitar props de override com fallback |
+| `daily-performance.tsx` | Aceitar props de override com fallback |
+| `send-transactional-email/index.ts` | Buscar overrides do banco antes de render |
+| `check-notifications/index.ts` | Buscar overrides e passar como templateData |
+| `preview-transactional-email/index.ts` | Buscar overrides para preview |
+| `src/components/admin/EmailTemplateEditor.tsx` | Formulário de edição por template |
 
-**Lógica do preview transacional:**
-- Chamar `supabase.functions.invoke('preview-transactional-email', { body: { templateName } })` para cada template
-- Exibir o HTML retornado em um iframe sandboxed
-- Mostrar metadados: subject, destinatário padrão, descrição do gatilho
+### Segurança
+- Somente `admin` pode ler/escrever na tabela de overrides (RLS com `has_role`)
+- Valores são escapados automaticamente pelo React (sem `dangerouslySetInnerHTML`)
 
