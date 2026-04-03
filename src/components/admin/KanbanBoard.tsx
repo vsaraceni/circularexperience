@@ -206,6 +206,35 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         content: `Movido de ${STAGE_LABELS[oldStage]} para ${STAGE_LABELS[newStage]}`,
       });
 
+      // Send proposal alert email when moving to call_agendada (fire-and-forget)
+      if (newStage === "call_agendada") {
+        (async () => {
+          try {
+            const ownerId = lead.assigned_to || userId;
+            const { data: ownerProfile } = await supabase.from("profiles").select("email").eq("id", ownerId).single();
+            if (ownerProfile?.email) {
+              supabase.functions.invoke("send-transactional-email", {
+                body: {
+                  templateName: "call-scheduled-alert",
+                  recipientEmail: ownerProfile.email,
+                  idempotencyKey: `call-alert-${leadId}-${Date.now()}`,
+                  templateData: {
+                    leadName: lead.name,
+                    company: lead.company || '',
+                    cargo: lead.cargo || '',
+                    telefone: lead.telefone || '',
+                    email: lead.email,
+                    workEmail: lead.work_email || '',
+                    briefingNotes: lead.briefing_notes || '',
+                    leadId: lead.id,
+                  },
+                },
+              }).catch(e => console.error("Call alert email error:", e));
+            }
+          } catch (e) { console.error("Call alert email error:", e); }
+        })();
+      }
+
       // Send Meta CAPI event for tracked stages (fire-and-forget)
       if (newStage === "call_agendada" || newStage === "fechado") {
         console.log("CAPI disparado para lead:", lead.email, newStage);
