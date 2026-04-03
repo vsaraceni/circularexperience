@@ -218,6 +218,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             fb_lead_id: lead.fb_lead_id || undefined,
             stage: newStage,
           },
+        }).then((response) => {
+          console.log("CAPI response:", JSON.stringify(response));
         }).catch((err) => console.error("Meta CAPI error:", err));
       }
 
@@ -315,6 +317,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         console.log("CAPI disparado para lead:", lead.email, "call_agendada");
         supabase.functions.invoke("send-meta-capi-event", {
           body: { lead_id: lead.id, email: lead.email, work_email: lead.work_email || undefined, telefone: lead.telefone || undefined, fb_lead_id: lead.fb_lead_id || undefined, stage: "call_agendada" },
+        }).then((response) => {
+          console.log("CAPI response:", JSON.stringify(response));
         }).catch((err) => console.error("Meta CAPI error:", err));
         toast.success("Call agendada!");
         onLeadUpdated();
@@ -347,6 +351,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         console.log("CAPI disparado para lead:", lead.email, "fechado");
         supabase.functions.invoke("send-meta-capi-event", {
           body: { lead_id: lead.id, email: lead.email, work_email: lead.work_email || undefined, telefone: lead.telefone || undefined, fb_lead_id: lead.fb_lead_id || undefined, stage: "fechado" },
+        }).then((response) => {
+          console.log("CAPI response:", JSON.stringify(response));
         }).catch((err) => console.error("Meta CAPI error:", err));
         toast.success("Lead fechado! 🎉");
         onLeadUpdated();
