@@ -97,7 +97,7 @@ function parseInvestment(text: string | null): number {
 
 export function useStrategicDashboard() {
   const [leads, setLeads] = useState<DashboardLead[]>([]);
-  const [activities, setActivities] = useState<DashboardActivity[]>([]);
+  const [, setActivities] = useState<DashboardActivity[]>([]);
   const [profiles, setProfiles] = useState<DashboardProfile[]>([]);
   const [proposals, setProposals] = useState<DashboardProposal[]>([]);
   const [followUps, setFollowUps] = useState<{ lead_id: string; due_date: string; completed: boolean }[]>([]);
