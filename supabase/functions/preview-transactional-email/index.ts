@@ -77,8 +77,12 @@ Deno.serve(async (req) => {
     }
 
     try {
+      const previewDataWithOverrides = { ...entry.previewData }
+      if (allOverrides[name]) {
+        previewDataWithOverrides.overrides = allOverrides[name]
+      }
       const html = await renderAsync(
-        React.createElement(entry.component, entry.previewData)
+        React.createElement(entry.component, previewDataWithOverrides)
       )
       const resolvedSubject =
         typeof entry.subject === 'function'
