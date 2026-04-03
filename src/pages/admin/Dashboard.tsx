@@ -66,6 +66,10 @@ interface Proposal {
   status: string;
 }
 
+const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
+const isTestEmail = (email: string) =>
+  TEST_DOMAINS.some((d) => email.toLowerCase().endsWith(d));
+
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
