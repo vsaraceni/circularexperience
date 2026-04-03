@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -12,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mail, Eye, Send, Clock, BarChart3 } from "lucide-react";
+import { Mail, Eye, Send, Clock, BarChart3, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 
@@ -30,12 +31,20 @@ const VARIABLES_SIGNATURE = [
   { key: "{{sender_phone}}", label: "Telefone do admin" },
 ];
 
+interface EditableField {
+  label: string;
+  default: string;
+  placeholder: string;
+}
+
 interface TransactionalPreview {
   templateName: string;
   displayName: string;
   subject: string;
   html: string;
   status: string;
+  editableFields?: Record<string, EditableField>;
+  currentOverrides?: Record<string, any>;
 }
 
 const TRANSACTIONAL_META: Record<string, { icon: React.ReactNode; trigger: string; recipient: string }> = {
@@ -70,6 +79,9 @@ const EmailTemplateEditor = () => {
   });
   const [transactionalPreviews, setTransactionalPreviews] = useState<TransactionalPreview[]>([]);
   const [loadingPreviews, setLoadingPreviews] = useState(false);
+  // Override form state per template
+  const [overrideForms, setOverrideForms] = useState<Record<string, Record<string, string>>>({});
+  const [savingOverride, setSavingOverride] = useState<string | null>(null);
 
   const fetchTemplate = async () => {
     setLoading(true);
@@ -101,6 +113,17 @@ const EmailTemplateEditor = () => {
       });
       if (!error && data?.templates) {
         setTransactionalPreviews(data.templates);
+        // Initialize override forms from currentOverrides
+        const forms: Record<string, Record<string, string>> = {};
+        for (const t of data.templates) {
+          if (t.editableFields) {
+            forms[t.templateName] = {};
+            for (const [key, field] of Object.entries(t.editableFields as Record<string, EditableField>)) {
+              forms[t.templateName][key] = t.currentOverrides?.[key] || "";
+            }
+          }
+        }
+        setOverrideForms(forms);
       }
     } catch (err) {
       console.error("Failed to load transactional previews", err);
@@ -137,6 +160,65 @@ const EmailTemplateEditor = () => {
     } else {
       toast.success("Template de email atualizado!");
     }
+  };
+
+  const handleSaveOverride = async (templateName: string) => {
+    setSavingOverride(templateName);
+    const formData = overrideForms[templateName] || {};
+    // Only save non-empty values
+    const overrides: Record<string, string> = {};
+    for (const [key, value] of Object.entries(formData)) {
+      if (value && value.trim()) {
+        overrides[key] = value.trim();
+      }
+    }
+
+    const { error } = await supabase
+      .from("email_template_overrides" as any)
+      .upsert({
+        template_name: templateName,
+        overrides,
+        updated_at: new Date().toISOString(),
+      } as any, { onConflict: "template_name" });
+
+    setSavingOverride(null);
+    if (error) {
+      toast.error("Erro ao salvar personalização");
+      console.error(error);
+    } else {
+      toast.success("Personalização salva! O preview será atualizado.");
+      // Refresh previews to show updated content
+      fetchTransactionalPreviews();
+    }
+  };
+
+  const handleResetOverride = async (templateName: string) => {
+    // Clear form
+    const preview = transactionalPreviews.find(p => p.templateName === templateName);
+    if (preview?.editableFields) {
+      const cleared: Record<string, string> = {};
+      for (const key of Object.keys(preview.editableFields)) {
+        cleared[key] = "";
+      }
+      setOverrideForms(prev => ({ ...prev, [templateName]: cleared }));
+    }
+    // Delete from DB
+    await supabase
+      .from("email_template_overrides" as any)
+      .delete()
+      .eq("template_name", templateName);
+    toast.info("Textos restaurados para o padrão.");
+    fetchTransactionalPreviews();
+  };
+
+  const setOverrideField = (templateName: string, key: string, value: string) => {
+    setOverrideForms(prev => ({
+      ...prev,
+      [templateName]: {
+        ...(prev[templateName] || {}),
+        [key]: value,
+      },
+    }));
   };
 
   const set = (key: string, value: string) =>
@@ -243,10 +325,12 @@ const EmailTemplateEditor = () => {
             )}
           </TabsContent>
 
-          {/* Transactional email previews */}
+          {/* Transactional email tabs with editable fields */}
           {["daily-digest", "call-scheduled-alert", "daily-performance"].map((templateName) => {
             const preview = transactionalPreviews.find((p) => p.templateName === templateName);
             const meta = TRANSACTIONAL_META[templateName];
+            const fields = preview?.editableFields;
+            const formValues = overrideForms[templateName] || {};
 
             return (
               <TabsContent key={templateName} value={templateName}>
@@ -256,15 +340,13 @@ const EmailTemplateEditor = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Meta info */}
                     <div className="rounded-lg border p-3" style={{ background: 'hsl(var(--color-bg-subtle))', borderColor: 'hsl(var(--color-border))' }}>
                       <div className="flex items-center gap-2 text-sm font-medium mb-2">
                         {meta?.icon}
                         <span style={{ color: 'hsl(var(--color-brand))' }}>
                           {preview?.displayName || templateName}
                         </span>
-                        <Badge variant="outline" className="ml-auto text-xs">
-                          <Eye className="h-3 w-3 mr-1" /> Somente visualização
-                        </Badge>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                         <div><strong>Gatilho:</strong> {meta?.trigger}</div>
@@ -277,8 +359,62 @@ const EmailTemplateEditor = () => {
                       )}
                     </div>
 
+                    {/* Editable fields */}
+                    {fields && Object.keys(fields).length > 0 && (
+                      <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold flex items-center gap-1.5">
+                            ✏️ Personalizar textos
+                          </Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs h-7 text-muted-foreground"
+                            onClick={() => handleResetOverride(templateName)}
+                          >
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            Restaurar padrão
+                          </Button>
+                        </div>
+                        {Object.entries(fields).map(([key, field]) => (
+                          <div key={key} className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">{field.label}</Label>
+                            {field.default.length > 60 ? (
+                              <Textarea
+                                value={formValues[key] || ""}
+                                onChange={(e) => setOverrideField(templateName, key, e.target.value)}
+                                placeholder={field.placeholder}
+                                className="text-sm min-h-[60px]"
+                              />
+                            ) : (
+                              <Input
+                                value={formValues[key] || ""}
+                                onChange={(e) => setOverrideField(templateName, key, e.target.value)}
+                                placeholder={field.placeholder}
+                                className="text-sm"
+                              />
+                            )}
+                          </div>
+                        ))}
+                        <Button
+                          onClick={() => handleSaveOverride(templateName)}
+                          disabled={savingOverride === templateName}
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Save className="h-4 w-4 mr-1" />
+                          {savingOverride === templateName ? "Salvando..." : "Salvar personalização"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Preview iframe */}
                     {preview?.status === "ready" && preview.html ? (
                       <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <div className="bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5 border-b" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                          <Eye className="h-3 w-3" />
+                          Preview ao vivo
+                        </div>
                         <iframe
                           srcDoc={preview.html}
                           title={`Preview: ${preview.displayName}`}
@@ -296,10 +432,6 @@ const EmailTemplateEditor = () => {
                         Preview não disponível para este template.
                       </div>
                     )}
-
-                    <div className="rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
-                      Este template é gerenciado por código. Para alterações, entre em contato com o desenvolvedor.
-                    </div>
                   </div>
                 )}
               </TabsContent>
