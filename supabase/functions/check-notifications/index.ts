@@ -15,6 +15,7 @@ Deno.serve(async (req) => {
     try {
       const body = await req.json();
       if (body?.mode === "digest") mode = "digest";
+      if (body?.mode === "daily-performance") mode = "daily-performance";
     } catch { /* no body = realtime */ }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
