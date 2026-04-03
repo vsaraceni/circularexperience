@@ -290,6 +290,7 @@ export type Database = {
           kanban_stage: string
           last_activity_at: string | null
           linkedin_added: boolean | null
+          lost_at_stage: string | null
           lost_notes: string | null
           lost_reason: string | null
           mensagem: string | null
@@ -326,6 +327,7 @@ export type Database = {
           kanban_stage?: string
           last_activity_at?: string | null
           linkedin_added?: boolean | null
+          lost_at_stage?: string | null
           lost_notes?: string | null
           lost_reason?: string | null
           mensagem?: string | null
@@ -362,6 +364,7 @@ export type Database = {
           kanban_stage?: string
           last_activity_at?: string | null
           linkedin_added?: boolean | null
+          lost_at_stage?: string | null
           lost_notes?: string | null
           lost_reason?: string | null
           mensagem?: string | null
