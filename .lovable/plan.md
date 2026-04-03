@@ -1,35 +1,69 @@
 
 
-## Ajustes no Painel: Remover Pipeline + Corrigir KPI "Em Contato"
+## Corrigir KPI "Em Contato" — incluir leads perdidos que passaram de boas-vindas
 
-### Problema 1 — "Linha" Pipeline
-A seção "Pipeline" com os 7 cards de estágio (Novo, Boas-Vindas, etc.) será removida do painel.
+### Problema raiz
 
-### Problema 2 — KPI "Em Contato" inconsistente com Funil
-A discrepância (61% vs 71%) ocorre porque:
-- **KPI** filtra leads pelo período da campanha (`created_at` entre datas)
-- **Funil** usa TODOS os leads ativos (sem filtro de campanha)
+Quando um lead é marcado como "perdido", o `kanban_stage` vira `"perdido"` e perdemos o registro de qual estágio ele estava antes. Resultado: leads que estavam em `em_contato` e foram perdidos não contam no KPI "Em Contato", gerando números inconsistentes entre KPI e funil.
 
-Bases diferentes = números diferentes. A correção: **o funil também deve usar os leads filtrados pela campanha ativa**, garantindo que KPI e funil falem do mesmo universo de dados.
+O que o usuário quer medir: **quantos leads "fisgamos" após boas-vindas** — incluindo os que depois foram perdidos.
 
-### Mudanças
+### Solução
 
-**`src/pages/admin/StrategicDashboard.tsx`**
-- Remover toda a seção "Pipeline" (linhas ~131-185 com `STAGES_META`, grid de cards, health bars)
-- Remover o array `STAGES_META` no topo (não mais necessário)
+**1. Novo campo `lost_at_stage` na tabela `leads`** (migração SQL)
 
-**`src/hooks/useStrategicDashboard.ts`**
-- Alterar o cálculo do `funnelData` para usar `campaignLeads` (quando campanha ativa) ao invés de `activeLeads + lostLeads`
-- Isso alinha o denominador do funil com os KPIs da campanha
+```sql
+ALTER TABLE leads ADD COLUMN lost_at_stage text;
+```
 
-### Resultado esperado
-- KPI "Em Contato" e Funil "Em Contato" mostrarão a mesma base de cálculo
-- Seção Pipeline removida — espaço mais limpo para os dados relevantes
+Backfill dos leads já perdidos usando `lead_activities`:
+```sql
+UPDATE leads SET lost_at_stage = sub.prev_stage
+FROM (
+  SELECT la.lead_id,
+    (SELECT la2.content FROM lead_activities la2 
+     WHERE la2.lead_id = la.lead_id AND la2.activity_type = 'stage_change' 
+     AND la2.created_at < la.created_at 
+     ORDER BY la2.created_at DESC LIMIT 1) as prev_stage
+  FROM lead_activities la
+  WHERE la.activity_type = 'perdido'
+) sub
+WHERE leads.id = sub.lead_id AND leads.kanban_stage = 'perdido' AND leads.lost_at_stage IS NULL;
+```
+
+Se não houver `stage_change` no histórico, fallback: marcar como `boas_vindas` (estágio mínimo para perda).
+
+**2. Salvar `lost_at_stage` ao marcar como perdido** (`KanbanBoard.tsx`)
+
+Na função `handleLostConfirm`, adicionar `lost_at_stage: lostLead.kanban_stage` no update.
+
+**3. Refatorar KPIs e Funil** (`useStrategicDashboard.ts`)
+
+Helper unificado para determinar o "estágio máximo alcançado" por um lead:
+
+```typescript
+function maxReachedStage(lead): string {
+  if (lead.kanban_stage === "perdido") return lead.lost_at_stage || "boas_vindas";
+  return lead.kanban_stage;
+}
+```
+
+Todos os cálculos (KPI summary + funnel) usam `maxReachedStage` ao invés de `kanban_stage` direto:
+
+| KPI | Numerador | Denominador |
+|-----|-----------|-------------|
+| Em Contato | leads cujo maxReached ≥ em_contato | total leads campanha |
+| Agendamentos | leads cujo maxReached ≥ call_agendada | leads cujo maxReached ≥ em_contato |
+| Propostas | leads cujo maxReached ≥ proposta | leads cujo maxReached ≥ call_agendada |
+
+O funil também usa `maxReachedStage`, eliminando o filtro `status !== "lost"`. Perdidos são incluídos no universo e contam na fase que alcançaram.
 
 ### Arquivos afetados
 
 | Arquivo | Ação |
 |---------|------|
-| `src/pages/admin/StrategicDashboard.tsx` | Remover seção Pipeline e `STAGES_META` |
-| `src/hooks/useStrategicDashboard.ts` | Funil usa `campaignLeads` ao invés de todos os leads |
+| Migração SQL | Adicionar coluna `lost_at_stage`, backfill existentes |
+| `src/components/admin/KanbanBoard.tsx` | Salvar `lost_at_stage` ao marcar perdido |
+| `src/hooks/useStrategicDashboard.ts` | Helper `maxReachedStage`, refatorar KPIs e funil para usar mesma lógica |
+| `src/integrations/supabase/types.ts` | Auto-atualizado |
 
