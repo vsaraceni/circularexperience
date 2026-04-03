@@ -1,56 +1,77 @@
 
 
-## Tornar Templates Transacionais Editáveis pelo Admin
+## Reestruturar Navegação CRM — 4 Módulos com Hamburger no Mobile
 
-### Problema
-Os 3 templates transacionais (Digest, Alerta, Performance) são 100% código — o admin não pode ajustar nem o texto de saudação, assunto ou CTA.
+### Arquitetura
 
-### Solução
-Criar um sistema de **overrides de texto** armazenados no banco, onde o admin edita campos-chave de cada template pela Central de Emails, sem tocar em código.
+4 módulos independentes com rotas próprias. Desktop: ícones com tooltips na navbar. Mobile: menu hamburger (Sheet) que maximiza a tela para o Kanban.
 
-### Como funciona
+```text
+Desktop (≥768px):
+┌──────────────────────────────────────────────────────────────┐
+│ [Logo] [🔲] [📋] [📊] [⚡]          [🔔] [Avatar ▾]       │
+└──────────────────────────────────────────────────────────────┘
 
-1. **Nova tabela `email_template_overrides`**
-   - `template_name` (PK, text) — ex: `daily-digest`
-   - `overrides` (jsonb) — ex: `{"greeting": "Bom dia, time!", "cta_text": "Resolver agora"}`
-   - `updated_at` (timestamp)
+Mobile (<768px):
+┌──────────────────────────────────────┐
+│ [☰]  [Logo]            [🔔] [Avatar]│
+└──────────────────────────────────────┘
+  ↑ abre Sheet com links dos 4 módulos
+```
 
-2. **Campos editáveis por template**
+### Módulos e rotas
 
-| Template | Campos editáveis |
-|----------|-----------------|
-| daily-digest | greeting, cta_text, resolved_title, resolved_text, footer |
-| call-scheduled-alert | title, subtitle, cta_text, no_briefing_warning, footer |
-| daily-performance | title, footer |
+| Rota | Módulo | Ícone | Conteúdo |
+|------|--------|-------|----------|
+| `/admin/pipeline` | Pipeline | `LayoutGrid` | Kanban + filtros + missões (extraído de Proposals.tsx) |
+| `/admin/propostas` | Propostas | `FileText` | Lista de propostas com tabs |
+| `/admin/dashboard` | Dashboard | `BarChart3` | Dashboard analítico |
+| `/painel` | Painel | `Activity` | Painel estratégico |
 
-3. **Fluxo de envio**
-   - `send-transactional-email` e `check-notifications` buscam overrides do banco antes de renderizar
-   - Passam os overrides como props adicionais para o componente React Email
-   - Cada template usa o override se existir, senão mantém o default hardcoded
+### Mudanças
 
-4. **UI na Central de Emails**
-   - Substituir "Somente visualização" por formulário com os campos editáveis
-   - Cada campo mostra placeholder com o valor default do código
-   - Botão "Salvar" grava no banco
-   - Preview ao vivo: após salvar, recarrega o iframe com os novos textos
+**1. Criar `src/components/admin/CrmNavbar.tsx`**
+- Desktop: Logo + 4 botões ícone (Tooltip) + NotificationBell + Avatar dropdown (com Perfil, Emails, Site, Sair)
+- Mobile: Logo + hamburger (Sheet lateral com 4 links + ações) + NotificationBell + Avatar compacto
+- Props: `currentModule`, children opcionais para ações contextuais (ex: botão "Nova Proposta")
+- Botão ativo: `bg-brand` + `text-white`
 
-5. **Preview transacional com overrides**
-   - `preview-transactional-email` também busca overrides do banco para renderizar o preview fidedigno
+**2. Criar `src/pages/admin/Pipeline.tsx`**
+- Extrair do Proposals.tsx: todo o state de leads, kanban, filtros, sort, MissionsBanner, KanbanBoard, lost leads
+- Usa CrmNavbar com `currentModule="pipeline"`
+- Layout full-height (h-screen) sem scroll — prioridade mobile: kanban ocupa tela toda
+- Mobile: navbar mínima (hamburger + logo), sem barra de filtros visível por padrão (filtros dentro de popover/sheet)
+
+**3. Simplificar `src/pages/admin/Proposals.tsx`**
+- Remove kanban, leads state, viewMode toggle, filtros de lead
+- Mantém: lista de propostas (tabs rascunhos/enviadas), form, handleSave/Delete/StatusChange
+- Usa CrmNavbar com `currentModule="propostas"`
+
+**4. Atualizar `src/pages/admin/Dashboard.tsx`**
+- Substituir header custom por CrmNavbar com `currentModule="dashboard"`
+
+**5. Atualizar `src/pages/admin/StrategicDashboard.tsx`**
+- Substituir header custom por CrmNavbar com `currentModule="painel"`
+
+**6. Atualizar `src/App.tsx`**
+- Adicionar rota `/admin/pipeline` (ProtectedRoute)
+- Manter `/admin/propostas` apontando para Proposals simplificado
+
+### Mobile — Kanban prioritário
+
+- Navbar compacta: h-12, hamburger à esquerda, logo centralizado, notificação + avatar à direita
+- Sheet do hamburger: links dos 4 módulos + Perfil + Sair
+- Pipeline mobile: barra de filtros/sort colapsa em um único botão (popover)
+- Conteúdo do kanban usa `calc(100vh - 48px)` para maximizar espaço
 
 ### Arquivos afetados
 
 | Arquivo | Ação |
 |---------|------|
-| Migração SQL | Criar tabela `email_template_overrides` com RLS |
-| `daily-digest.tsx` | Aceitar props de override com fallback |
-| `call-scheduled-alert.tsx` | Aceitar props de override com fallback |
-| `daily-performance.tsx` | Aceitar props de override com fallback |
-| `send-transactional-email/index.ts` | Buscar overrides do banco antes de render |
-| `check-notifications/index.ts` | Buscar overrides e passar como templateData |
-| `preview-transactional-email/index.ts` | Buscar overrides para preview |
-| `src/components/admin/EmailTemplateEditor.tsx` | Formulário de edição por template |
-
-### Segurança
-- Somente `admin` pode ler/escrever na tabela de overrides (RLS com `has_role`)
-- Valores são escapados automaticamente pelo React (sem `dangerouslySetInnerHTML`)
+| `src/components/admin/CrmNavbar.tsx` | Criar |
+| `src/pages/admin/Pipeline.tsx` | Criar (extrair de Proposals) |
+| `src/pages/admin/Proposals.tsx` | Simplificar |
+| `src/pages/admin/Dashboard.tsx` | Trocar header |
+| `src/pages/admin/StrategicDashboard.tsx` | Trocar header |
+| `src/App.tsx` | Nova rota `/admin/pipeline` |
 
