@@ -36,6 +36,21 @@ Deno.serve(async (req) => {
     })
   }
 
+  // Fetch all overrides from DB
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  let allOverrides: Record<string, Record<string, any>> = {}
+  if (supabaseUrl && supabaseServiceKey) {
+    const { createClient } = await import('npm:@supabase/supabase-js@2')
+    const sb = createClient(supabaseUrl, supabaseServiceKey)
+    const { data: rows } = await sb.from('email_template_overrides').select('template_name, overrides')
+    if (rows) {
+      for (const r of rows) {
+        allOverrides[r.template_name] = r.overrides as Record<string, any>
+      }
+    }
+  }
+
   const templateNames = Object.keys(TEMPLATES)
   const results: Array<{
     templateName: string
@@ -44,6 +59,8 @@ Deno.serve(async (req) => {
     html: string
     status: 'ready' | 'preview_data_required' | 'render_failed'
     errorMessage?: string
+    editableFields?: Record<string, { label: string; default: string; placeholder: string }>
+    currentOverrides?: Record<string, any>
   }> = []
 
   for (const name of templateNames) {
@@ -62,8 +79,12 @@ Deno.serve(async (req) => {
     }
 
     try {
+      const previewDataWithOverrides = { ...entry.previewData }
+      if (allOverrides[name]) {
+        previewDataWithOverrides.overrides = allOverrides[name]
+      }
       const html = await renderAsync(
-        React.createElement(entry.component, entry.previewData)
+        React.createElement(entry.component, previewDataWithOverrides)
       )
       const resolvedSubject =
         typeof entry.subject === 'function'
@@ -76,6 +97,8 @@ Deno.serve(async (req) => {
         subject: resolvedSubject,
         html,
         status: 'ready',
+        editableFields: entry.editableFields,
+        currentOverrides: allOverrides[name] || {},
       })
     } catch (err) {
       console.error('Failed to render template for preview', {

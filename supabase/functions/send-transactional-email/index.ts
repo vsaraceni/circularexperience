@@ -282,7 +282,18 @@ Deno.serve(async (req) => {
     )
   }
 
-  // 4. Render React Email template to HTML and plain text
+  // 4. Fetch overrides from DB and merge into templateData
+  const { data: overrideRow } = await supabase
+    .from('email_template_overrides')
+    .select('overrides')
+    .eq('template_name', templateName)
+    .maybeSingle()
+
+  if (overrideRow?.overrides && typeof overrideRow.overrides === 'object') {
+    templateData.overrides = overrideRow.overrides
+  }
+
+  // 5. Render React Email template to HTML and plain text
   const html = await renderAsync(
     React.createElement(template.component, templateData)
   )

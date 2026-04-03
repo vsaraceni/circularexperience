@@ -77,6 +77,24 @@ export type Database = {
         }
         Relationships: []
       }
+      email_template_overrides: {
+        Row: {
+          overrides: Json
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          overrides?: Json
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          overrides?: Json
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_html: string
