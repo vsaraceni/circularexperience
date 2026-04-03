@@ -323,8 +323,10 @@ export function useStrategicDashboard() {
       novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
       call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado",
     };
-    // Use campaign-filtered leads when a campaign is active, otherwise all leads
-    const funnelLeads = activeCampaign ? campaignLeads : [...activeLeads, ...lostLeads];
+    // Use campaign-filtered leads (excluding lost) when a campaign is active, otherwise all leads
+    const funnelLeads = activeCampaign
+      ? campaignLeads.filter((l) => l.status !== "lost")
+      : [...activeLeads, ...lostLeads];
     const reachedStage = (stage: string) => {
       const idx = stageOrder.indexOf(stage);
       return funnelLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length;
