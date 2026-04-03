@@ -67,7 +67,6 @@ interface Proposal {
 }
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [submissions, setSubmissions] = useState<{ id: string }[]>([]);
