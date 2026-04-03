@@ -1,71 +1,40 @@
 
 
-## Avaliação Estratégica — Dashboard Estratégico Comercial
+## Conectar CRM ao Meta Ads — Edge Function `send-meta-capi-event`
 
-### Estado atual vs PRD
+### O que será feito
 
-O Dashboard atual (`Dashboard.tsx`, 358 linhas) é um painel de relatórios simples com gráficos de barras/pizza estáticos. O PRD pede um **cockpit operacional em tempo real** — são sistemas fundamentalmente diferentes. Recomendo criar uma **nova página** (`/painel`) em vez de reescrever o Dashboard existente.
+Uma edge function que envia eventos de conversão para o Meta (Facebook) Conversions API quando um lead avança para "Call Agendada" ou "Fechado", permitindo otimizar campanhas com base em dados reais do CRM.
 
-### Gaps de infraestrutura identificados
+### Migration necessária
 
-Antes de construir o dashboard, há lacunas que precisam ser resolvidas:
+Adicionar 2 colunas na tabela `leads`:
+- `meta_last_event_sent` (text, nullable)
+- `meta_last_event_at` (timestamptz, nullable)
 
-| Gap | Situação atual | Necessário |
-|-----|---------------|------------|
-| SLAs | Hardcoded em `UrgencyBadge.tsx` | PRD diz "ler do Supabase". Opção: manter hardcoded (já funciona) ou migrar para tabela `sla_config` |
-| Papel SDR/Closer | Não existe no DB | Precisa de campo `role_label` e `badge` em `profiles` para identificar quem é SDR vs Closer |
-| Valor de proposta | Campo `investment` em `proposals` (texto livre, ex: "R$ 15.000") | Funciona, mas parsing é frágil — já existe lógica no Dashboard atual |
-| Realtime | Não usado no Dashboard atual | Precisa de subscription em `leads` e `lead_activities` |
-| Protocolo BV completo | Eventos já rastreados: `welcome_enviado`, `linkedin_adicionado`, `whatsapp_enviado` | Basta consultar `lead_activities` por lead |
+### Edge Function: `supabase/functions/send-meta-capi-event/index.ts`
 
-### Recomendação: SLAs hardcoded vs tabela
+- CORS headers padrão
+- Valida body (lead_id, email, stage obrigatórios)
+- Filtra stages: só "Call Agendada" → `Schedule` (value 0) e "Fechado" → `Purchase` (value 14900)
+- SHA-256 via `crypto.subtle.digest` nativo do Deno para email, work_email, telefone
+- POST para `https://graph.facebook.com/v18.0/1614314956387976/events` com `META_ACCESS_TOKEN`
+- PATCH na tabela `leads` via Supabase client (service role) para registrar `meta_last_event_sent` e `meta_last_event_at`
+- Retorna `{ success: true, event_name }`
 
-O PRD insiste em "ler do Supabase", mas os SLAs já estão hardcoded e funcionam bem no Kanban. Criar uma tabela `sla_config` adicionaria complexidade sem ganho real (vocês são 3 pessoas, não vão mudar SLAs com frequência). **Recomendo manter hardcoded** e importar `SLA_CONFIG` de `UrgencyBadge.tsx` no dashboard — uma única fonte de verdade no código.
+### Secret
 
-### Estratégia de implementação em 3 fases
+`META_ACCESS_TOKEN` já existe nos secrets do projeto — não precisa adicionar.
 
-**Fase 1 — Estrutura + Pipeline + Health Score** (maior valor, entregável independente)
-- Nova rota `/painel` com página `StrategicDashboard.tsx`
-- Header roxo com Health Score (anel circular), velocity do dia, badge de alertas
-- Faixa de 7 cartões de pipeline com contagem + barra de saúde
-- Realtime subscription em `leads` e `lead_activities`
-- Migration: adicionar `role_label` e `badge_initials` em `profiles`
+### Integração no CRM
 
-**Fase 2 — Painéis SDR/Closer + Alertas**
-- Coluna de alertas automáticos (6 regras do PRD)
-- Painel SDR com SLA Compliance, Taxa de Ativação, Protocolo Completo
-- Painel Closer com conversões, valor em Nutrição, aging
-- Ações prioritárias prescritivas no rodapé de cada painel
+Chamar `supabase.functions.invoke("send-meta-capi-event", { body })` no momento em que o lead muda de stage no Kanban (dentro de `Dashboard.tsx` ou `KanbanBoard.tsx`, no handler de drag/drop ou mudança de coluna).
 
-**Fase 3 — Funil de conversão + Ações do dia**
-- Gráfico de barras horizontal com taxas de conversão entre etapas
-- Seletor de período (Hoje / 7d / 30d)
-- Lista de ações do dia geradas automaticamente
-- Navegação: clicar em alerta/ação → CRM filtrado
+### Resumo de arquivos
 
-### Complexidade estimada
-
-| Componente | Linhas aprox. | Queries Supabase |
-|------------|--------------|-----------------|
-| Header + Health Score | ~200 | leads + activities (7d) |
-| Pipeline cards | ~150 | leads (já carregado) |
-| Alertas | ~200 | activities + leads |
-| Painel SDR | ~200 | activities filtradas |
-| Painel Closer | ~200 | activities + proposals |
-| Funil + Ações | ~250 | activities por período |
-| Hooks/utils | ~150 | — |
-| **Total** | **~1350** | 3-4 queries + Realtime |
-
-### Pergunta crítica antes de começar
-
-O PRD referencia nomes de pessoas (Lívia = SDR, Alinye = Closer) e badges (LL, AL, VS). Hoje o `profiles` não tem essa informação. Duas opções:
-
-1. **Hardcodar** os nomes/badges no código (rápido, frágil)
-2. **Adicionar campos** `role_label` e `badge_initials` na tabela `profiles` (correto, requer migration + preenchimento manual)
-
-Recomendo opção 2 — é uma migration simples e torna o dashboard dinâmico.
-
-### Próximo passo sugerido
-
-Aprovar a estratégia geral e começar pela **Fase 1** — que já entrega valor visual e operacional significativo, e serve como fundação para as fases seguintes.
+| Arquivo | Ação |
+|---------|------|
+| `supabase/functions/send-meta-capi-event/index.ts` | Criar |
+| Migration | Adicionar `meta_last_event_sent`, `meta_last_event_at` em `leads` |
+| `src/pages/admin/Dashboard.tsx` ou `KanbanBoard.tsx` | Invocar a function ao mudar stage |
 
