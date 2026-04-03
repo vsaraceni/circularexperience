@@ -312,6 +312,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
           activity_type: "call_agendada", content: "Call agendada via Google Calendar",
         });
         // Meta CAPI — fire-and-forget
+        console.log("CAPI disparado para lead:", lead.email, "call_agendada");
         supabase.functions.invoke("send-meta-capi-event", {
           body: { lead_id: lead.id, email: lead.email, work_email: lead.work_email || undefined, telefone: lead.telefone || undefined, fb_lead_id: lead.fb_lead_id || undefined, stage: "call_agendada" },
         }).catch((err) => console.error("Meta CAPI error:", err));
