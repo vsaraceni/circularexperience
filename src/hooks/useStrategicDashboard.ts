@@ -46,35 +46,74 @@ export interface DashboardProposal {
   status: string;
 }
 
-export type AlertType = "sla_critical" | "no_activity" | "stale_proposal" | "call_no_briefing" | "overdue_followup" | "protocol_incomplete";
+export interface CampaignGoals {
+  em_contato_pct: number;
+  agendamentos_pct: number;
+  propostas_pct: number;
+  deals_count: number;
+  deals_value: number;
+}
 
-export interface DashboardAlert {
-  type: AlertType;
-  message: string;
-  leadId: string;
-  leadName: string;
-  severity: "warning" | "critical";
+export interface Campaign {
+  id: string;
+  name: string;
+  starts_at: string;
+  ends_at: string;
+  goals: CampaignGoals;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface CampaignKPI {
+  key: string;
+  label: string;
+  current: number;
+  target: number;
+  unit: "pct" | "count" | "currency";
+  pct: number; // progress toward goal (0-100+)
 }
 
 const ACTIVE_STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
 
+const ADVANCED_STAGES: Record<string, string[]> = {
+  em_contato: ["em_contato", "call_agendada", "proposta", "nutricao", "fechado"],
+  call_agendada: ["call_agendada", "proposta", "nutricao", "fechado"],
+  proposta: ["proposta", "nutricao", "fechado"],
+};
+
+function parseInvestment(text: string | null): number {
+  if (!text) return 0;
+  const multiMatch = text.match(/(\d+)\s*x\s*(?:de\s*)?R?\$?\s*([\d.,]+)/i);
+  if (multiMatch) {
+    const multiplier = parseInt(multiMatch[1]);
+    const val = parseFloat(multiMatch[2].replace(/\./g, "").replace(",", "."));
+    return isNaN(val) ? 0 : val * multiplier;
+  }
+  const nums = text.match(/[\d.,]+/g);
+  if (!nums) return 0;
+  const val = parseFloat(nums[0].replace(/\./g, "").replace(",", "."));
+  return isNaN(val) ? 0 : val;
+}
+
 export function useStrategicDashboard() {
   const [leads, setLeads] = useState<DashboardLead[]>([]);
-  const [activities, setActivities] = useState<DashboardActivity[]>([]);
+  const [, setActivities] = useState<DashboardActivity[]>([]);
   const [profiles, setProfiles] = useState<DashboardProfile[]>([]);
   const [proposals, setProposals] = useState<DashboardProposal[]>([]);
   const [followUps, setFollowUps] = useState<{ lead_id: string; due_date: string; completed: boolean }[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = useCallback(async () => {
     const sevenDaysAgo = subDays(new Date(), 7).toISOString();
 
-    const [leadsRes, activitiesRes, profilesRes, proposalsRes, followUpsRes] = await Promise.all([
+    const [leadsRes, activitiesRes, profilesRes, proposalsRes, followUpsRes, campaignsRes] = await Promise.all([
       supabase.from("leads").select("*").neq("status", "archived"),
       supabase.from("lead_activities").select("id, lead_id, activity_type, created_at, user_id").gte("created_at", sevenDaysAgo),
       supabase.from("profiles").select("id, full_name, role_label, badge_initials"),
       supabase.from("proposals").select("id, investment, lead_id, status"),
       supabase.from("lead_follow_ups").select("lead_id, due_date, completed").eq("completed", false),
+      supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
     ]);
 
     if (leadsRes.data) setLeads(leadsRes.data as DashboardLead[]);
@@ -82,6 +121,7 @@ export function useStrategicDashboard() {
     if (profilesRes.data) setProfiles(profilesRes.data as DashboardProfile[]);
     if (proposalsRes.data) setProposals(proposalsRes.data as DashboardProposal[]);
     if (followUpsRes.data) setFollowUps(followUpsRes.data);
+    if (campaignsRes.data) setCampaigns(campaignsRes.data.map((c: any) => ({ ...c, goals: c.goals as CampaignGoals })));
     setLoading(false);
   }, []);
 
@@ -90,16 +130,12 @@ export function useStrategicDashboard() {
 
     const leadsChannel = supabase
       .channel("strategic-leads")
-      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => {
-        fetchAll();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "leads" }, () => fetchAll())
       .subscribe();
 
     const activitiesChannel = supabase
       .channel("strategic-activities")
-      .on("postgres_changes", { event: "*", schema: "public", table: "lead_activities" }, () => {
-        fetchAll();
-      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "lead_activities" }, () => fetchAll())
       .subscribe();
 
     return () => {
@@ -108,8 +144,98 @@ export function useStrategicDashboard() {
     };
   }, [fetchAll]);
 
+  // Active campaign
+  const activeCampaign = useMemo(() => campaigns.find((c) => c.is_active) || null, [campaigns]);
+
   const activeLeads = useMemo(() => leads.filter((l) => l.status !== "lost"), [leads]);
   const lostLeads = useMemo(() => leads.filter((l) => l.status === "lost"), [leads]);
+
+  // Campaign-period leads
+  const campaignLeads = useMemo(() => {
+    if (!activeCampaign) return activeLeads;
+    const start = new Date(activeCampaign.starts_at);
+    const end = new Date(activeCampaign.ends_at);
+    end.setHours(23, 59, 59, 999);
+    return leads.filter((l) => {
+      if (!l.created_at) return false;
+      const d = new Date(l.created_at);
+      return d >= start && d <= end;
+    });
+  }, [leads, activeLeads, activeCampaign]);
+
+  // Campaign KPIs
+  const campaignKPIs = useMemo((): CampaignKPI[] => {
+    if (!activeCampaign) return [];
+    const goals = activeCampaign.goals;
+    const total = campaignLeads.length;
+    const activeCL = campaignLeads.filter((l) => l.status !== "lost");
+
+    // Em contato: leads que avançaram além de boas_vindas / total
+    const emContatoCount = activeCL.filter((l) => ADVANCED_STAGES.em_contato.includes(l.kanban_stage)).length;
+    const emContatoPct = total > 0 ? Math.round((emContatoCount / total) * 100) : 0;
+
+    // Agendamentos: leads call_agendada+ / em_contato+
+    const agendBase = emContatoCount;
+    const agendCount = activeCL.filter((l) => ADVANCED_STAGES.call_agendada.includes(l.kanban_stage)).length;
+    const agendPct = agendBase > 0 ? Math.round((agendCount / agendBase) * 100) : 0;
+
+    // Propostas: leads proposta+ / call_agendada+
+    const propBase = agendCount;
+    const propCount = activeCL.filter((l) => ADVANCED_STAGES.proposta.includes(l.kanban_stage)).length;
+    const propPct = propBase > 0 ? Math.round((propCount / propBase) * 100) : 0;
+
+    // Deals
+    const dealsCount = activeCL.filter((l) => l.kanban_stage === "fechado").length;
+
+    // Revenue
+    const closedLeadIds = new Set(activeCL.filter((l) => l.kanban_stage === "fechado").map((l) => l.id));
+    const dealsValue = proposals
+      .filter((p) => p.lead_id && closedLeadIds.has(p.lead_id))
+      .reduce((sum, p) => sum + parseInvestment(p.investment), 0);
+
+    return [
+      {
+        key: "em_contato",
+        label: "Em Contato",
+        current: emContatoPct,
+        target: goals.em_contato_pct || 40,
+        unit: "pct",
+        pct: goals.em_contato_pct > 0 ? Math.round((emContatoPct / goals.em_contato_pct) * 100) : 0,
+      },
+      {
+        key: "agendamentos",
+        label: "Agendamentos",
+        current: agendPct,
+        target: goals.agendamentos_pct || 50,
+        unit: "pct",
+        pct: goals.agendamentos_pct > 0 ? Math.round((agendPct / goals.agendamentos_pct) * 100) : 0,
+      },
+      {
+        key: "propostas",
+        label: "Propostas",
+        current: propPct,
+        target: goals.propostas_pct || 60,
+        unit: "pct",
+        pct: goals.propostas_pct > 0 ? Math.round((propPct / goals.propostas_pct) * 100) : 0,
+      },
+      {
+        key: "deals",
+        label: "Deals",
+        current: dealsCount,
+        target: goals.deals_count || 5,
+        unit: "count",
+        pct: goals.deals_count > 0 ? Math.round((dealsCount / goals.deals_count) * 100) : 0,
+      },
+      {
+        key: "revenue",
+        label: "Receita",
+        current: dealsValue,
+        target: goals.deals_value || 100000,
+        unit: "currency",
+        pct: goals.deals_value > 0 ? Math.round((dealsValue / goals.deals_value) * 100) : 0,
+      },
+    ];
+  }, [campaignLeads, activeCampaign, proposals]);
 
   // Pipeline counts per stage
   const pipelineCounts = useMemo(() => {
@@ -121,11 +247,10 @@ export function useStrategicDashboard() {
     return counts;
   }, [activeLeads]);
 
-  // Health Score: % of active leads within SLA
+  // Health Score
   const healthScore = useMemo(() => {
     const scoreable = activeLeads.filter((l) => l.kanban_stage !== "fechado" && l.kanban_stage !== "perdido");
     if (scoreable.length === 0) return 100;
-
     const pendingFollowUpLeadIds = new Set(followUps.map((f) => f.lead_id));
     const healthy = scoreable.filter((l) => {
       const level = getUrgencyLevel(l.kanban_stage, l.stage_updated_at, l.last_activity_at, pendingFollowUpLeadIds.has(l.id));
@@ -134,11 +259,10 @@ export function useStrategicDashboard() {
     return Math.round((healthy.length / scoreable.length) * 100);
   }, [activeLeads, followUps]);
 
-  // Stage health: per-stage % within SLA
+  // Stage health
   const stageHealth = useMemo(() => {
     const pendingFollowUpLeadIds = new Set(followUps.map((f) => f.lead_id));
     const result: Record<string, { total: number; healthy: number; warning: number; critical: number }> = {};
-
     ACTIVE_STAGES.forEach((stage) => {
       const stageLeads = pipelineCounts[stage] || [];
       const stats = { total: stageLeads.length, healthy: 0, warning: 0, critical: 0 };
@@ -150,270 +274,83 @@ export function useStrategicDashboard() {
       });
       result[stage] = stats;
     });
-
     return result;
   }, [pipelineCounts, followUps]);
 
-  // Velocity: leads closed in last 7 days
-  const velocity7d = useMemo(() => {
-    const sevenDaysAgo = subDays(new Date(), 7);
-    return activeLeads.filter(
-      (l) => l.kanban_stage === "fechado" && l.closed_at && new Date(l.closed_at) >= sevenDaysAgo
-    ).length;
-  }, [activeLeads]);
-
-  // Activities today
-  const activitiesToday = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    return activities.filter((a) => a.created_at?.startsWith(today)).length;
-  }, [activities]);
-
   // Pipeline total value
   const pipelineTotal = useMemo(() => {
-    const openLeadIds = new Set(
-      activeLeads.filter((l) => l.kanban_stage !== "fechado").map((l) => l.id)
-    );
+    const openLeadIds = new Set(activeLeads.filter((l) => l.kanban_stage !== "fechado").map((l) => l.id));
     return proposals
       .filter((p) => p.lead_id && openLeadIds.has(p.lead_id))
-      .reduce((sum, p) => {
-        if (!p.investment) return sum;
-        const text = p.investment;
-        // Handle patterns like "2x de R$ 28.000" → 56000
-        const multiMatch = text.match(/(\d+)\s*x\s*(?:de\s*)?R?\$?\s*([\d.,]+)/i);
-        if (multiMatch) {
-          const multiplier = parseInt(multiMatch[1]);
-          const val = parseFloat(multiMatch[2].replace(/\./g, "").replace(",", "."));
-          return sum + (isNaN(val) ? 0 : val * multiplier);
-        }
-        const nums = text.match(/[\d.,]+/g);
-        if (!nums) return sum;
-        const val = parseFloat(nums[0].replace(/\./g, "").replace(",", "."));
-        return sum + (isNaN(val) ? 0 : val);
-      }, 0);
+      .reduce((sum, p) => sum + parseInvestment(p.investment), 0);
   }, [activeLeads, proposals]);
-
-  // Alerts
-  const alerts = useMemo(() => {
-    const result: DashboardAlert[] = [];
-    const now = new Date();
-    const pendingFollowUpLeadIds = new Set(followUps.map((f) => f.lead_id));
-
-    activeLeads.forEach((l) => {
-      if (l.kanban_stage === "fechado") return;
-
-      // 1. SLA critical
-      const level = getUrgencyLevel(l.kanban_stage, l.stage_updated_at, l.last_activity_at, pendingFollowUpLeadIds.has(l.id));
-      if (level === "critical") {
-        result.push({
-          type: "sla_critical",
-          message: `SLA crítico em "${l.kanban_stage}"`,
-          leadId: l.id,
-          leadName: l.company || l.name,
-          severity: "critical",
-        });
-      }
-
-      // 2. Boas-vindas protocol incomplete
-      if (l.kanban_stage === "boas_vindas" || l.kanban_stage === "em_contato") {
-        const missing: string[] = [];
-        if (!l.welcome_sent) missing.push("email");
-        if (!l.linkedin_added) missing.push("LinkedIn");
-        if (!l.whatsapp_sent) missing.push("WhatsApp");
-        if (missing.length > 0) {
-          result.push({
-            type: "protocol_incomplete",
-            message: `Protocolo BV incompleto: falta ${missing.join(", ")}`,
-            leadId: l.id,
-            leadName: l.company || l.name,
-            severity: "warning",
-          });
-        }
-      }
-
-      // 3. Call agendada sem briefing
-      if (l.kanban_stage === "call_agendada" && !l.briefing_notes) {
-        result.push({
-          type: "call_no_briefing",
-          message: "Call agendada sem briefing",
-          leadId: l.id,
-          leadName: l.company || l.name,
-          severity: "warning",
-        });
-      }
-
-      // 4. Proposta/Nutrição sem atividade > 3 dias
-      if ((l.kanban_stage === "proposta" || l.kanban_stage === "nutricao") && l.last_activity_at) {
-        const daysSinceActivity = differenceInDays(now, new Date(l.last_activity_at));
-        if (daysSinceActivity > 3) {
-          result.push({
-            type: "no_activity",
-            message: `${daysSinceActivity}d sem atividade`,
-            leadId: l.id,
-            leadName: l.company || l.name,
-            severity: daysSinceActivity > 5 ? "critical" : "warning",
-          });
-        }
-      }
-    });
-
-    // 5. Overdue follow-ups
-    followUps.forEach((fu) => {
-      if (new Date(fu.due_date) < now) {
-        const lead = activeLeads.find((l) => l.id === fu.lead_id);
-        if (lead && lead.kanban_stage !== "fechado") {
-          result.push({
-            type: "overdue_followup",
-            message: "Follow-up vencido",
-            leadId: fu.lead_id,
-            leadName: lead.company || lead.name,
-            severity: "critical",
-          });
-        }
-      }
-    });
-
-    // Sort: critical first
-    result.sort((a, b) => (a.severity === "critical" ? -1 : 1) - (b.severity === "critical" ? -1 : 1));
-    return result;
-  }, [activeLeads, followUps]);
 
   // SDR metrics
   const sdrMetrics = useMemo(() => {
     const sdrProfiles = profiles.filter((p) => p.role_label?.toLowerCase() === "sdr");
     const sdrIds = new Set(sdrProfiles.map((p) => p.id));
-
     const sdrLeads = activeLeads.filter((l) => l.assigned_to && sdrIds.has(l.assigned_to));
     const bvLeads = sdrLeads.filter((l) => ["boas_vindas", "em_contato"].includes(l.kanban_stage));
-
-    // Protocol completion rate
     const protocolComplete = bvLeads.filter((l) => l.welcome_sent && l.linkedin_added && l.whatsapp_sent).length;
-    const protocolRate = bvLeads.length > 0 ? Math.round((protocolComplete / bvLeads.length) * 100) : 100;
-
-    // Activation rate (leads that moved beyond boas_vindas)
+    const protocolRate = bvLeads.length > 0 ? Math.round((protocolComplete / bvLeads.length) * 100) : 0;
     const activated = sdrLeads.filter((l) => !["novo", "boas_vindas"].includes(l.kanban_stage)).length;
     const activationRate = sdrLeads.length > 0 ? Math.round((activated / sdrLeads.length) * 100) : 0;
-
-    // SLA compliance
     const pendingFollowUpLeadIds = new Set(followUps.map((f) => f.lead_id));
     const sdrStagedLeads = sdrLeads.filter((l) => !["fechado", "perdido"].includes(l.kanban_stage));
     const withinSla = sdrStagedLeads.filter((l) => getUrgencyLevel(l.kanban_stage, l.stage_updated_at, l.last_activity_at, pendingFollowUpLeadIds.has(l.id)) === "normal").length;
-    const slaCompliance = sdrStagedLeads.length > 0 ? Math.round((withinSla / sdrStagedLeads.length) * 100) : 100;
-
-    return {
-      profiles: sdrProfiles,
-      totalLeads: sdrLeads.length,
-      protocolRate,
-      activationRate,
-      slaCompliance,
-    };
+    const slaCompliance = sdrStagedLeads.length > 0 ? Math.round((withinSla / sdrStagedLeads.length) * 100) : 0;
+    return { profiles: sdrProfiles, totalLeads: sdrLeads.length, protocolRate, activationRate, slaCompliance };
   }, [activeLeads, profiles, followUps]);
 
   // Closer metrics
   const closerMetrics = useMemo(() => {
     const closerProfiles = profiles.filter((p) => p.role_label?.toLowerCase() === "closer");
     const closerIds = new Set(closerProfiles.map((p) => p.id));
-
     const closerLeads = activeLeads.filter((l) => l.assigned_to && closerIds.has(l.assigned_to));
     const closed = closerLeads.filter((l) => l.kanban_stage === "fechado").length;
     const conversionRate = closerLeads.length > 0 ? Math.round((closed / closerLeads.length) * 100) : 0;
-
-    // Value in pipeline
     const closerLeadIds = new Set(closerLeads.filter((l) => l.kanban_stage !== "fechado").map((l) => l.id));
     const pipelineValue = proposals
       .filter((p) => p.lead_id && closerLeadIds.has(p.lead_id))
-      .reduce((sum, p) => {
-        if (!p.investment) return sum;
-        const nums = p.investment.match(/[\d.,]+/g);
-        if (!nums) return sum;
-        const val = parseFloat(nums[0].replace(/\./g, "").replace(",", "."));
-        return sum + (isNaN(val) ? 0 : val);
-      }, 0);
-
-    return {
-      profiles: closerProfiles,
-      totalLeads: closerLeads.length,
-      closed,
-      conversionRate,
-      pipelineValue,
-    };
+      .reduce((sum, p) => sum + parseInvestment(p.investment), 0);
+    return { profiles: closerProfiles, totalLeads: closerLeads.length, closed, conversionRate, pipelineValue };
   }, [activeLeads, profiles, proposals]);
 
-  // Conversion funnel: rate from each stage to the next
+  // Conversion funnel
   const funnelData = useMemo(() => {
     const stageOrder = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
     const stageLabels: Record<string, string> = {
       novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
       call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado",
     };
-
-    // Count leads that have REACHED each stage (current or beyond)
     const reachedStage = (stage: string) => {
       const idx = stageOrder.indexOf(stage);
-      return activeLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length + 
-             lostLeads.filter((l) => {
-               // Lost leads also passed through stages
-               const lostIdx = stageOrder.indexOf(l.kanban_stage);
-               return lostIdx >= idx;
-             }).length;
+      return activeLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length +
+        lostLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length;
     };
-
     return stageOrder.map((stage, i) => {
       const reached = reachedStage(stage);
       const current = (pipelineCounts[stage] || []).length;
       const prevReached = i > 0 ? reachedStage(stageOrder[i - 1]) : reached;
       const conversionRate = prevReached > 0 ? Math.round((reached / prevReached) * 100) : 100;
-
-      return {
-        stage,
-        label: stageLabels[stage],
-        current,
-        reached,
-        conversionRate,
-      };
+      return { stage, label: stageLabels[stage], current, reached, conversionRate };
     });
   }, [activeLeads, lostLeads, pipelineCounts]);
 
-  // Daily actions: prescriptive list
+  // Daily actions
   const dailyActions = useMemo(() => {
-    const actions: { priority: number; icon: string; text: string; leadId?: string }[] = [];
+    const actions: { priority: number; icon: string; text: string }[] = [];
     const now = new Date();
-
-    // Leads novos sem ação
     const novosLeads = pipelineCounts["novo"] || [];
-    if (novosLeads.length > 0) {
-      actions.push({ priority: 1, icon: "🆕", text: `${novosLeads.length} lead(s) novo(s) aguardando primeiro contato` });
-    }
-
-    // Follow-ups vencidos
+    if (novosLeads.length > 0) actions.push({ priority: 1, icon: "🆕", text: `${novosLeads.length} lead(s) novo(s) aguardando primeiro contato` });
     const overdueFollowUps = followUps.filter((f) => new Date(f.due_date) < now);
-    if (overdueFollowUps.length > 0) {
-      actions.push({ priority: 2, icon: "⏰", text: `${overdueFollowUps.length} follow-up(s) vencido(s)` });
-    }
-
-    // Protocolos BV incompletos
-    const bvIncomplete = activeLeads.filter(
-      (l) => ["boas_vindas", "em_contato"].includes(l.kanban_stage) &&
-             (!l.welcome_sent || !l.linkedin_added || !l.whatsapp_sent)
-    );
-    if (bvIncomplete.length > 0) {
-      actions.push({ priority: 3, icon: "📋", text: `${bvIncomplete.length} protocolo(s) BV incompleto(s)` });
-    }
-
-    // Calls sem briefing
+    if (overdueFollowUps.length > 0) actions.push({ priority: 2, icon: "⏰", text: `${overdueFollowUps.length} follow-up(s) vencido(s)` });
+    const bvIncomplete = activeLeads.filter((l) => ["boas_vindas", "em_contato"].includes(l.kanban_stage) && (!l.welcome_sent || !l.linkedin_added || !l.whatsapp_sent));
+    if (bvIncomplete.length > 0) actions.push({ priority: 3, icon: "📋", text: `${bvIncomplete.length} protocolo(s) BV incompleto(s)` });
     const callsNoBriefing = (pipelineCounts["call_agendada"] || []).filter((l) => !l.briefing_notes);
-    if (callsNoBriefing.length > 0) {
-      actions.push({ priority: 4, icon: "📝", text: `${callsNoBriefing.length} call(s) sem briefing preenchido` });
-    }
-
-    // Leads em proposta/nutrição parados
-    const staleLeads = activeLeads.filter(
-      (l) => ["proposta", "nutricao"].includes(l.kanban_stage) &&
-             l.last_activity_at && differenceInDays(now, new Date(l.last_activity_at)) > 3
-    );
-    if (staleLeads.length > 0) {
-      actions.push({ priority: 5, icon: "💤", text: `${staleLeads.length} lead(s) parado(s) há mais de 3 dias` });
-    }
-
+    if (callsNoBriefing.length > 0) actions.push({ priority: 4, icon: "📝", text: `${callsNoBriefing.length} call(s) sem briefing preenchido` });
+    const staleLeads = activeLeads.filter((l) => ["proposta", "nutricao"].includes(l.kanban_stage) && l.last_activity_at && differenceInDays(now, new Date(l.last_activity_at)) > 3);
+    if (staleLeads.length > 0) actions.push({ priority: 5, icon: "💤", text: `${staleLeads.length} lead(s) parado(s) há mais de 3 dias` });
     return actions.sort((a, b) => a.priority - b.priority);
   }, [activeLeads, pipelineCounts, followUps]);
 
@@ -424,14 +361,16 @@ export function useStrategicDashboard() {
     pipelineCounts,
     healthScore,
     stageHealth,
-    velocity7d,
-    activitiesToday,
     pipelineTotal,
-    alerts,
     profiles,
     sdrMetrics,
     closerMetrics,
     funnelData,
     dailyActions,
+    activeCampaign,
+    campaigns,
+    campaignKPIs,
+    campaignLeads,
+    refetch: fetchAll,
   };
 }
