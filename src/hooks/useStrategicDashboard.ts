@@ -22,6 +22,7 @@ export interface DashboardLead {
   lost_reason: string | null;
   call_date: string | null;
   briefing_notes: string | null;
+  lost_at_stage: string | null;
 }
 
 export interface DashboardProfile {
@@ -74,6 +75,19 @@ export interface CampaignKPI {
 }
 
 const ACTIVE_STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+
+const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+
+function maxReachedStage(lead: DashboardLead): string {
+  if (lead.kanban_stage === "perdido") return lead.lost_at_stage || "boas_vindas";
+  return lead.kanban_stage;
+}
+
+function hasReachedAtLeast(lead: DashboardLead, stage: string): boolean {
+  const idx = STAGE_ORDER.indexOf(stage);
+  const reachedIdx = STAGE_ORDER.indexOf(maxReachedStage(lead));
+  return reachedIdx >= idx;
+}
 
 const ADVANCED_STAGES: Record<string, string[]> = {
   em_contato: ["em_contato", "call_agendada", "proposta", "nutricao", "fechado"],
@@ -168,27 +182,26 @@ export function useStrategicDashboard() {
     if (!activeCampaign) return [];
     const goals = activeCampaign.goals;
     const total = campaignLeads.length;
-    const activeCL = campaignLeads.filter((l) => l.status !== "lost");
 
-    // Em contato: leads que avançaram além de boas_vindas / total
-    const emContatoCount = activeCL.filter((l) => ADVANCED_STAGES.em_contato.includes(l.kanban_stage)).length;
+    // Em contato: leads que passaram de boas_vindas (reached em_contato+) / total
+    const emContatoCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "em_contato")).length;
     const emContatoPct = total > 0 ? Math.round((emContatoCount / total) * 100) : 0;
 
     // Agendamentos: leads call_agendada+ / em_contato+
     const agendBase = emContatoCount;
-    const agendCount = activeCL.filter((l) => ADVANCED_STAGES.call_agendada.includes(l.kanban_stage)).length;
+    const agendCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "call_agendada")).length;
     const agendPct = agendBase > 0 ? Math.round((agendCount / agendBase) * 100) : 0;
 
     // Propostas: leads proposta+ / call_agendada+
     const propBase = agendCount;
-    const propCount = activeCL.filter((l) => ADVANCED_STAGES.proposta.includes(l.kanban_stage)).length;
+    const propCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "proposta")).length;
     const propPct = propBase > 0 ? Math.round((propCount / propBase) * 100) : 0;
 
-    // Deals
-    const dealsCount = activeCL.filter((l) => l.kanban_stage === "fechado").length;
+    // Deals (only actually closed, not lost)
+    const dealsCount = campaignLeads.filter((l) => l.kanban_stage === "fechado").length;
 
     // Revenue
-    const closedLeadIds = new Set(activeCL.filter((l) => l.kanban_stage === "fechado").map((l) => l.id));
+    const closedLeadIds = new Set(campaignLeads.filter((l) => l.kanban_stage === "fechado").map((l) => l.id));
     const dealsValue = proposals
       .filter((p) => p.lead_id && closedLeadIds.has(p.lead_id))
       .reduce((sum, p) => sum + parseInvestment(p.investment), 0);
@@ -316,24 +329,21 @@ export function useStrategicDashboard() {
     return { profiles: closerProfiles, totalLeads: closerLeads.length, closed, conversionRate, pipelineValue };
   }, [activeLeads, profiles, proposals]);
 
-  // Conversion funnel
+  // Conversion funnel — uses maxReachedStage so lost leads count at the stage they reached
   const funnelData = useMemo(() => {
     const stageOrder = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
     const stageLabels: Record<string, string> = {
       novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
       call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado",
     };
-    // Use campaign-filtered leads (excluding lost) when a campaign is active, otherwise all leads
-    const funnelLeads = activeCampaign
-      ? campaignLeads.filter((l) => l.status !== "lost")
-      : [...activeLeads, ...lostLeads];
+    // Use campaign leads (including lost) when campaign is active
+    const funnelLeads = activeCampaign ? campaignLeads : [...activeLeads, ...lostLeads];
     const reachedStage = (stage: string) => {
-      const idx = stageOrder.indexOf(stage);
-      return funnelLeads.filter((l) => stageOrder.indexOf(l.kanban_stage) >= idx).length;
+      return funnelLeads.filter((l) => hasReachedAtLeast(l, stage)).length;
     };
     return stageOrder.map((stage, i) => {
       const reached = reachedStage(stage);
-      const current = funnelLeads.filter((l) => l.kanban_stage === stage).length;
+      const current = funnelLeads.filter((l) => maxReachedStage(l) === stage).length;
       const prevReached = i > 0 ? reachedStage(stageOrder[i - 1]) : reached;
       const conversionRate = prevReached > 0 ? Math.round((reached / prevReached) * 100) : 0;
       return { stage, label: stageLabels[stage], current, reached, conversionRate };
