@@ -1,77 +1,91 @@
 
 
-## Reestruturar Navegação CRM — 4 Módulos com Hamburger no Mobile
+## Evoluir Painel Estratégico — Campanhas com Metas
 
-### Arquitetura
+### Visão Geral
 
-4 módulos independentes com rotas próprias. Desktop: ícones com tooltips na navbar. Mobile: menu hamburger (Sheet) que maximiza a tela para o Kanban.
+Substituir o modelo de barras de progresso sem referência por um sistema de **campanhas com metas**. Cada campanha tem nome, datas, e metas por KPI. O painel exibe a campanha ativa em destaque com contagem regressiva.
 
-```text
-Desktop (≥768px):
-┌──────────────────────────────────────────────────────────────┐
-│ [Logo] [🔲] [📋] [📊] [⚡]          [🔔] [Avatar ▾]       │
-└──────────────────────────────────────────────────────────────┘
+### 1. Tabela `campaigns` (migração SQL)
 
-Mobile (<768px):
-┌──────────────────────────────────────┐
-│ [☰]  [Logo]            [🔔] [Avatar]│
-└──────────────────────────────────────┘
-  ↑ abre Sheet com links dos 4 módulos
+```sql
+create table campaigns (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,                    -- "Campanha Mês do Meio Ambiente"
+  starts_at date not null,
+  ends_at date not null,
+  goals jsonb not null default '{}',     -- {"em_contato_pct": 40, "agendamentos_pct": 50, "propostas_pct": 60, "deals_count": 5, "deals_value": 100000}
+  is_active boolean not null default true,
+  created_at timestamptz default now()
+);
+alter table campaigns enable row level security;
+-- Leitura para todos autenticados, escrita para admin
+create policy "Authenticated read campaigns" on campaigns for select to authenticated using (true);
+create policy "Admin manage campaigns" on campaigns for all to authenticated using (has_role(auth.uid(), 'admin'::app_role)) with check (has_role(auth.uid(), 'admin'::app_role));
 ```
 
-### Módulos e rotas
+Seed com campanha exemplo:
+```sql
+INSERT INTO campaigns (name, starts_at, ends_at, goals) VALUES (
+  'Campanha Mês do Meio Ambiente',
+  '2026-04-01', '2026-04-30',
+  '{"em_contato_pct": 40, "agendamentos_pct": 50, "propostas_pct": 60, "deals_count": 5, "deals_value": 100000}'
+);
+```
 
-| Rota | Módulo | Ícone | Conteúdo |
-|------|--------|-------|----------|
-| `/admin/pipeline` | Pipeline | `LayoutGrid` | Kanban + filtros + missões (extraído de Proposals.tsx) |
-| `/admin/propostas` | Propostas | `FileText` | Lista de propostas com tabs |
-| `/admin/dashboard` | Dashboard | `BarChart3` | Dashboard analítico |
-| `/painel` | Painel | `Activity` | Painel estratégico |
+### 2. Atualizar `role_label` do Vinicius
 
-### Mudanças
+```sql
+UPDATE profiles SET role_label = 'closer' WHERE id = '676d1c91-1610-4478-a637-59445038753b';
+```
 
-**1. Criar `src/components/admin/CrmNavbar.tsx`**
-- Desktop: Logo + 4 botões ícone (Tooltip) + NotificationBell + Avatar dropdown (com Perfil, Emails, Site, Sair)
-- Mobile: Logo + hamburger (Sheet lateral com 4 links + ações) + NotificationBell + Avatar compacto
-- Props: `currentModule`, children opcionais para ações contextuais (ex: botão "Nova Proposta")
-- Botão ativo: `bg-brand` + `text-white`
+### 3. Lógica de KPIs baseada na campanha
 
-**2. Criar `src/pages/admin/Pipeline.tsx`**
-- Extrair do Proposals.tsx: todo o state de leads, kanban, filtros, sort, MissionsBanner, KanbanBoard, lost leads
-- Usa CrmNavbar com `currentModule="pipeline"`
-- Layout full-height (h-screen) sem scroll — prioridade mobile: kanban ocupa tela toda
-- Mobile: navbar mínima (hamburger + logo), sem barra de filtros visível por padrão (filtros dentro de popover/sheet)
+Filtrar leads pelo período da campanha (`created_at` entre `starts_at` e `ends_at`):
 
-**3. Simplificar `src/pages/admin/Proposals.tsx`**
-- Remove kanban, leads state, viewMode toggle, filtros de lead
-- Mantém: lista de propostas (tabs rascunhos/enviadas), form, handleSave/Delete/StatusChange
-- Usa CrmNavbar com `currentModule="propostas"`
+| KPI | Cálculo | Meta (exemplo) |
+|-----|---------|----------------|
+| Em Contato | leads em_contato+ / total leads do período | 40% |
+| Agendamentos | leads call_agendada+ / leads em_contato+ | 50% |
+| Propostas | leads proposta+ / leads call_agendada+ | 60% |
+| Deals fechados | count de fechados no período | 5 |
+| R$ Vendas | soma investment dos fechados | R$ 100k |
 
-**4. Atualizar `src/pages/admin/Dashboard.tsx`**
-- Substituir header custom por CrmNavbar com `currentModule="dashboard"`
+Barra de progresso = valor atual / meta. Cores: verde ≥80%, âmbar ≥50%, vermelho <50%.
 
-**5. Atualizar `src/pages/admin/StrategicDashboard.tsx`**
-- Substituir header custom por CrmNavbar com `currentModule="painel"`
+### 4. Layout do Painel reformulado
 
-**6. Atualizar `src/App.tsx`**
-- Adicionar rota `/admin/pipeline` (ProtectedRoute)
-- Manter `/admin/propostas` apontando para Proposals simplificado
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│ 🎯 Campanha Mês do Meio Ambiente          Faltam 27 dias  [⚙️] │
+├─────────────────────────────────────────────────────────────────┤
+│ [Em Contato ██████ 75%] [Agendamentos ███ 40%] [Propostas ██ 30%] [Deals 2/5] [R$ 45k/100k] │
+├─────────────────────────────────────────────────────────────────┤
+│ [Pipeline cards: 7 etapas com contagem + SLA]                   │
+├────────────────────────────┬────────────────────────────────────┤
+│       SDR (Lívia)          │        Closer (Alinye + Vinicius) │
+├────────────────────────────┴────────────────────────────────────┤
+│ [Funil de Conversão]       │ [Ações do Dia]                    │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-### Mobile — Kanban prioritário
+- **Seção "Alertas" removida** — espaço redistribuído para SDR e Closer (50/50)
+- **Banner da campanha** no topo com nome, contagem regressiva e botão de config (admin)
+- **Summary bar** reformulada: 5 cards com progresso vs meta da campanha
+- Pipeline cards: barra SLA mostra "—" quando total = 0 (ao invés de 100%)
 
-- Navbar compacta: h-12, hamburger à esquerda, logo centralizado, notificação + avatar à direita
-- Sheet do hamburger: links dos 4 módulos + Perfil + Sair
-- Pipeline mobile: barra de filtros/sort colapsa em um único botão (popover)
-- Conteúdo do kanban usa `calc(100vh - 48px)` para maximizar espaço
+### 5. Dialog de gerenciamento de campanhas (admin)
 
-### Arquivos afetados
+Botão ⚙️ abre dialog com:
+- Lista de campanhas (ativa marcada)
+- Formulário: nome, data início/fim, metas por KPI
+- Botão criar nova / editar existente / ativar/desativar
+
+### 6. Arquivos afetados
 
 | Arquivo | Ação |
 |---------|------|
-| `src/components/admin/CrmNavbar.tsx` | Criar |
-| `src/pages/admin/Pipeline.tsx` | Criar (extrair de Proposals) |
-| `src/pages/admin/Proposals.tsx` | Simplificar |
-| `src/pages/admin/Dashboard.tsx` | Trocar header |
-| `src/pages/admin/StrategicDashboard.tsx` | Trocar header |
-| `src/App.tsx` | Nova rota `/admin/pipeline` |
+| Migração SQL | Criar tabela `campaigns`, seed, update role_label Vinicius |
+| `src/hooks/useStrategicDashboard.ts` | Buscar campanha ativa, filtrar leads por período, calcular KPIs vs metas, remover `alerts` |
+| `src/pages/admin/StrategicDashboard.tsx` | Banner campanha no topo, summary bar com metas, remover seção Alertas, SDR+Closer 50/50, dialog de campanhas, fix barra 0=100% |
 
