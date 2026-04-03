@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  ArrowLeft,
   Activity,
   AlertTriangle,
   Zap,
@@ -16,9 +15,10 @@ import {
   Clock,
   Briefcase,
   Phone,
+  ArrowLeft,
 } from "lucide-react";
-import { LogoImage } from "@/components/LogoImage";
-import logo from "@/assets/movimento-circular-logo.png";
+import CrmNavbar from "@/components/admin/CrmNavbar";
+import { useStrategicDashboard, type DashboardAlert } from "@/hooks/useStrategicDashboard";
 import { useStrategicDashboard, type DashboardAlert } from "@/hooks/useStrategicDashboard";
 
 const STAGES_META = [
