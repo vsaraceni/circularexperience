@@ -206,6 +206,20 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         content: `Movido de ${STAGE_LABELS[oldStage]} para ${STAGE_LABELS[newStage]}`,
       });
 
+      // Send Meta CAPI event for tracked stages (fire-and-forget)
+      if (newStage === "call_agendada" || newStage === "fechado") {
+        supabase.functions.invoke("send-meta-capi-event", {
+          body: {
+            lead_id: leadId,
+            email: lead.email,
+            work_email: lead.work_email || undefined,
+            telefone: lead.telefone || undefined,
+            fb_lead_id: lead.fb_lead_id || undefined,
+            stage: newStage,
+          },
+        }).catch((err) => console.error("Meta CAPI error:", err));
+      }
+
       onLeadUpdated();
     } catch (err: any) {
       toast.error("Erro ao mover lead: " + (err.message || ""));

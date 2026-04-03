@@ -42,6 +42,11 @@ export interface Lead {
   call_date?: string | null;
   briefing_notes?: string | null;
   colaboradores?: string | null;
+  work_email?: string | null;
+  fb_lead_id?: string | null;
+  ad_id?: string | null;
+  adset_id?: string | null;
+  campaign_id?: string | null;
 }
 
 interface AuthorDefaults {
