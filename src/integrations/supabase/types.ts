@@ -135,10 +135,13 @@ export type Database = {
       }
       leads: {
         Row: {
+          ad_id: string | null
+          adset_id: string | null
           assigned_at: string | null
           assigned_to: string | null
           briefing_notes: string | null
           call_date: string | null
+          campaign_id: string | null
           cargo: string | null
           closed_at: string | null
           colaboradores: string | null
@@ -147,6 +150,7 @@ export type Database = {
           company_website: string | null
           created_at: string | null
           email: string
+          fb_lead_id: string | null
           id: string
           kanban_stage: string
           last_activity_at: string | null
@@ -154,6 +158,8 @@ export type Database = {
           lost_notes: string | null
           lost_reason: string | null
           mensagem: string | null
+          meta_last_event_at: string | null
+          meta_last_event_sent: string | null
           name: string
           origem: string
           stage_updated_at: string | null
@@ -162,12 +168,16 @@ export type Database = {
           welcome_sent: boolean
           welcome_sent_at: string | null
           whatsapp_sent: boolean | null
+          work_email: string | null
         }
         Insert: {
+          ad_id?: string | null
+          adset_id?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           briefing_notes?: string | null
           call_date?: string | null
+          campaign_id?: string | null
           cargo?: string | null
           closed_at?: string | null
           colaboradores?: string | null
@@ -176,6 +186,7 @@ export type Database = {
           company_website?: string | null
           created_at?: string | null
           email: string
+          fb_lead_id?: string | null
           id?: string
           kanban_stage?: string
           last_activity_at?: string | null
@@ -183,6 +194,8 @@ export type Database = {
           lost_notes?: string | null
           lost_reason?: string | null
           mensagem?: string | null
+          meta_last_event_at?: string | null
+          meta_last_event_sent?: string | null
           name: string
           origem?: string
           stage_updated_at?: string | null
@@ -191,12 +204,16 @@ export type Database = {
           welcome_sent?: boolean
           welcome_sent_at?: string | null
           whatsapp_sent?: boolean | null
+          work_email?: string | null
         }
         Update: {
+          ad_id?: string | null
+          adset_id?: string | null
           assigned_at?: string | null
           assigned_to?: string | null
           briefing_notes?: string | null
           call_date?: string | null
+          campaign_id?: string | null
           cargo?: string | null
           closed_at?: string | null
           colaboradores?: string | null
@@ -205,6 +222,7 @@ export type Database = {
           company_website?: string | null
           created_at?: string | null
           email?: string
+          fb_lead_id?: string | null
           id?: string
           kanban_stage?: string
           last_activity_at?: string | null
@@ -212,6 +230,8 @@ export type Database = {
           lost_notes?: string | null
           lost_reason?: string | null
           mensagem?: string | null
+          meta_last_event_at?: string | null
+          meta_last_event_sent?: string | null
           name?: string
           origem?: string
           stage_updated_at?: string | null
@@ -220,6 +240,7 @@ export type Database = {
           welcome_sent?: boolean
           welcome_sent_at?: string | null
           whatsapp_sent?: boolean | null
+          work_email?: string | null
         }
         Relationships: [
           {
