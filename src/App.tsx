@@ -12,6 +12,7 @@ import PrintablePresentation from "./pages/PrintablePresentation";
 import Dashboard from "./pages/admin/Dashboard";
 import Templates from "./pages/admin/Templates";
 import StrategicDashboard from "./pages/admin/StrategicDashboard";
+import Unsubscribe from "./pages/Unsubscribe";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
