@@ -109,6 +109,10 @@ function parseInvestment(text: string | null): number {
   return isNaN(val) ? 0 : val;
 }
 
+const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
+const isTestEmail = (email: string) =>
+  TEST_DOMAINS.some((d) => email.toLowerCase().endsWith(d));
+
 export function useStrategicDashboard() {
   const [leads, setLeads] = useState<DashboardLead[]>([]);
   const [, setActivities] = useState<DashboardActivity[]>([]);
