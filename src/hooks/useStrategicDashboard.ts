@@ -182,7 +182,6 @@ export function useStrategicDashboard() {
     if (!activeCampaign) return [];
     const goals = activeCampaign.goals;
     const total = campaignLeads.length;
-    const activeCL = campaignLeads.filter((l) => l.status !== "lost");
 
     // Em contato: leads que passaram de boas_vindas (reached em_contato+) / total
     const emContatoCount = campaignLeads.filter((l) => hasReachedAtLeast(l, "em_contato")).length;
