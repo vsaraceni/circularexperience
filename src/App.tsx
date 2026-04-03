@@ -27,6 +27,14 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin/pipeline"
+            element={
+              <ProtectedRoute>
+                <Pipeline />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/proposta/:slug" element={<ProposalView />} />
           <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
           <Route

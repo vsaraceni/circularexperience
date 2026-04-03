@@ -187,17 +187,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-background/95 backdrop-blur-md sticky top-0 z-40">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <LogoImage src={logo} alt="Movimento Circular" className="h-10" />
-            <span className="text-lg font-bold text-foreground">Dashboard</span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/admin/propostas")}>
-            <ArrowLeft className="h-4 w-4 mr-1" /> Pipeline
-          </Button>
-        </div>
-      </header>
+      <CrmNavbar currentModule="dashboard" />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Filters */}
