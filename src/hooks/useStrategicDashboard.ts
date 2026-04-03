@@ -134,7 +134,7 @@ export function useStrategicDashboard() {
       supabase.from("campaigns").select("*").order("created_at", { ascending: false }),
     ]);
 
-    if (leadsRes.data) setLeads(leadsRes.data as DashboardLead[]);
+    if (leadsRes.data) setLeads((leadsRes.data as DashboardLead[]).filter(l => !isTestEmail(l.email)));
     if (activitiesRes.data) setActivities(activitiesRes.data as DashboardActivity[]);
     if (profilesRes.data) setProfiles(profilesRes.data as DashboardProfile[]);
     if (proposalsRes.data) setProposals(proposalsRes.data as DashboardProposal[]);

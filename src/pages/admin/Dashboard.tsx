@@ -88,7 +88,7 @@ const Dashboard = () => {
         supabase.from("proposal_submissions").select("id"),
         supabase.from("profiles").select("id, full_name"),
       ]);
-      if (leadsRes.data) setLeads(leadsRes.data);
+      if (leadsRes.data) setLeads(leadsRes.data.filter(l => !isTestEmail(l.email)));
       if (proposalsRes.data) setProposals(proposalsRes.data);
       if (subsRes.data) setSubmissions(subsRes.data);
       if (profilesRes.data) setProfiles(profilesRes.data);
