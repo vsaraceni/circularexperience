@@ -171,7 +171,6 @@ export function usePerformanceDashboard() {
   // Follow-up discipline
   const followUpMetrics = useMemo((): FollowUpMetrics => {
     const now = new Date();
-    const todayStart = startOfDay(now);
     const relevantLeadIds = ownerFilter === "all" ? null : new Set(filteredLeads.map(l => l.id));
 
     const filtered = relevantLeadIds ? followUps.filter(f => relevantLeadIds.has(f.lead_id)) : followUps;
