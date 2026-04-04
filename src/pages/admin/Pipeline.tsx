@@ -18,6 +18,7 @@ import MissionsBanner from "@/components/admin/MissionsBanner";
 import LostLeadsView from "@/components/admin/LostLeadsView";
 import ProposalForm from "@/components/admin/ProposalForm";
 import CrmNavbar from "@/components/admin/CrmNavbar";
+import DailyBriefing from "@/components/admin/DailyBriefing";
 
 import type { Proposal } from "./Proposals";
 
