@@ -303,7 +303,8 @@ function LeadDrawerWrapper({ leadId, onClose }: { leadId: string; onClose: () =>
 
   useState(() => {
     (async () => {
-      const { data } = await (await import("@/integrations/supabase/client")).supabase
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = await supabase
         .from("leads")
         .select("*")
         .eq("id", leadId)
@@ -319,8 +320,7 @@ function LeadDrawerWrapper({ leadId, onClose }: { leadId: string; onClose: () =>
       lead={lead}
       open={open}
       onOpenChange={(v) => { setOpen(v); if (!v) onClose(); }}
-      userId=""
-      onLeadUpdated={() => {}}
+      onQuickAction={() => {}}
     />
   );
 }
