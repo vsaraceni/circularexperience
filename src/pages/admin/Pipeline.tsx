@@ -18,6 +18,7 @@ import MissionsBanner from "@/components/admin/MissionsBanner";
 import LostLeadsView from "@/components/admin/LostLeadsView";
 import ProposalForm from "@/components/admin/ProposalForm";
 import CrmNavbar from "@/components/admin/CrmNavbar";
+import DailyBriefing from "@/components/admin/DailyBriefing";
 
 import type { Proposal } from "./Proposals";
 
@@ -253,6 +254,7 @@ const Pipeline = () => {
   return (
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: 'hsl(var(--color-bg-page))' }}>
       <CrmNavbar currentModule="pipeline" />
+      {user && <DailyBriefing userId={user.id} />}
 
       {showLost ? (
         <main className="flex-1 overflow-auto px-6 py-5">

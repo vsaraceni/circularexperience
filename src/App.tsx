@@ -12,6 +12,7 @@ import PrintablePresentation from "./pages/PrintablePresentation";
 import Dashboard from "./pages/admin/Dashboard";
 import Templates from "./pages/admin/Templates";
 import StrategicDashboard from "./pages/admin/StrategicDashboard";
+import PerformanceDashboard from "./pages/admin/PerformanceDashboard";
 import Pipeline from "./pages/admin/Pipeline";
 import Unsubscribe from "./pages/Unsubscribe";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -58,6 +59,14 @@ const App = () => (
             element={
               <ProtectedRoute requireAdmin>
                 <Templates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/performance"
+            element={
+              <ProtectedRoute>
+                <PerformanceDashboard />
               </ProtectedRoute>
             }
           />
