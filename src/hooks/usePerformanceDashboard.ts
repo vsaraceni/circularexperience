@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInDays, differenceInHours, format, subDays, startOfDay, isAfter, isBefore, parseISO } from "date-fns";
+import { differenceInDays, format, subDays, startOfDay, isBefore } from "date-fns";
 
 const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
 const isTestEmail = (email: string) =>

@@ -9,7 +9,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle, Clock, AlertTriangle, TrendingUp, CalendarCheck } from "lucide-react";
 import LeadDrawer from "@/components/admin/LeadDrawer";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const CATEGORY_COLORS: Record<string, string> = {
   Comunicação: "#2FB2C0",
