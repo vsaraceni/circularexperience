@@ -204,6 +204,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         user_id: userId,
         activity_type: "stage_mudou",
         content: `Movido de ${STAGE_LABELS[oldStage]} para ${STAGE_LABELS[newStage]}`,
+        metadata: { from: oldStage, to: newStage },
       });
 
       // Send proposal alert email when moving to call_agendada (fire-and-forget)
