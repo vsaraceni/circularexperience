@@ -13,12 +13,13 @@ import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
-type ModuleKey = "pipeline" | "propostas" | "dashboard" | "painel";
+type ModuleKey = "pipeline" | "propostas" | "dashboard" | "painel" | "performance";
 
 const NAV_ITEMS: { key: ModuleKey; label: string; icon: typeof LayoutGrid; path: string }[] = [
   { key: "pipeline", label: "Pipeline", icon: LayoutGrid, path: "/admin/pipeline" },
   { key: "propostas", label: "Propostas", icon: FileText, path: "/admin/propostas" },
   { key: "dashboard", label: "Dashboard", icon: BarChart3, path: "/admin/dashboard" },
+  { key: "performance", label: "Performance", icon: Gauge, path: "/admin/performance" },
   { key: "painel", label: "Painel", icon: Activity, path: "/painel" },
 ];
 

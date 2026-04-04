@@ -63,6 +63,14 @@ const App = () => (
             }
           />
           <Route
+            path="/admin/performance"
+            element={
+              <ProtectedRoute>
+                <PerformanceDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/painel"
             element={
               <ProtectedRoute>

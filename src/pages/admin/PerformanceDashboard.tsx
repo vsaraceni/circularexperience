@@ -20,9 +20,8 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const PerformanceDashboard = () => {
-  const navigate = useNavigate();
   const {
-    loading, profiles, profileMap, agingLeads, followUpMetrics,
+    loading, profiles, agingLeads, followUpMetrics,
     dailyActions, actionsPerDay, periodDays, setPeriodDays,
     ownerFilter, setOwnerFilter,
   } = usePerformanceDashboard();
