@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +9,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CheckCircle, Clock, AlertTriangle, TrendingUp, CalendarCheck } from "lucide-react";
 import LeadDrawer from "@/components/admin/LeadDrawer";
+import { supabase } from "@/integrations/supabase/client";
 
 const CATEGORY_COLORS: Record<string, string> = {
   Comunicação: "#2FB2C0",
