@@ -1,30 +1,16 @@
 
 
-## Exportação Propostas + Leads: CSV + VIEW SQL
+## Corrigir exportação CSV — dados do lead ausentes
 
-### O que será feito
+### Diagnóstico
+A VIEW `vw_proposals_leads` está correta no banco — todos os campos do lead (email, telefone, kanban_stage, origem, etc.) retornam dados. O problema foi exclusivamente no script de exportação que gerou o CSV original.
 
-1. **VIEW SQL permanente** (`vw_proposals_leads`) — JOIN de `proposals` com `leads`, expondo todos os campos relevantes em uma única consulta. Acessível via `SELECT * FROM vw_proposals_leads` em qualquer script externo.
+### Solução
+Regenerar o CSV via `psql` direto, usando o JOIN completo com todas as colunas. Sem alteração na VIEW ou em código — apenas re-exportar.
 
-2. **CSV imediato** — Exportação para `/mnt/documents/propostas_leads.csv` com todos os dados combinados.
-
-### Campos incluídos na VIEW
-
-**Da proposta**: id, slug, status, company_name, contact_name, contact_role, title, scope, investment, considerations, event_date, valid_until, author_name, author_email, author_phone, created_at
-
-**Do lead**: email, telefone, cargo, company, kanban_stage, lost_at_stage, lost_reason, lost_notes, origem, colaboradores, briefing_notes, work_email, company_website, company_description, assigned_to, call_date, created_at (como lead_created_at)
-
-### Detalhes técnicos
-
-- Migração SQL: `CREATE VIEW public.vw_proposals_leads AS SELECT ...` com LEFT JOIN
-- RLS não se aplica a views — o acesso segue as permissões da tabela base (já protegida)
-- O CSV será gerado via `psql COPY` direto do JOIN
-- Exclui leads de teste (`@atinaedu.com.br`, `@movimentocircular.io`)
-
-### Arquivos afetados
+### Ação
 
 | Ação | Detalhe |
 |------|---------|
-| Migração SQL | CREATE VIEW `vw_proposals_leads` |
-| Script export | CSV em `/mnt/documents/propostas_leads.csv` |
+| Script export | Novo CSV em `/mnt/documents/propostas_leads.csv` via `psql COPY` da view |
 
