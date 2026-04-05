@@ -716,7 +716,61 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_proposals_leads: {
+        Row: {
+          assigned_to: string | null
+          author_email: string | null
+          author_name: string | null
+          author_phone: string | null
+          briefing_notes: string | null
+          call_date: string | null
+          colaboradores: string | null
+          company_description: string | null
+          company_name: string | null
+          company_website: string | null
+          considerations: string | null
+          contact_name: string | null
+          contact_role: string | null
+          event_date: string | null
+          id: string | null
+          investment: string | null
+          kanban_stage: string | null
+          lead_cargo: string | null
+          lead_company: string | null
+          lead_created_at: string | null
+          lead_email: string | null
+          lead_id: string | null
+          lead_status: string | null
+          lead_telefone: string | null
+          lost_at_stage: string | null
+          lost_notes: string | null
+          lost_reason: string | null
+          origem: string | null
+          proposal_created_at: string | null
+          proposal_status: string | null
+          scope: string | null
+          slug: string | null
+          title: string | null
+          valid_until: string | null
+          work_email: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       delete_email: {
