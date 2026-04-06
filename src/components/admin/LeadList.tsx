@@ -47,6 +47,8 @@ export interface Lead {
   ad_id?: string | null;
   adset_id?: string | null;
   campaign_id?: string | null;
+  valor_proposta?: number | null;
+  proxima_acao?: string | null;
 }
 
 interface AuthorDefaults {

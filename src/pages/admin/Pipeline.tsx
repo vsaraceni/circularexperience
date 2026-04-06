@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Plus, Search, Eye, ArrowLeft, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, Eye, ArrowLeft, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal, ListChecks, Kanban } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
@@ -16,6 +16,7 @@ import type { Lead } from "@/components/admin/LeadList";
 import KanbanBoard from "@/components/admin/KanbanBoard";
 import MissionsBanner from "@/components/admin/MissionsBanner";
 import LostLeadsView from "@/components/admin/LostLeadsView";
+import PriorityListView from "@/components/admin/PriorityListView";
 import ProposalForm from "@/components/admin/ProposalForm";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import DailyBriefing from "@/components/admin/DailyBriefing";
@@ -42,6 +43,7 @@ const Pipeline = () => {
   const [filterOwner, setFilterOwner] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStages, setFilterStages] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
@@ -152,8 +154,11 @@ const Pipeline = () => {
     } else if (filterStatus === "no_prazo") {
       result = result.filter((l) => getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "normal");
     }
+    if (filterStages.length > 0) {
+      result = result.filter((l) => filterStages.includes(l.kanban_stage));
+    }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, allPendingFollowUps, proposals]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, filterStages, allPendingFollowUps, proposals]);
 
   const handleGenerateProposal = (lead: Lead) => {
     setPrefill({
@@ -232,7 +237,29 @@ const Pipeline = () => {
 
   const [sortMode, setSortMode] = useState<"urgency" | "arrival" | "stale">("urgency");
   const [searchFocused, setSearchFocused] = useState(false);
-  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length;
+  const [viewMode, setViewMode] = useState<"kanban" | "priorities">(() => {
+    try { return (localStorage.getItem("pipeline_view") as "kanban" | "priorities") || "kanban"; } catch { return "kanban"; }
+  });
+  const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
+  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length;
+
+  const toggleViewMode = (mode: "kanban" | "priorities") => {
+    setViewMode(mode);
+    try { localStorage.setItem("pipeline_view", mode); } catch {}
+  };
+
+  const PIPELINE_STAGES = [
+    { id: "novo", label: "Novo" },
+    { id: "boas_vindas", label: "Boas-Vindas" },
+    { id: "em_contato", label: "Em Contato" },
+    { id: "call_agendada", label: "Call Agendada" },
+    { id: "proposta", label: "Proposta" },
+    { id: "nutricao", label: "Nutrição" },
+  ];
+
+  const toggleStageFilter = (stageId: string) => {
+    setFilterStages(prev => prev.includes(stageId) ? prev.filter(s => s !== stageId) : [...prev, stageId]);
+  };
 
   if (showForm) {
     return (
@@ -299,6 +326,30 @@ const Pipeline = () => {
               }}
             />
             <div className="h-4 w-px hidden md:block" style={{ background: 'hsl(var(--color-border))' }} />
+
+            {/* View mode toggle */}
+            <div className="hidden md:flex items-center rounded-lg overflow-hidden" style={{ border: '1px solid hsl(var(--color-border))' }}>
+              <button
+                onClick={() => toggleViewMode("kanban")}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium transition-all"
+                style={{
+                  background: viewMode === "kanban" ? 'hsl(var(--color-brand))' : 'transparent',
+                  color: viewMode === "kanban" ? 'white' : 'hsl(var(--color-text-muted))',
+                }}
+              >
+                <Kanban className="h-3 w-3" /> Kanban
+              </button>
+              <button
+                onClick={() => toggleViewMode("priorities")}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium transition-all"
+                style={{
+                  background: viewMode === "priorities" ? 'hsl(var(--color-brand))' : 'transparent',
+                  color: viewMode === "priorities" ? 'white' : 'hsl(var(--color-text-muted))',
+                }}
+              >
+                <ListChecks className="h-3 w-3" /> Prioridades
+              </button>
+            </div>
 
             {/* Sort pills */}
             <div className="hidden md:flex items-center gap-1">
@@ -381,9 +432,40 @@ const Pipeline = () => {
                     <SelectItem value="no_prazo">No prazo</SelectItem>
                   </SelectContent>
                 </Select>
+                <div>
+                  <p className="text-[10px] font-medium mb-1" style={{ color: 'hsl(var(--color-text-secondary))' }}>Etapa do funil</p>
+                  <div className="flex flex-wrap gap-1">
+                    {PIPELINE_STAGES.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => toggleStageFilter(s.id)}
+                        className="px-2 py-0.5 text-[10px] rounded-full transition-all"
+                        style={{
+                          background: filterStages.includes(s.id) ? 'hsl(var(--color-brand))' : 'hsl(var(--color-bg-page))',
+                          color: filterStages.includes(s.id) ? 'white' : 'hsl(var(--color-text-secondary))',
+                          border: `1px solid ${filterStages.includes(s.id) ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))'}`,
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {viewMode === "priorities" && (
+                  <Select value={prioritySortKey} onValueChange={(v) => setPrioritySortKey(v as any)}>
+                    <SelectTrigger className="w-full h-8 rounded-lg text-xs"><SelectValue placeholder="Ordenação" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sla">SLA (padrão)</SelectItem>
+                      <SelectItem value="oldest">Mais antigo</SelectItem>
+                      <SelectItem value="newest">Mais recente</SelectItem>
+                      <SelectItem value="value">Maior valor</SelectItem>
+                      <SelectItem value="size">Maior empresa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 {activeFilterCount > 0 && (
                   <Button variant="ghost" size="sm" className="w-full h-7 text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}
-                    onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); }}
+                    onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); setFilterStages([]); }}
                   >
                     Limpar filtros
                   </Button>
@@ -434,18 +516,31 @@ const Pipeline = () => {
             </Button>
           </div>
 
-          {/* Kanban */}
+          {/* View content */}
           <div className="flex-1 overflow-hidden">
-            <KanbanBoard
-              leads={filteredLeads}
-              userId={user!.id}
-              proposals={proposals}
-              profiles={profiles}
-              sortMode={sortMode}
-              onLeadUpdated={fetchLeads}
-              onGenerateProposal={handleGenerateProposal}
-              onSendWelcome={handleSendWelcomeFromKanban}
-            />
+            {viewMode === "kanban" ? (
+              <KanbanBoard
+                leads={filteredLeads}
+                userId={user!.id}
+                proposals={proposals}
+                profiles={profiles}
+                sortMode={sortMode}
+                onLeadUpdated={fetchLeads}
+                onGenerateProposal={handleGenerateProposal}
+                onSendWelcome={handleSendWelcomeFromKanban}
+              />
+            ) : (
+              <PriorityListView
+                leads={filteredLeads}
+                userId={user!.id}
+                profiles={profiles}
+                proposals={proposals}
+                sortKey={prioritySortKey}
+                onLeadUpdated={fetchLeads}
+                onGenerateProposal={handleGenerateProposal}
+                onSendWelcome={handleSendWelcomeFromKanban}
+              />
+            )}
           </div>
         </div>
       )}

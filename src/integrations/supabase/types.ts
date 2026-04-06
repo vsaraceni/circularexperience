@@ -298,9 +298,11 @@ export type Database = {
           meta_last_event_sent: string | null
           name: string
           origem: string
+          proxima_acao: string | null
           stage_updated_at: string | null
           status: string
           telefone: string | null
+          valor_proposta: number | null
           welcome_sent: boolean
           welcome_sent_at: string | null
           whatsapp_sent: boolean | null
@@ -335,9 +337,11 @@ export type Database = {
           meta_last_event_sent?: string | null
           name: string
           origem?: string
+          proxima_acao?: string | null
           stage_updated_at?: string | null
           status?: string
           telefone?: string | null
+          valor_proposta?: number | null
           welcome_sent?: boolean
           welcome_sent_at?: string | null
           whatsapp_sent?: boolean | null
@@ -372,9 +376,11 @@ export type Database = {
           meta_last_event_sent?: string | null
           name?: string
           origem?: string
+          proxima_acao?: string | null
           stage_updated_at?: string | null
           status?: string
           telefone?: string | null
+          valor_proposta?: number | null
           welcome_sent?: boolean
           welcome_sent_at?: string | null
           whatsapp_sent?: boolean | null
@@ -730,6 +736,7 @@ export type Database = {
           company_website: string | null
           considerations: string | null
           contact_name: string | null
+          contact_name_lead: string | null
           contact_role: string | null
           event_date: string | null
           id: string | null
@@ -748,10 +755,12 @@ export type Database = {
           origem: string | null
           proposal_created_at: string | null
           proposal_status: string | null
+          proxima_acao: string | null
           scope: string | null
           slug: string | null
           title: string | null
           valid_until: string | null
+          valor_proposta: number | null
           work_email: string | null
         }
         Relationships: [
