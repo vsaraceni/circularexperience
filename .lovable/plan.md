@@ -1,54 +1,33 @@
 
 
-## Relatório de Avanços On-Demand no Menu Admin
+## Correção: Relatório de Avanços com dados inconsistentes
 
-### O que será feito
+### Diagnóstico
 
-Um novo item no menu do avatar do administrador chamado "Relatório de Avanços" que abre um dialog/modal onde o gestor pode:
+O componente `DigestReportDialog.tsx` tem dois problemas que fazem os dados parecerem fixos/hardcoded:
 
-1. Escolher o período de consolidação: Hoje, Ontem, Semana passada, Mês passado, Últimos 30 dias
-2. Clicar em "Gerar Relatório" para produzir uma mensagem formatada (igual ao email de digest) com:
-   - Missões do pipeline (Novos, Follow-up, Agendamento, Calls, Briefing) com contagens
-   - Barra de progresso das missões
-   - Ações realizadas no período (total + por categoria)
-   - Follow-ups agendados/concluídos/atrasados
-   - SLA críticos
-3. Botão "Copiar" para copiar a mensagem como texto para colar no WhatsApp/email
+1. **Follow-ups sem filtro de período** (linha 113): A query busca TODOS os follow-ups do banco, sem `.gte()/.lte()` pelo período selecionado. Resultado: os números de follow-ups são sempre os mesmos independente do período escolhido.
 
-### Implementação
+2. **Missões mostram estado atual do pipeline** (linhas 122-137): As missões (Novos, Follow-up, Agendamento, Calls, Briefing) calculam o estado atual dos leads, não filtram por período. Quando o gestor escolhe "Semana passada", os dados de missões são idênticos a "Hoje". Isso faz parecer hardcoded.
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/admin/DigestReportDialog.tsx` | **Novo** — Dialog com seletor de período, geração de relatório formatado, botão copiar |
-| `src/components/admin/CrmNavbar.tsx` | Adicionar item "Relatório de Avanços" no DropdownMenu do avatar (ao lado de Perfil e Central de Emails) |
+### Solução
 
-### Detalhes do componente `DigestReportDialog`
+| Problema | Correção |
+|----------|---------|
+| Follow-ups sem filtro | Adicionar `.gte("due_date", fromDate).lte("due_date", toDate)` na query |
+| Missões fixas | Manter missões como "estado atual" (são um snapshot do pipeline agora), mas separar visualmente com label "Estado atual do pipeline" para não confundir com dados do período. Alternativamente, para períodos passados, contar atividades de stage_mudou no período como proxy de progresso |
+| Ações fixas para "Hoje" com 0 | Nenhum bug — se não houve ações hoje, mostra 0 corretamente |
 
-- **Seletor de período**: Select com opções "Hoje", "Ontem", "Semana passada", "Mês passado", "Últimos 30 dias"
-- **Dados**: Reutiliza a mesma lógica do `usePerformanceDashboard` e `MissionsBanner` — consulta `leads`, `lead_activities` e `lead_follow_ups` no período selecionado
-- **Saída visual**: Card estilizado com as mesmas seções do email digest (missões com cores, progresso, resumo de ações)
-- **Saída texto**: Versão plaintext formatada para copiar (emoji + texto, estilo WhatsApp)
-- **Botão "Copiar relatório"**: Copia o texto formatado para o clipboard com toast de confirmação
+**Abordagem escolhida para Missões**: Para períodos passados, as missões não fazem sentido (são tarefas de hoje). A seção de Missões só aparece quando o período é "Hoje". Para outros períodos, mostrar um resumo de movimentação: quantos leads entraram, quantos avançaram de etapa, quantos foram fechados/perdidos — tudo filtrado pelo período.
 
-### Exemplo de saída copiável
+### Mudanças no arquivo `DigestReportDialog.tsx`
 
-```
-☀️ Relatório de Avanços — 01/04 a 06/04
-
-🎯 Missões: 3/5 resolvidas
-  ✅ Follow-up (0)
-  ✅ Calls (0)
-  ✅ Briefing (0)
-  ⚠️ Novos (2)
-  ⚠️ Agendamento (3)
-
-📊 Ações no período: 47
-  Comunicação: 18 | Progresso: 12 | Propostas: 8 | Follow-up: 6 | Outros: 3
-
-📋 Follow-ups: 15 agendados, 12 concluídos, 2 atrasados
-🚨 SLA críticos: 3 leads
-```
+1. **Follow-ups**: filtrar por `due_date` dentro do período
+2. **Missões**: exibir apenas para período "Hoje"
+3. **Novo bloco "Movimentação"** (para todos os períodos): contar atividades `lead_recebido`, `stage_mudou`, `fechado`, `perdido` no período — dados que realmente mudam conforme o período
+4. **SLA críticos**: manter como estado atual (sempre relevante), mas com label claro
 
 ### Sem migração SQL
-Todos os dados já existem nas tabelas `leads`, `lead_activities` e `lead_follow_ups`.
+
+Todas as queries já funcionam com as tabelas existentes — o problema é apenas lógica de filtro no frontend.
 
