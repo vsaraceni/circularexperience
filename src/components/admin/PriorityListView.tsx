@@ -66,7 +66,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     leads.filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado"),
   [leads]);
 
-  const sortLeads = (list: Lead[]) => {
+  const sortLeads = useCallback((list: Lead[]) => {
     return [...list].sort((a, b) => {
       if (sortKey === "value") {
         return ((b as any).valor_proposta || 0) - ((a as any).valor_proposta || 0);
@@ -80,7 +80,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       if (sortKey === "newest") {
         return new Date(b.stage_updated_at || b.created_at || 0).getTime() - new Date(a.stage_updated_at || a.created_at || 0).getTime();
       }
-      // default: sla — bigger company first, then value, then oldest
       const sizeA = COLABORADORES_WEIGHT[a.colaboradores || ""] || 0;
       const sizeB = COLABORADORES_WEIGHT[b.colaboradores || ""] || 0;
       if (sizeB !== sizeA) return sizeB - sizeA;
@@ -89,7 +88,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       if (valB !== valA) return valB - valA;
       return new Date(a.stage_updated_at || a.created_at || 0).getTime() - new Date(b.stage_updated_at || b.created_at || 0).getTime();
     });
-  };
+  }, [sortKey]);
 
   const groups = useMemo(() => {
     const grouped: Record<UrgencyLevel, Lead[]> = { critical: [], warning: [], normal: [] };
@@ -104,7 +103,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       warning: sortLeads(grouped.warning),
       normal: sortLeads(grouped.normal),
     };
-  }, [activeLeads, followUpsByLead, sortKey]);
+  }, [activeLeads, followUpsByLead, sortLeads]);
 
   const toggle = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
 
