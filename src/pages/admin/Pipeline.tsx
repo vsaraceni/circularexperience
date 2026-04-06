@@ -43,6 +43,7 @@ const Pipeline = () => {
   const [filterOwner, setFilterOwner] = useState("all");
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStages, setFilterStages] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
