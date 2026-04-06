@@ -432,9 +432,40 @@ const Pipeline = () => {
                     <SelectItem value="no_prazo">No prazo</SelectItem>
                   </SelectContent>
                 </Select>
+                <div>
+                  <p className="text-[10px] font-medium mb-1" style={{ color: 'hsl(var(--color-text-secondary))' }}>Etapa do funil</p>
+                  <div className="flex flex-wrap gap-1">
+                    {PIPELINE_STAGES.map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => toggleStageFilter(s.id)}
+                        className="px-2 py-0.5 text-[10px] rounded-full transition-all"
+                        style={{
+                          background: filterStages.includes(s.id) ? 'hsl(var(--color-brand))' : 'hsl(var(--color-bg-page))',
+                          color: filterStages.includes(s.id) ? 'white' : 'hsl(var(--color-text-secondary))',
+                          border: `1px solid ${filterStages.includes(s.id) ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))'}`,
+                        }}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {viewMode === "priorities" && (
+                  <Select value={prioritySortKey} onValueChange={(v) => setPrioritySortKey(v as any)}>
+                    <SelectTrigger className="w-full h-8 rounded-lg text-xs"><SelectValue placeholder="Ordenação" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sla">SLA (padrão)</SelectItem>
+                      <SelectItem value="oldest">Mais antigo</SelectItem>
+                      <SelectItem value="newest">Mais recente</SelectItem>
+                      <SelectItem value="value">Maior valor</SelectItem>
+                      <SelectItem value="size">Maior empresa</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 {activeFilterCount > 0 && (
                   <Button variant="ghost" size="sm" className="w-full h-7 text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}
-                    onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); }}
+                    onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); setFilterStages([]); }}
                   >
                     Limpar filtros
                   </Button>
