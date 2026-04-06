@@ -241,7 +241,25 @@ const Pipeline = () => {
     try { return (localStorage.getItem("pipeline_view") as "kanban" | "priorities") || "kanban"; } catch { return "kanban"; }
   });
   const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
-  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length;
+  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length;
+
+  const toggleViewMode = (mode: "kanban" | "priorities") => {
+    setViewMode(mode);
+    try { localStorage.setItem("pipeline_view", mode); } catch {}
+  };
+
+  const PIPELINE_STAGES = [
+    { id: "novo", label: "Novo" },
+    { id: "boas_vindas", label: "Boas-Vindas" },
+    { id: "em_contato", label: "Em Contato" },
+    { id: "call_agendada", label: "Call Agendada" },
+    { id: "proposta", label: "Proposta" },
+    { id: "nutricao", label: "Nutrição" },
+  ];
+
+  const toggleStageFilter = (stageId: string) => {
+    setFilterStages(prev => prev.includes(stageId) ? prev.filter(s => s !== stageId) : [...prev, stageId]);
+  };
 
   if (showForm) {
     return (
