@@ -225,7 +225,4 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   );
 };
 
-// Re-export Badge for internal use
-import { Badge } from "@/components/ui/badge";
-
 export default PriorityListView;
