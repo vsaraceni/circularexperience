@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
 import PriorityCard from "./PriorityCard";
