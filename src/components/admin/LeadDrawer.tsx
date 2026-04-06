@@ -755,4 +755,129 @@ function BriefingField({ leadId, initialValue, onSaved }: { leadId: string; init
   );
 }
 
+
+const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+
+function ProximaAcaoField({ leadId, initialValue, onSaved }: { leadId: string; initialValue: string; onSaved?: () => void }) {
+  const [text, setText] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const dirty = text !== initialValue;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await supabase.from("leads").update({ proxima_acao: text || null } as any).eq("id", leadId);
+      toast.success("Próxima ação salva!");
+      onSaved?.();
+    } catch {
+      toast.error("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Input
+        placeholder="Ex: Ligar terça às 14h"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        className="h-8 text-xs flex-1"
+      />
+      {dirty && (
+        <Button size="sm" className="h-8 px-2 text-xs" disabled={saving} onClick={handleSave}>
+          <Save className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function ValorPropostaField({ leadId, initialValue, onSaved }: { leadId: string; initialValue?: number | null; onSaved?: () => void }) {
+  const [value, setValue] = useState(initialValue != null ? String(initialValue) : "");
+  const [saving, setSaving] = useState(false);
+  const dirty = value !== (initialValue != null ? String(initialValue) : "");
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const numVal = value ? parseFloat(value.replace(/[^\d.,]/g, "").replace(",", ".")) : null;
+      await supabase.from("leads").update({ valor_proposta: numVal } as any).eq("id", leadId);
+      toast.success("Valor salvo!");
+      onSaved?.();
+    } catch {
+      toast.error("Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <div className="relative flex-1">
+        <span className="absolute left-2 top-1.5 text-xs text-muted-foreground">R$</span>
+        <Input
+          placeholder="0,00"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="h-8 text-xs pl-8"
+        />
+      </div>
+      {dirty && (
+        <Button size="sm" className="h-8 px-2 text-xs" disabled={saving} onClick={handleSave}>
+          <Save className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function AdvanceStageButton({ lead, userId, onDone }: { lead: Lead; userId?: string; onDone?: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const currentIdx = STAGE_ORDER.indexOf(lead.kanban_stage);
+
+  if (currentIdx < 0 || currentIdx >= STAGE_ORDER.length - 1) return null;
+
+  const nextStage = STAGE_ORDER[currentIdx + 1];
+  const nextLabel = STAGE_LABELS[nextStage] || nextStage;
+  const isClosing = nextStage === "fechado";
+
+  const handleAdvance = async () => {
+    setLoading(true);
+    try {
+      const now = new Date().toISOString();
+      const updates: any = { kanban_stage: nextStage, stage_updated_at: now, last_activity_at: now };
+      if (isClosing) { updates.status = "converted"; updates.closed_at = now; }
+      await supabase.from("leads").update(updates).eq("id", lead.id);
+      if (userId) {
+        await supabase.from("lead_activities").insert({
+          lead_id: lead.id, user_id: userId,
+          activity_type: "stage_mudou",
+          content: `Avançado para ${nextLabel}`,
+          metadata: { from: lead.kanban_stage, to: nextStage },
+        });
+      }
+      toast.success(isClosing ? "Lead fechado! 🎉" : `Avançado para ${nextLabel}`);
+      onDone?.();
+    } catch {
+      toast.error("Erro ao avançar etapa");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button
+      size="sm"
+      className="w-full h-8 text-xs gap-1"
+      style={{ background: isClosing ? '#388E3C' : 'hsl(var(--color-brand))', color: 'white' }}
+      disabled={loading}
+      onClick={handleAdvance}
+    >
+      {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ChevronRight className="h-3 w-3" />}
+      {isClosing ? "Marcar como Ganho" : `Avançar → ${nextLabel}`}
+    </Button>
+  );
+}
+
 export default LeadDrawer;
