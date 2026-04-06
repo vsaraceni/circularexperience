@@ -327,6 +327,30 @@ const Pipeline = () => {
             />
             <div className="h-4 w-px hidden md:block" style={{ background: 'hsl(var(--color-border))' }} />
 
+            {/* View mode toggle */}
+            <div className="hidden md:flex items-center rounded-lg overflow-hidden" style={{ border: '1px solid hsl(var(--color-border))' }}>
+              <button
+                onClick={() => toggleViewMode("kanban")}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium transition-all"
+                style={{
+                  background: viewMode === "kanban" ? 'hsl(var(--color-brand))' : 'transparent',
+                  color: viewMode === "kanban" ? 'white' : 'hsl(var(--color-text-muted))',
+                }}
+              >
+                <Kanban className="h-3 w-3" /> Kanban
+              </button>
+              <button
+                onClick={() => toggleViewMode("priorities")}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium transition-all"
+                style={{
+                  background: viewMode === "priorities" ? 'hsl(var(--color-brand))' : 'transparent',
+                  color: viewMode === "priorities" ? 'white' : 'hsl(var(--color-text-muted))',
+                }}
+              >
+                <ListChecks className="h-3 w-3" /> Prioridades
+              </button>
+            </div>
+
             {/* Sort pills */}
             <div className="hidden md:flex items-center gap-1">
               {([
