@@ -153,8 +153,11 @@ const Pipeline = () => {
     } else if (filterStatus === "no_prazo") {
       result = result.filter((l) => getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null) === "normal");
     }
+    if (filterStages.length > 0) {
+      result = result.filter((l) => filterStages.includes(l.kanban_stage));
+    }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, allPendingFollowUps, proposals]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, filterStages, allPendingFollowUps, proposals]);
 
   const handleGenerateProposal = (lead: Lead) => {
     setPrefill({
