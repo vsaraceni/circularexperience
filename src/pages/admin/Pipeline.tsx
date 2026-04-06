@@ -240,7 +240,6 @@ const Pipeline = () => {
   const [viewMode, setViewMode] = useState<"kanban" | "priorities">(() => {
     try { return (localStorage.getItem("pipeline_view") as "kanban" | "priorities") || "kanban"; } catch { return "kanban"; }
   });
-  const [filterStages, setFilterStages] = useState<string[]>([]);
   const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
   const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length;
 
