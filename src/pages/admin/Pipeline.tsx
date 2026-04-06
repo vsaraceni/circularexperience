@@ -516,18 +516,31 @@ const Pipeline = () => {
             </Button>
           </div>
 
-          {/* Kanban */}
+          {/* View content */}
           <div className="flex-1 overflow-hidden">
-            <KanbanBoard
-              leads={filteredLeads}
-              userId={user!.id}
-              proposals={proposals}
-              profiles={profiles}
-              sortMode={sortMode}
-              onLeadUpdated={fetchLeads}
-              onGenerateProposal={handleGenerateProposal}
-              onSendWelcome={handleSendWelcomeFromKanban}
-            />
+            {viewMode === "kanban" ? (
+              <KanbanBoard
+                leads={filteredLeads}
+                userId={user!.id}
+                proposals={proposals}
+                profiles={profiles}
+                sortMode={sortMode}
+                onLeadUpdated={fetchLeads}
+                onGenerateProposal={handleGenerateProposal}
+                onSendWelcome={handleSendWelcomeFromKanban}
+              />
+            ) : (
+              <PriorityListView
+                leads={filteredLeads}
+                userId={user!.id}
+                profiles={profiles}
+                proposals={proposals}
+                sortKey={prioritySortKey}
+                onLeadUpdated={fetchLeads}
+                onGenerateProposal={handleGenerateProposal}
+                onSendWelcome={handleSendWelcomeFromKanban}
+              />
+            )}
           </div>
         </div>
       )}
