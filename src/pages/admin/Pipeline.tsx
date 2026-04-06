@@ -44,6 +44,7 @@ const Pipeline = () => {
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterStages, setFilterStages] = useState<string[]>([]);
+  const [filterTier, setFilterTier] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
@@ -157,8 +158,17 @@ const Pipeline = () => {
     if (filterStages.length > 0) {
       result = result.filter((l) => filterStages.includes(l.kanban_stage));
     }
+    if (filterTier.length > 0) {
+      const TIER_MAP: Record<string, string[]> = {
+        tier1: ["501_a_2000", "mais_de_2000", "acima_de_2000"],
+        tier2: ["101_a_500"],
+        tier3: ["até_100", "51_a_100", "11_a_50", "1_a_10"],
+      };
+      const allowedValues = filterTier.flatMap(t => TIER_MAP[t] || []);
+      result = result.filter((l) => l.colaboradores && allowedValues.includes(l.colaboradores));
+    }
     return result;
-  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, filterStages, allPendingFollowUps, proposals]);
+  }, [allLeads, searchTerm, filterOrigem, filterOwner, filterPeriod, filterStatus, filterStages, filterTier, allPendingFollowUps, proposals]);
 
   const handleGenerateProposal = (lead: Lead) => {
     setPrefill({
@@ -241,7 +251,17 @@ const Pipeline = () => {
     try { return (localStorage.getItem("pipeline_view") as "kanban" | "priorities") || "kanban"; } catch { return "kanban"; }
   });
   const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
-  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length;
+  const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length + filterTier.length;
+
+  const TIER_OPTIONS = [
+    { id: "tier1", label: "Tier 1 (500+)" },
+    { id: "tier2", label: "Tier 2 (101-500)" },
+    { id: "tier3", label: "Tier 3 (até 100)" },
+  ];
+
+  const toggleTierFilter = (tierId: string) => {
+    setFilterTier(prev => prev.includes(tierId) ? prev.filter(t => t !== tierId) : [...prev, tierId]);
+  };
 
   const toggleViewMode = (mode: "kanban" | "priorities") => {
     setViewMode(mode);
@@ -451,6 +471,25 @@ const Pipeline = () => {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="text-[10px] font-medium mb-1" style={{ color: 'hsl(var(--color-text-secondary))' }}>Porte da empresa</p>
+                  <div className="flex flex-wrap gap-1">
+                    {TIER_OPTIONS.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => toggleTierFilter(t.id)}
+                        className="px-2 py-0.5 text-[10px] rounded-full transition-all"
+                        style={{
+                          background: filterTier.includes(t.id) ? 'hsl(var(--color-brand))' : 'hsl(var(--color-bg-page))',
+                          color: filterTier.includes(t.id) ? 'white' : 'hsl(var(--color-text-secondary))',
+                          border: `1px solid ${filterTier.includes(t.id) ? 'hsl(var(--color-brand))' : 'hsl(var(--color-border))'}`,
+                        }}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {viewMode === "priorities" && (
                   <Select value={prioritySortKey} onValueChange={(v) => setPrioritySortKey(v as any)}>
                     <SelectTrigger className="w-full h-8 rounded-lg text-xs"><SelectValue placeholder="Ordenação" /></SelectTrigger>
@@ -465,7 +504,7 @@ const Pipeline = () => {
                 )}
                 {activeFilterCount > 0 && (
                   <Button variant="ghost" size="sm" className="w-full h-7 text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}
-                    onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); setFilterStages([]); }}
+                    onClick={() => { setFilterOrigem("all"); setFilterOwner("all"); setFilterPeriod("all"); setFilterStatus("all"); setFilterStages([]); setFilterTier([]); }}
                   >
                     Limpar filtros
                   </Button>
