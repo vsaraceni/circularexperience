@@ -262,6 +262,24 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </TabsList>
 
           <TabsContent value="resumo" className="overflow-y-auto mt-4 pr-1">
+              {/* Action fields */}
+              {lead.kanban_stage !== "perdido" && lead.kanban_stage !== "fechado" && (
+                <div className="mb-4 space-y-3 rounded-lg border p-3" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--muted) / 0.3)' }}>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+                      <Target className="h-3 w-3" /> Próxima Ação
+                    </label>
+                    <ProximaAcaoField leadId={lead.id} initialValue={(lead as any).proxima_acao || ""} onSaved={onNoteAdded} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
+                      <DollarSign className="h-3 w-3" /> Valor da Proposta
+                    </label>
+                    <ValorPropostaField leadId={lead.id} initialValue={(lead as any).valor_proposta} onSaved={onNoteAdded} />
+                  </div>
+                  <AdvanceStageButton lead={lead} userId={userId} onDone={onNoteAdded} />
+                </div>
+              )}
               <Accordion type="single" collapsible defaultValue="lead-data">
                 {/* Block 1: Dados do Lead */}
                 <AccordionItem value="lead-data">
