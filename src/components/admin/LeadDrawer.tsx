@@ -12,6 +12,7 @@ import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
   Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
+  Target, DollarSign, ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
