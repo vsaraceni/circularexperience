@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import NotificationBell from "@/components/admin/NotificationBell";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
+import DigestReportDialog from "@/components/admin/DigestReportDialog";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
@@ -135,6 +136,11 @@ export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
               {isAdmin && (
                 <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
                   <EmailTemplateEditor />
+                </div>
+              )}
+              {isAdmin && (
+                <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
+                  <DigestReportDialog />
                 </div>
               )}
               <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">
