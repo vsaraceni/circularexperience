@@ -82,14 +82,24 @@ function getPeriodRange(key: PeriodKey): { from: Date; to: Date; label: string }
 
 interface ReportData {
   periodLabel: string;
+  periodKey: PeriodKey;
+  // Missions (only for "today")
   missions: { label: string; count: number; resolved: boolean }[];
   missionsResolved: number;
   missionsTotal: number;
+  // Movement (for all periods)
+  leadsReceived: number;
+  stageChanges: number;
+  leadsClosed: number;
+  leadsLost: number;
+  // Actions
   actionsTotal: number;
   actionsByCategory: Record<string, number>;
+  // Follow-ups (filtered by period)
   followUpsScheduled: number;
   followUpsCompleted: number;
   followUpsOverdue: number;
+  // SLA (current state)
   slaCriticalCount: number;
 }
 
@@ -106,11 +116,13 @@ export default function DigestReportDialog() {
     const { from, to, label } = getPeriodRange(period);
     const fromISO = from.toISOString();
     const toISO = to.toISOString();
+    const fromDate = format(from, "yyyy-MM-dd");
+    const toDate = format(to, "yyyy-MM-dd");
 
     const [leadsRes, activitiesRes, followUpsRes] = await Promise.all([
       supabase.from("leads").select("id, name, email, kanban_stage, status, stage_updated_at, last_activity_at, call_date, briefing_notes"),
       supabase.from("lead_activities").select("id, activity_type, created_at").gte("created_at", fromISO).lte("created_at", toISO),
-      supabase.from("lead_follow_ups").select("id, lead_id, due_date, completed, completed_at"),
+      supabase.from("lead_follow_ups").select("id, lead_id, due_date, completed, completed_at").gte("due_date", fromDate).lte("due_date", toDate),
     ]);
 
     const allLeads = (leadsRes.data || []).filter((l: any) => !isTestEmail(l.email));
@@ -118,31 +130,40 @@ export default function DigestReportDialog() {
     const activities = activitiesRes.data || [];
     const followUps = followUpsRes.data || [];
 
-    // Missions (current state, same logic as MissionsBanner)
-    const novos = activeLeads.filter((l: any) => l.kanban_stage === "novo").length;
-    const boasVindas = activeLeads.filter((l: any) => {
-      if (l.kanban_stage !== "boas_vindas") return false;
-      const days = l.stage_updated_at ? Math.floor((Date.now() - new Date(l.stage_updated_at).getTime()) / 86400000) : 0;
-      return days >= (STAGE_THRESHOLDS.boas_vindas?.warning || 2);
-    }).length;
-    const emContato = activeLeads.filter((l: any) => l.kanban_stage === "em_contato").length;
-    const callsHoje = activeLeads.filter((l: any) => {
-      if (l.kanban_stage !== "call_agendada" || !l.call_date) return false;
-      const d = new Date(l.call_date);
-      const now = new Date();
-      return format(d, "yyyy-MM-dd") === format(now, "yyyy-MM-dd") || format(d, "yyyy-MM-dd") === format(subDays(now, -1), "yyyy-MM-dd");
-    }).length;
-    const briefings = activeLeads.filter((l: any) =>
-      ["call_agendada", "proposta"].includes(l.kanban_stage) && (!l.briefing_notes || l.briefing_notes.trim() === "")
-    ).length;
+    // Movement counts from activities
+    const leadsReceived = activities.filter((a: any) => a.activity_type === "lead_recebido").length;
+    const stageChanges = activities.filter((a: any) => a.activity_type === "stage_mudou").length;
+    const leadsClosed = activities.filter((a: any) => a.activity_type === "fechado").length;
+    const leadsLost = activities.filter((a: any) => a.activity_type === "perdido").length;
 
-    const missions = [
-      { label: "Novos", count: novos, resolved: novos === 0 },
-      { label: "Follow-up", count: boasVindas, resolved: boasVindas === 0 },
-      { label: "Agendamento", count: emContato, resolved: emContato === 0 },
-      { label: "Calls", count: callsHoje, resolved: callsHoje === 0 },
-      { label: "Briefing", count: briefings, resolved: briefings === 0 },
-    ];
+    // Missions (current pipeline state — only relevant for "today")
+    let missions: { label: string; count: number; resolved: boolean }[] = [];
+    if (period === "today") {
+      const novos = activeLeads.filter((l: any) => l.kanban_stage === "novo").length;
+      const boasVindas = activeLeads.filter((l: any) => {
+        if (l.kanban_stage !== "boas_vindas") return false;
+        const days = l.stage_updated_at ? Math.floor((Date.now() - new Date(l.stage_updated_at).getTime()) / 86400000) : 0;
+        return days >= (STAGE_THRESHOLDS.boas_vindas?.warning || 2);
+      }).length;
+      const emContato = activeLeads.filter((l: any) => l.kanban_stage === "em_contato").length;
+      const callsHoje = activeLeads.filter((l: any) => {
+        if (l.kanban_stage !== "call_agendada" || !l.call_date) return false;
+        const d = new Date(l.call_date);
+        const now = new Date();
+        return format(d, "yyyy-MM-dd") === format(now, "yyyy-MM-dd") || format(d, "yyyy-MM-dd") === format(subDays(now, -1), "yyyy-MM-dd");
+      }).length;
+      const briefings = activeLeads.filter((l: any) =>
+        ["call_agendada", "proposta"].includes(l.kanban_stage) && (!l.briefing_notes || l.briefing_notes.trim() === "")
+      ).length;
+
+      missions = [
+        { label: "Novos", count: novos, resolved: novos === 0 },
+        { label: "Follow-up", count: boasVindas, resolved: boasVindas === 0 },
+        { label: "Agendamento", count: emContato, resolved: emContato === 0 },
+        { label: "Calls", count: callsHoje, resolved: callsHoje === 0 },
+        { label: "Briefing", count: briefings, resolved: briefings === 0 },
+      ];
+    }
 
     // Actions by category
     const cats: Record<string, number> = {};
@@ -153,12 +174,11 @@ export default function DigestReportDialog() {
 
     // Follow-ups
     const now = new Date();
-    const todayStr = format(now, "yyyy-MM-dd");
     const fuScheduled = followUps.length;
     const fuCompleted = followUps.filter((f: any) => f.completed).length;
     const fuOverdue = followUps.filter((f: any) => !f.completed && isBefore(new Date(f.due_date + "T23:59:59"), now)).length;
 
-    // SLA critical
+    // SLA critical (current state)
     const slaCritical = activeLeads.filter((l: any) => {
       const th = STAGE_THRESHOLDS[l.kanban_stage];
       if (!th) return false;
@@ -168,9 +188,14 @@ export default function DigestReportDialog() {
 
     setReport({
       periodLabel: label,
+      periodKey: period,
       missions,
       missionsResolved: missions.filter(m => m.resolved).length,
       missionsTotal: missions.length,
+      leadsReceived,
+      stageChanges,
+      leadsClosed,
+      leadsLost,
       actionsTotal: activities.length,
       actionsByCategory: cats,
       followUpsScheduled: fuScheduled,
@@ -186,17 +211,29 @@ export default function DigestReportDialog() {
     const lines: string[] = [];
     lines.push(`☀️ Relatório de Avanços — ${report.periodLabel}`);
     lines.push("");
-    lines.push(`🎯 Missões: ${report.missionsResolved}/${report.missionsTotal} resolvidas`);
-    report.missions.forEach(m => {
-      lines.push(`  ${m.resolved ? "✅" : "⚠️"} ${m.label} (${m.count})`);
-    });
+
+    if (report.periodKey === "today" && report.missions.length > 0) {
+      lines.push(`🎯 Missões do dia: ${report.missionsResolved}/${report.missionsTotal} resolvidas`);
+      report.missions.forEach(m => {
+        lines.push(`  ${m.resolved ? "✅" : "⚠️"} ${m.label} (${m.count})`);
+      });
+      lines.push("");
+    }
+
+    lines.push(`🔄 Movimentação no período:`);
+    lines.push(`  📥 Leads recebidos: ${report.leadsReceived}`);
+    lines.push(`  ➡️ Mudanças de etapa: ${report.stageChanges}`);
+    lines.push(`  🏆 Fechados: ${report.leadsClosed}`);
+    lines.push(`  ❌ Perdidos: ${report.leadsLost}`);
     lines.push("");
+
     const catParts = Object.entries(report.actionsByCategory).map(([k, v]) => `${k}: ${v}`).join(" | ");
     lines.push(`📊 Ações no período: ${report.actionsTotal}`);
     if (catParts) lines.push(`  ${catParts}`);
     lines.push("");
-    lines.push(`📋 Follow-ups: ${report.followUpsScheduled} agendados, ${report.followUpsCompleted} concluídos, ${report.followUpsOverdue} atrasados`);
-    lines.push(`🚨 SLA críticos: ${report.slaCriticalCount} leads`);
+
+    lines.push(`📋 Follow-ups no período: ${report.followUpsScheduled} agendados, ${report.followUpsCompleted} concluídos, ${report.followUpsOverdue} atrasados`);
+    lines.push(`🚨 SLA críticos (atual): ${report.slaCriticalCount} leads`);
     return lines.join("\n");
   }, [report]);
 
@@ -237,53 +274,85 @@ export default function DigestReportDialog() {
         {report && (
           <ScrollArea className="max-h-[400px]">
             <div className="space-y-4 text-sm">
-              {/* Missions */}
-              <div className="rounded-lg border p-3" style={{ borderColor: "hsl(var(--color-border))" }}>
-                <p className="font-semibold mb-2" style={{ color: "hsl(var(--color-text-primary))" }}>
-                  🎯 Missões: {report.missionsResolved}/{report.missionsTotal} resolvidas
-                </p>
-                <div className="w-full h-2 rounded-full mb-2" style={{ background: "hsl(var(--color-bg-subtle))" }}>
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${(report.missionsResolved / report.missionsTotal) * 100}%`, background: "#2FB2C0" }}
-                  />
+              {/* Missions — only for Today */}
+              {report.periodKey === "today" && report.missions.length > 0 && (
+                <div className="rounded-lg border p-3 border-border">
+                  <p className="font-semibold mb-2 text-foreground">
+                    🎯 Missões do dia: {report.missionsResolved}/{report.missionsTotal} resolvidas
+                  </p>
+                  <div className="w-full h-2 rounded-full mb-2 bg-muted">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{ width: `${(report.missionsResolved / report.missionsTotal) * 100}%`, background: "#2FB2C0" }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    {report.missions.map(m => (
+                      <div key={m.label} className="flex items-center gap-2 text-xs">
+                        <span>{m.resolved ? "✅" : "⚠️"}</span>
+                        <span className={m.resolved ? "text-muted-foreground" : "text-foreground"}>
+                          {m.label}
+                        </span>
+                        <span className="font-semibold" style={{ color: m.resolved ? "#388E3C" : "#F4A736" }}>
+                          ({m.count})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  {report.missions.map(m => (
-                    <div key={m.label} className="flex items-center gap-2 text-xs">
-                      <span>{m.resolved ? "✅" : "⚠️"}</span>
-                      <span style={{ color: m.resolved ? "hsl(var(--color-text-muted))" : "hsl(var(--color-text-primary))" }}>
-                        {m.label}
-                      </span>
-                      <span className="font-semibold" style={{ color: m.resolved ? "#388E3C" : "#F4A736" }}>
-                        ({m.count})
-                      </span>
-                    </div>
-                  ))}
+              )}
+
+              {/* Movement */}
+              <div className="rounded-lg border p-3 border-border">
+                <p className="font-semibold mb-2 text-foreground">🔄 Movimentação no período</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span>📥</span>
+                    <span className="text-muted-foreground">Leads recebidos:</span>
+                    <strong className="text-foreground">{report.leadsReceived}</strong>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>➡️</span>
+                    <span className="text-muted-foreground">Mudanças de etapa:</span>
+                    <strong className="text-foreground">{report.stageChanges}</strong>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>🏆</span>
+                    <span className="text-muted-foreground">Fechados:</span>
+                    <strong style={{ color: "#388E3C" }}>{report.leadsClosed}</strong>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span>❌</span>
+                    <span className="text-muted-foreground">Perdidos:</span>
+                    <strong style={{ color: report.leadsLost > 0 ? "#EB626D" : undefined }}>{report.leadsLost}</strong>
+                  </div>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="rounded-lg border p-3" style={{ borderColor: "hsl(var(--color-border))" }}>
-                <p className="font-semibold mb-1" style={{ color: "hsl(var(--color-text-primary))" }}>
+              <div className="rounded-lg border p-3 border-border">
+                <p className="font-semibold mb-1 text-foreground">
                   📊 Ações no período: {report.actionsTotal}
                 </p>
-                <div className="flex flex-wrap gap-2 text-xs" style={{ color: "hsl(var(--color-text-secondary))" }}>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                   {Object.entries(report.actionsByCategory).map(([cat, count]) => (
-                    <span key={cat} className="px-2 py-0.5 rounded-full" style={{ background: "hsl(var(--color-bg-subtle))" }}>
+                    <span key={cat} className="px-2 py-0.5 rounded-full bg-muted">
                       {cat}: <strong>{count}</strong>
                     </span>
                   ))}
+                  {Object.keys(report.actionsByCategory).length === 0 && (
+                    <span className="text-muted-foreground italic">Nenhuma ação registrada</span>
+                  )}
                 </div>
               </div>
 
               {/* Follow-ups + SLA */}
-              <div className="rounded-lg border p-3 space-y-1" style={{ borderColor: "hsl(var(--color-border))" }}>
-                <p className="text-xs" style={{ color: "hsl(var(--color-text-secondary))" }}>
-                  📋 Follow-ups: <strong>{report.followUpsScheduled}</strong> agendados, <strong>{report.followUpsCompleted}</strong> concluídos, <strong style={{ color: report.followUpsOverdue > 0 ? "#EB626D" : undefined }}>{report.followUpsOverdue}</strong> atrasados
+              <div className="rounded-lg border p-3 space-y-1 border-border">
+                <p className="text-xs text-muted-foreground">
+                  📋 Follow-ups no período: <strong>{report.followUpsScheduled}</strong> agendados, <strong>{report.followUpsCompleted}</strong> concluídos, <strong style={{ color: report.followUpsOverdue > 0 ? "#EB626D" : undefined }}>{report.followUpsOverdue}</strong> atrasados
                 </p>
-                <p className="text-xs" style={{ color: report.slaCriticalCount > 0 ? "#EB626D" : "hsl(var(--color-text-secondary))" }}>
-                  🚨 SLA críticos: <strong>{report.slaCriticalCount}</strong> leads
+                <p className="text-xs" style={{ color: report.slaCriticalCount > 0 ? "#EB626D" : undefined }}>
+                  🚨 SLA críticos (estado atual): <strong>{report.slaCriticalCount}</strong> leads
                 </p>
               </div>
 
