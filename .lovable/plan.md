@@ -1,69 +1,55 @@
 
 
-## Estratégia Revisada: CRM em subdomínio separado
+## Correções: Scroll, Colunas Redimensionáveis e Valor da Proposta
 
-### Problema
+### Problemas identificados
 
-Tudo roda no mesmo projeto Lovable — landing page e CRM. Lovable não suporta dois projetos no mesmo codebase, então **não é possível** separar em dois deploys distintos com um único projeto.
+1. **Scroll não funciona**: O container externo usa `flex-1` mas falta `min-h-0` para permitir que o flex child encolha abaixo do conteúdo natural. Sem isso, a div cresce infinitamente e nunca ativa scroll.
 
-### Duas abordagens possíveis
+2. **Colunas não redimensionáveis**: As larguras são fixas via classes (`w-[180px]`, etc.). O usuário não consegue ajustar.
 
-#### Opção A — Roteamento por hostname (mesmo projeto, recomendada)
+3. **Valor da proposta**: A coluna "Valor" exibe apenas `lead.valor_proposta`. Para leads na etapa "proposta" que já têm uma proposta gerada, o valor do campo `investment` da tabela `proposals` não aparece.
 
-Ambos os domínios (`experience.movimentocircular.io` e `crm.movimentocircular.io`) apontam para o mesmo projeto Lovable. No `App.tsx`, detectamos `window.location.hostname` e renderizamos rotas diferentes:
+### Solução
 
-- **`crm.movimentocircular.io`**: mostra `/login`, `/admin/*`, `/painel` — e redireciona `/` para `/login`
-- **`experience.movimentocircular.io`** (e qualquer outro host): mostra `/` (landing), `/proposta/:slug`, `/apresentacao-print/:slug`, `/unsubscribe` — esconde rotas admin
+**Arquivo: `src/components/admin/PriorityListView.tsx`**
 
-**Vantagens**: implementação rápida, mesmo backend, mesmos dados
-**Desvantagens**: o bundle JS é o mesmo para ambos (carrega código não usado)
+1. **Scroll** — Adicionar `min-h-0` no container flex (`flex-1 flex flex-col overflow-hidden min-h-0`) e no wrapper da tabela (`flex-1 overflow-auto min-h-0`).
 
-#### Opção B — Dois projetos Lovable separados
+2. **Colunas redimensionáveis** — Usar CSS nativo `resize: horizontal; overflow: hidden` nos `<th>` com um estilo `min-width` e `max-width`. Remover as classes `w-[Xpx]` fixas e usar `style={{ width, minWidth, maxWidth }}` para permitir que o browser aplique o resize handle nativo. Alternativa mais elegante: usar `column-resize` com cursor drag handle via `onMouseDown` no bordo direito de cada `<th>`.
 
-Criar um novo projeto Lovable só com o CRM, copiar componentes admin, conectar ao mesmo Supabase.
+   Abordagem escolhida: **drag handle manual** — um `<div>` invisível de 4px na borda direita de cada header que, ao arrastar, ajusta a largura da coluna via state `colWidths: number[]`. Isso é mais controlável e funciona melhor que o `resize` nativo em tabelas.
 
-**Vantagens**: bundles independentes, separação total
-**Desvantagens**: manutenção duplicada, trabalho significativo de migração
+3. **Valor da proposta real** — No `useMemo` que constrói `rows`, criar um mapa `proposalValueByLead` a partir de `proposals`. Na coluna Valor, exibir: `proposals[lead_id].investment` (se existir e lead estiver em etapa "proposta" ou "nutricao") OU `lead.valor_proposta`. Se ambos existirem, priorizar o valor da proposta gerada. Adicionar label "(proposta)" em texto menor para diferenciar.
 
-### Recomendação: Opção A
+### Detalhes técnicos
 
-É a mais prática e rápida. O overhead de bundle extra é negligível para uma aplicação deste porte.
+**Scroll fix** (linhas 307 e 337):
+```tsx
+// Linha 307: adicionar min-h-0
+<div className="flex-1 flex flex-col overflow-hidden min-h-0">
 
-### Plano de implementação (Opção A)
+// Linha 337: adicionar min-h-0
+<div className="flex-1 overflow-auto min-h-0 rounded-lg border" ...>
+```
 
-**Arquivo: `src/App.tsx`**
+**Colunas redimensionáveis**:
+- State: `const [colWidths, setColWidths] = useState<number[]>([180, 120, 110, 80, 80, 110, 160, 100, 80, 90])`
+- Componente `ResizeHandle`: div absoluto à direita do `<th>`, `cursor: col-resize`, `onMouseDown` inicia tracking de `clientX`, `onMouseMove` ajusta largura, `onMouseUp` finaliza
+- Cada `<th>` recebe `style={{ width: colWidths[i], minWidth: 60 }}` e `position: relative`
+- A `<table>` recebe `style={{ minWidth: sum(colWidths) }}` e remove `w-full` para permitir scroll horizontal
 
-Criar uma constante `isCrmDomain` baseada em `window.location.hostname.startsWith('crm.')`. Usar essa flag para:
-
-1. Se `isCrmDomain`:
-   - Rota `/` redireciona para `/admin/pipeline` (ou `/login` se não autenticado)
-   - Renderiza apenas rotas: `/login`, `/admin/*`, `/painel`
-   - Rotas da landing page não existem
-
-2. Se **não** `isCrmDomain`:
-   - Rota `/` mostra a landing page normalmente
-   - Rotas `/admin/*` e `/login` continuam acessíveis (para não quebrar links existentes durante transição)
-   - Opcionalmente, no futuro, pode-se remover `/login` e `/admin/*` deste domínio
-
-**Arquivo: `src/components/auth/ProtectedRoute.tsx`**
-
-Sem mudanças — a lógica de autenticação permanece igual.
-
-### Configuração de domínio
-
-Após a implementação do código, você precisará:
-
-1. Ir em **Project Settings → Domains**
-2. Conectar `crm.movimentocircular.io`
-3. Adicionar no DNS de `movimentocircular.io`:
-   - **A record**: `crm` → `185.158.133.1`
-   - **TXT record**: `_lovable.crm` → valor fornecido pelo Lovable
-
-O domínio `experience.movimentocircular.io` permanece como está.
+**Valor da proposta**:
+- `proposalMap`: `Record<string, string>` mapeando `lead_id → investment`
+- Na célula Valor: se `proposalMap[lead.id]` existe, exibir o investment formatado com label "(proposta)"; senão, exibir `valor_proposta` do lead
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/App.tsx` | Lógica condicional por hostname para separar rotas CRM vs Landing |
+| `src/components/admin/PriorityListView.tsx` | Fix scroll, colunas redimensionáveis, valor da proposta |
+
+### Sem migração SQL
+
+Dados de proposals já disponíveis via props.
 
