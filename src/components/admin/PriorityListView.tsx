@@ -186,7 +186,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterSla, setFilterSla] = useState<string[]>([]);
   const [filterPorte, setFilterPorte] = useState<string[]>([]);
   const [filterResp, setFilterResp] = useState<string[]>([]);
-  const [filterOrigem, setFilterOrigem] = useState<string[]>([]);
+  
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -243,8 +243,16 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const getLeadValue = useCallback((lead: Lead): { value: number | null; fromProposal: boolean } => {
     const proposalInvestment = proposalMap[lead.id];
     if (proposalInvestment) {
-      const parsed = parseFloat(proposalInvestment.replace(/[^\d.,]/g, "").replace(",", "."));
-      if (!isNaN(parsed) && parsed > 0) return { value: parsed, fromProposal: true };
+      let multiplier = 1;
+      let rest = proposalInvestment;
+      const mMatch = proposalInvestment.match(/(\d+)\s*x\s*/i);
+      if (mMatch) {
+        multiplier = parseInt(mMatch[1], 10) || 1;
+        rest = proposalInvestment.slice(mMatch.index! + mMatch[0].length);
+      }
+      const cleaned = rest.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
+      const parsed = (parseFloat(cleaned) || 0) * multiplier;
+      if (parsed > 0) return { value: parsed, fromProposal: true };
     }
     return { value: (lead as any).valor_proposta || null, fromProposal: false };
   }, [proposalMap]);
@@ -254,7 +262,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "✅ No prazo"];
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
-  const origemOptions = useMemo(() => [...new Set(rows.map(r => r.lead.origem))].sort(), [rows]);
+  
 
   // Apply column filters
   const filteredRows = useMemo(() => {
@@ -263,9 +271,9 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     if (filterSla.length > 0) result = result.filter(r => filterSla.includes(URGENCY_LABELS[r.urgency]));
     if (filterPorte.length > 0) result = result.filter(r => filterPorte.includes(r.tier));
     if (filterResp.length > 0) result = result.filter(r => filterResp.includes(r.responsavel));
-    if (filterOrigem.length > 0) result = result.filter(r => filterOrigem.includes(r.lead.origem));
+    
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterOrigem]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp]);
 
   // Sort
   const sortedRows = useMemo(() => {
@@ -294,7 +302,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     });
   }, [filteredRows, sortCol, sortDir, getLeadValue]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterOrigem.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -375,7 +383,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
     { label: "Próx. Ação", sortKey: undefined, filter: undefined },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
-    { label: "Origem", sortKey: undefined, filter: <ColumnFilter options={origemOptions} selected={filterOrigem} onChange={setFilterOrigem} label="Origem" /> },
     { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: undefined },
   ];
 
@@ -398,8 +405,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterSla.map(v => <Badge key={`s-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterSla(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterPorte.map(v => <Badge key={`p-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterPorte(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterResp.map(v => <Badge key={`r-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterResp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            {filterOrigem.map(v => <Badge key={`o-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterOrigem(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterOrigem([]); }}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
@@ -511,11 +517,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                     </td>
                     <td className="py-2 px-3 align-middle" style={{ width: colWidths[8] }}>
                       <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
-                        {row.lead.origem}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[9] }}>
-                      <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
                         {formatDate(row.lead.last_activity_at || row.lead.created_at)}
                       </span>
                     </td>
@@ -524,7 +525,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
               })}
               {sortedRows.length === 0 && (
                 <tr className="border-b">
-                  <td colSpan={10} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                  <td colSpan={9} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
                   </td>
                 </tr>
