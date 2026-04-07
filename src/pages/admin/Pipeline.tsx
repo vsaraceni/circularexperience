@@ -367,7 +367,7 @@ const Pipeline = () => {
                   color: viewMode === "priorities" ? 'white' : 'hsl(var(--color-text-muted))',
                 }}
               >
-                <ListChecks className="h-3 w-3" /> Prioridades
+                <Table2 className="h-3 w-3" /> To-Do List
               </button>
             </div>
 
