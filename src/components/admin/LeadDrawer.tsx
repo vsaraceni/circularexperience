@@ -77,12 +77,16 @@ interface LeadDrawerProps {
 const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded, isAdmin, defaultTab = "resumo" }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [enriching, setEnriching] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [followUpNote, setFollowUpNote] = useState("");
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const navigate = useNavigate();
+
+  // Sync defaultTab when drawer opens with a specific tab
+  useEffect(() => {
+    if (open) setActiveTab(defaultTab);
+  }, [open, defaultTab]);
 
   const { data: templates = [], isLoading: loadingTemplates } = useTemplatesWithOverrides(
     lead?.kanban_stage || "",
