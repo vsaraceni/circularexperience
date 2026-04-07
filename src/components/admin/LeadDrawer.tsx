@@ -12,7 +12,7 @@ import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
   Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
-  Target, DollarSign, ChevronRight,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -150,27 +150,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
     }
   };
 
-  const handleSaveNote = async () => {
-    if (!noteText.trim() || !userId) return;
-    setSavingNote(true);
-    try {
-      await supabase.from("lead_activities").insert({
-        lead_id: lead.id,
-        user_id: userId,
-        activity_type: "nota_manual",
-        content: noteText.trim(),
-      });
-      await supabase.from("leads").update({ last_activity_at: new Date().toISOString() }).eq("id", lead.id);
-      setNoteText("");
-      setRefreshKey((k) => k + 1);
-      onNoteAdded?.();
-      toast.success("Nota salva!");
-    } catch {
-      toast.error("Erro ao salvar nota");
-    } finally {
-      setSavingNote(false);
-    }
-  };
 
   const handleCopyTemplate = async (t: TemplateWithOverride) => {
     const text = getCurrentText(t);
