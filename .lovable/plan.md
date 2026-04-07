@@ -1,21 +1,37 @@
 
 
-## Corrigir logo do CRM na navbar
+## Correções na To-Do List: Scroll, Valor e Coluna Origem
 
-### Problema
-A lógica atual (`isCrmDomain`) verifica se o hostname começa com `crm.`, mas como o acesso ao CRM é feito via `experience.movimentocircular.io`, a condição nunca é verdadeira. O logo antigo é sempre exibido.
+### Problemas
 
-### Solução
-Mudar a lógica de seleção do logo: em vez de verificar o hostname, verificar se o usuário está em uma rota `/admin/*` ou `/login`. Se estiver em rota administrativa, usar o logo do CRM. Caso contrário, usar o logo original.
+1. **Scroll não funciona**: O container pai em `Pipeline.tsx` (linha 559) tem `overflow-hidden` e o `PriorityListView` usa `flex-1 flex flex-col overflow-hidden min-h-0`, mas a tabela interna precisa que toda a cadeia de flex permita encolhimento. O problema principal é que o `ResizeHandle` calcula delta a partir de `DEFAULT_COL_WIDTHS` em vez dos widths atuais, e mais criticamente, o container da tabela (linha 422) pode não estar recebendo altura correta.
 
-### Arquivo impactado
+2. **Valor colapsado**: A coluna "Valor" tem largura default de apenas 100px (`DEFAULT_COL_WIDTHS[7]`), insuficiente para exibir valores como "R$ 28.000". O `parseFloat` na linha 246 também pode não parsear corretamente valores como "2x de R$ 28.000".
+
+3. **Coluna Origem**: Precisa ser removida.
+
+### Mudanças no arquivo `src/components/admin/PriorityListView.tsx`
+
+**1. Remover coluna Origem**
+- Remover do array `columns` (linha 378)
+- Remover estado `filterOrigem` e referências
+- Remover a `<td>` de origem (linhas 512-516)
+- Atualizar `DEFAULT_COL_WIDTHS` de 10 para 9 colunas
+- Atualizar `colSpan={10}` para `colSpan={9}`
+
+**2. Aumentar largura da coluna Valor**
+- Alterar `DEFAULT_COL_WIDTHS` para dar mais espaço ao Valor (de 100 → 140px)
+
+**3. Corrigir parsing do valor da proposta**
+- Usar a mesma lógica `parseInvestment` do KanbanColumn que trata multiplicadores ("2x de R$ 28.000")
+
+**4. Garantir scroll funcional**
+- Adicionar `min-h-0` ao container pai da tabela se necessário
+- O container em linha 422 já tem `overflow-auto min-h-0`, mas o wrapper externo (linha 392) precisa garantir `min-h-0` na cadeia flex — já tem. Vou verificar se o `overflow-hidden` do Pipeline.tsx bloqueia. O container `flex-1 overflow-hidden` (Pipeline linha 559) deveria permitir que o filho gerencie seu próprio scroll. A cadeia parece correta. O problema real pode ser que `<table>` com `tableLayout: fixed` e `minWidth` está dentro de um `overflow-auto` div mas a div não recebe altura restrita. Vou garantir que o div da tabela use `overflow-auto` com height constraint correto.
+
+### Resumo das alterações
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin/CrmNavbar.tsx` | Trocar `isCrmDomain` por detecção de rota admin (o componente já é usado apenas em páginas admin, então basta sempre usar `logoCrm`) |
-
-### Detalhe técnico
-Como `CrmNavbar` é renderizado **exclusivamente** em páginas admin, a solução mais simples é remover a condicional e usar sempre `logoCrm` nesse componente. O logo original continuará sendo usado na landing page, que usa o `Header.tsx` separado.
-
-Além disso, atualizar o asset `crm-logo.png` com a imagem recém-enviada pelo usuário (`image-70.png` / `plataforma_2-2.png`), caso o arquivo atual ainda seja o antigo.
+| `src/components/admin/PriorityListView.tsx` | Remover coluna Origem, aumentar largura do Valor, fix parsing investimento, garantir scroll |
 
