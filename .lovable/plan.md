@@ -1,33 +1,69 @@
 
 
-## Correção: Relatório de Avanços com dados inconsistentes
+## Implementação: Visão "To-Do List" como Tabela Matricial (Proposta B)
 
-### Diagnóstico
+### Resumo
 
-O componente `DigestReportDialog.tsx` tem dois problemas que fazem os dados parecerem fixos/hardcoded:
+Substituir a visão atual de cards agrupados por urgência por uma **tabela estilo planilha** com ordenação por coluna e filtros inline em cada header. O toggle será renomeado de "Prioridades" para "To-Do List".
 
-1. **Follow-ups sem filtro de período** (linha 113): A query busca TODOS os follow-ups do banco, sem `.gte()/.lte()` pelo período selecionado. Resultado: os números de follow-ups são sempre os mesmos independente do período escolhido.
+### Arquivos impactados
 
-2. **Missões mostram estado atual do pipeline** (linhas 122-137): As missões (Novos, Follow-up, Agendamento, Calls, Briefing) calculam o estado atual dos leads, não filtram por período. Quando o gestor escolhe "Semana passada", os dados de missões são idênticos a "Hoje". Isso faz parecer hardcoded.
+| Arquivo | Ação |
+|---------|------|
+| `src/components/admin/PriorityListView.tsx` | **Reescrita total** — tabela matricial com filtros inline por coluna |
+| `src/pages/admin/Pipeline.tsx` | Renomear label para "To-Do List", ícone `Table2`, passar `profiles` |
 
-### Solução
+### Estrutura da tabela
 
-| Problema | Correção |
-|----------|---------|
-| Follow-ups sem filtro | Adicionar `.gte("due_date", fromDate).lte("due_date", toDate)` na query |
-| Missões fixas | Manter missões como "estado atual" (são um snapshot do pipeline agora), mas separar visualmente com label "Estado atual do pipeline" para não confundir com dados do período. Alternativamente, para períodos passados, contar atividades de stage_mudou no período como proxy de progresso |
-| Ações fixas para "Hoje" com 0 | Nenhum bug — se não houve ações hoje, mostra 0 corretamente |
+```text
+┌─────────────┬──────────┬────────────┬────────┬───────┬────────────┬──────────────┬──────────┬────────┬───────────┐
+│ Empresa ▼   │ Contato  │ Etapa 🔽   │ SLA ▼🔽│Porte🔽│Responsável🔽│ Próx. Ação  │ Valor ▼  │Origem🔽│ Últ. Ativ │
+├─────────────┼──────────┼────────────┼────────┼───────┼────────────┼──────────────┼──────────┼────────┼───────────┤
+│██ Acme Corp │ João     │ [Call]     │ 🔴 3d  │ T1    │ Maria      │ Enviar prop  │ R$50.000 │ Meta   │ 01/04     │
+│██ Beta Ltd  │ Maria    │ [Proposta] │ ⚠️ 1d  │ T2    │ Pedro      │ Follow-up    │ R$12.000 │ LP     │ 03/04     │
+└─────────────┴──────────┴────────────┴────────┴───────┴────────────┴──────────────┴──────────┴────────┴───────────┘
+██ = borda lateral colorida por urgência SLA
+🔽 = filtro inline (popover com checkboxes)
+▼  = coluna ordenável (click no header)
+```
 
-**Abordagem escolhida para Missões**: Para períodos passados, as missões não fazem sentido (são tarefas de hoje). A seção de Missões só aparece quando o período é "Hoje". Para outros períodos, mostrar um resumo de movimentação: quantos leads entraram, quantos avançaram de etapa, quantos foram fechados/perdidos — tudo filtrado pelo período.
+### Colunas
 
-### Mudanças no arquivo `DigestReportDialog.tsx`
+| # | Coluna | Ordenável | Filtro Inline |
+|---|--------|-----------|---------------|
+| 1 | Empresa | Sim (A-Z) | — |
+| 2 | Contato | — | — |
+| 3 | Etapa | Sim | Multi-select (6 etapas) |
+| 4 | SLA | Sim (tempo) | Multi-select (Vencido/Atenção/No prazo) |
+| 5 | Porte | Sim | Multi-select (Tier 1/2/3) |
+| 6 | Responsável | Sim | Multi-select (profiles) |
+| 7 | Próx. Ação | — | — |
+| 8 | Valor | Sim (R$) | — |
+| 9 | Origem | — | Multi-select (origens únicas) |
+| 10 | Última Ativ. | Sim | — |
 
-1. **Follow-ups**: filtrar por `due_date` dentro do período
-2. **Missões**: exibir apenas para período "Hoje"
-3. **Novo bloco "Movimentação"** (para todos os períodos): contar atividades `lead_recebido`, `stage_mudou`, `fechado`, `perdido` no período — dados que realmente mudam conforme o período
-4. **SLA críticos**: manter como estado atual (sempre relevante), mas com label claro
+### Funcionalidades
+
+- **Ordenação**: click no header alterna asc/desc com seta visual (ChevronUp/Down)
+- **Filtros inline**: ícone Filter em headers filtráveis, abre Popover com checkboxes; ícone azul quando ativo; filtros aditivos aos filtros globais do Pipeline
+- **Visual**: borda lateral esquerda colorida por urgência (vermelho/âmbar/verde); header sticky; hover na linha
+- **Interação**: click na linha abre LeadDrawer (mesmo comportamento atual)
+- **Dados**: reutiliza `filteredLeads` do Pipeline; urgência via `getUrgencyLevel()`; tier via `TIER_MAP`; valor formatado `Intl.NumberFormat`; data `dd/MM HH:mm`
+
+### Detalhes técnicos
+
+**`PriorityListView.tsx`** — reescrita completa:
+- States: `sortCol`, `sortDir` (asc/desc/null), `columnFilters: Record<string, string[]>`
+- Filtros inline derivam opções dinamicamente dos dados (origens únicas, profiles existentes)
+- Mantém todos os dialogs existentes (LeadDrawer, LostDialog, SubmissionDialog, ContactDialog) e quick actions
+- Props mantidas (mesma interface), sem breaking changes no Pipeline
+
+**`Pipeline.tsx`**:
+- Label "Prioridades" → "To-Do List"
+- Ícone `ListChecks` → `Table2`
+- Sem outras mudanças estruturais
 
 ### Sem migração SQL
 
-Todas as queries já funcionam com as tabelas existentes — o problema é apenas lógica de filtro no frontend.
+Todos os campos já existem nas tabelas. Apenas lógica de apresentação no frontend.
 
