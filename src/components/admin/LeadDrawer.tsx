@@ -71,9 +71,11 @@ interface LeadDrawerProps {
   profiles?: { id: string; full_name: string | null }[];
   onNoteAdded?: () => void;
   isAdmin?: boolean;
+  defaultTab?: string;
 }
 
-const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded, isAdmin }) => {
+const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded, isAdmin, defaultTab = "resumo" }) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
