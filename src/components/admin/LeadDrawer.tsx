@@ -482,14 +482,20 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </TabsContent>
 
           <TabsContent value="followups" className="mt-4 overflow-hidden">
-            <div className="space-y-3 mb-4">
-              <p className="text-sm font-medium text-foreground">Agendar follow-up</p>
+            <div className="space-y-3 mb-4 rounded-lg border p-3" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--muted) / 0.3)' }}>
+              <p className="text-sm font-medium text-foreground">Agendar próximo passo</p>
+              <Textarea
+                placeholder="Qual a próxima ação? (obrigatório)"
+                value={followUpNote}
+                onChange={(e) => setFollowUpNote(e.target.value)}
+                className="text-xs min-h-[60px] resize-y"
+              />
               <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1 w-[140px] justify-start", !followUpDate && "text-muted-foreground")}>
+                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1 w-[160px] justify-start", !followUpDate && "text-muted-foreground")}>
                       <Calendar className="h-3 w-3" />
-                      {followUpDate ? format(followUpDate, "dd/MM/yyyy") : "Data"}
+                      {followUpDate ? format(followUpDate, "dd/MM/yyyy") : "Data (obrigatório)"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -503,23 +509,17 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     />
                   </PopoverContent>
                 </Popover>
-                <Textarea
-                  placeholder="Próxima ação (obrigatório)"
-                  value={followUpNote}
-                  onChange={(e) => setFollowUpNote(e.target.value)}
-                  className="h-8 text-xs flex-1 min-h-[60px]"
-                />
                 <Button
                   size="sm"
-                  className="h-8 text-xs"
+                  className="h-8 text-xs flex-1"
                   disabled={!followUpDate || !followUpNote.trim() || createFollowUp.isPending}
                   onClick={async () => {
-                    if (!followUpDate || !userId) return;
+                    if (!followUpDate || !followUpNote.trim() || !userId) return;
                     await createFollowUp.mutateAsync({
                       leadId: lead.id,
                       userId,
                       dueDate: format(followUpDate, "yyyy-MM-dd"),
-                      note: followUpNote || undefined,
+                      note: followUpNote.trim(),
                     });
                     setFollowUpDate(undefined);
                     setFollowUpNote("");
