@@ -1,37 +1,61 @@
 
 
-## Correções na To-Do List: Scroll, Valor e Coluna Origem
+## Unificar notas e reestruturar Follow-ups no Drawer
 
-### Problemas
+### Análise do estado atual
 
-1. **Scroll não funciona**: O container pai em `Pipeline.tsx` (linha 559) tem `overflow-hidden` e o `PriorityListView` usa `flex-1 flex flex-col overflow-hidden min-h-0`, mas a tabela interna precisa que toda a cadeia de flex permita encolhimento. O problema principal é que o `ResizeHandle` calcula delta a partir de `DEFAULT_COL_WIDTHS` em vez dos widths atuais, e mais criticamente, o container da tabela (linha 422) pode não estar recebendo altura correta.
+O drawer tem **3 pontos** onde se registram notas/próximas ações:
 
-2. **Valor colapsado**: A coluna "Valor" tem largura default de apenas 100px (`DEFAULT_COL_WIDTHS[7]`), insuficiente para exibir valores como "R$ 28.000". O `parseFloat` na linha 246 também pode não parsear corretamente valores como "2x de R$ 28.000".
+1. **Aba Resumo** — bloco "Próxima Ação" (campo texto livre salvo em `leads.proxima_acao`) + "Valor da Proposta" (salvo em `leads.valor_proposta`)
+2. **Aba Follow-ups** — formulário com Data + Nota (opcional) → salva em `lead_follow_ups`
+3. **Aba Atividades** — textarea "Adicionar nota" → salva em `lead_activities` como `nota_manual`
 
-3. **Coluna Origem**: Precisa ser removida.
+### Problemas identificados
 
-### Mudanças no arquivo `src/components/admin/PriorityListView.tsx`
+- "Próxima Ação" na aba Resumo é essencialmente um follow-up sem data — duplica a funcionalidade
+- "Valor da Proposta" na aba Resumo é desvinculado da proposta real (que já existe na tabela `proposals.investment`) — dado redundante e confuso
+- Nota na aba Atividades duplica a capacidade de registrar observações que o follow-up já cobre
+- Ao mover um lead de estágio (drag-and-drop), não há prompt para registrar o próximo passo
 
-**1. Remover coluna Origem**
-- Remover do array `columns` (linha 378)
-- Remover estado `filterOrigem` e referências
-- Remover a `<td>` de origem (linhas 512-516)
-- Atualizar `DEFAULT_COL_WIDTHS` de 10 para 9 colunas
-- Atualizar `colSpan={10}` para `colSpan={9}`
+### Plano de mudanças
 
-**2. Aumentar largura da coluna Valor**
-- Alterar `DEFAULT_COL_WIDTHS` para dar mais espaço ao Valor (de 100 → 140px)
+**1. Remover da aba Resumo**
+- Remover o bloco "Próxima Ação" (`ProximaAcaoField`) e "Valor da Proposta" (`ValorPropostaField`)
+- Manter o botão "Avançar Etapa" e o restante (dados do lead, empresa, briefing, mensagens)
 
-**3. Corrigir parsing do valor da proposta**
-- Usar a mesma lógica `parseInvestment` do KanbanColumn que trata multiplicadores ("2x de R$ 28.000")
+**2. Remover nota da aba Atividades**
+- Remover a textarea "Adicionar nota" e botão "Salvar nota" da aba Atividades
+- Atividades fica somente como timeline de leitura (histórico)
 
-**4. Garantir scroll funcional**
-- Adicionar `min-h-0` ao container pai da tabela se necessário
-- O container em linha 422 já tem `overflow-auto min-h-0`, mas o wrapper externo (linha 392) precisa garantir `min-h-0` na cadeia flex — já tem. Vou verificar se o `overflow-hidden` do Pipeline.tsx bloqueia. O container `flex-1 overflow-hidden` (Pipeline linha 559) deveria permitir que o filho gerencie seu próprio scroll. A cadeia parece correta. O problema real pode ser que `<table>` com `tableLayout: fixed` e `minWidth` está dentro de um `overflow-auto` div mas a div não recebe altura restrita. Vou garantir que o div da tabela use `overflow-auto` com height constraint correto.
+**3. Reestruturar aba Follow-ups**
+- Renomear para "Próximo Passo" (ou manter "Follow-ups")
+- Formulário estruturado:
+  - **Próxima Ação** (textarea obrigatória — não permite gravar sem nota)
+  - **Data** (date picker obrigatório)
+  - Botão "Agendar"
+- Validação: ambos os campos são obrigatórios
+- O restante da aba (lista de pendentes, concluídos) permanece igual
 
-### Resumo das alterações
+**4. Abrir drawer ao mover lead de estágio**
+- No `KanbanBoard.tsx`, após `handleDragEnd` com sucesso, abrir o drawer na aba "Follow-ups" automaticamente para que o usuário registre o próximo passo
+- Adicionar prop `defaultTab` ao `LeadDrawer` para controlar qual aba abre
+- Mesmo comportamento no `AdvanceStageButton` (botão "Avançar Etapa" dentro do drawer): após avançar, trocar para a aba de follow-ups
+
+### Visão crítica e melhorias sugeridas
+
+- **Nota como campo obrigatório no FUP é a decisão certa**: elimina follow-ups vagos sem contexto
+- **Valor da Proposta pode ficar somente na proposta real** (`proposals.investment`), que já existe e é exibido no Kanban. Removê-lo do lead simplifica a interface
+- **O campo `proxima_acao` no banco não precisa ser deletado** — apenas deixa de ser exibido/editado. Dados existentes ficam preservados
+- **Ao abrir o drawer pós-move, não bloquear o fluxo** — o drawer abre mas o usuário pode fechar sem agendar. Forçar seria prejudicial ao ritmo de trabalho
+
+### Arquivos impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin/PriorityListView.tsx` | Remover coluna Origem, aumentar largura do Valor, fix parsing investimento, garantir scroll |
+| `src/components/admin/LeadDrawer.tsx` | Remover ProximaAcaoField e ValorPropostaField da aba Resumo; remover nota da aba Atividades; tornar nota obrigatória no form de follow-up; adicionar prop `defaultTab` |
+| `src/components/admin/KanbanBoard.tsx` | Após drag-and-drop bem-sucedido, abrir drawer na aba follow-ups |
+
+### Sem migração SQL necessária
+
+A tabela `lead_follow_ups` já tem o campo `note` (nullable). A obrigatoriedade será apenas no frontend.
 
