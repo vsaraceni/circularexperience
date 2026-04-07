@@ -680,16 +680,21 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
 };
 
 function InfoRow({
-  icon, label, value, linkedin, company, whatsapp, href,
+  icon, label, value, linkedin, company, whatsapp, href, copyable,
 }: {
   icon: React.ReactNode; label: string; value: string;
-  linkedin?: string; company?: string; whatsapp?: string; href?: string;
+  linkedin?: string; company?: string; whatsapp?: string; href?: string; copyable?: boolean;
 }) {
+  const handleCopy = copyable ? () => {
+    navigator.clipboard.writeText(value).then(() => toast.success("E-mail copiado!"));
+  } : undefined;
+
   const content = (
-    <div className="flex items-center gap-2 text-sm">
+    <div className={cn("flex items-center gap-2 text-sm", copyable && "cursor-pointer group")} onClick={handleCopy} title={copyable ? "Clique para copiar" : undefined}>
       <span className="text-muted-foreground shrink-0">{icon}</span>
       <span className="text-muted-foreground text-xs w-16 shrink-0">{label}</span>
       <span className="text-foreground truncate">{value}</span>
+      {copyable && <Copy className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />}
     </div>
   );
   if (linkedin) {
