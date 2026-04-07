@@ -11,7 +11,7 @@ import NotificationBell from "@/components/admin/NotificationBell";
 import ProfileEditor from "@/components/admin/ProfileEditor";
 import EmailTemplateEditor from "@/components/admin/EmailTemplateEditor";
 import DigestReportDialog from "@/components/admin/DigestReportDialog";
-import logoOriginal from "@/assets/movimento-circular-logo.png";
+
 import logoCrm from "@/assets/crm-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
