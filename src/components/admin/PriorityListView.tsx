@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChevronUp, ChevronDown, Filter, X } from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
@@ -50,6 +50,8 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
 
 type SortCol = "empresa" | "etapa" | "sla" | "porte" | "responsavel" | "valor" | "ultima_ativ";
 type SortDir = "asc" | "desc";
+
+const DEFAULT_COL_WIDTHS = [180, 120, 110, 80, 80, 110, 160, 100, 80, 90];
 
 interface PriorityListViewProps {
   leads: Lead[];
@@ -123,6 +125,31 @@ const SortableHeader = ({ label, active, dir, onClick, children }: {
   </div>
 );
 
+// Drag handle for resizing columns
+const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const onMove = (ev: MouseEvent) => {
+      onResize(ev.clientX - startX);
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [onResize]);
+
+  return (
+    <div
+      className="absolute right-0 top-0 bottom-0 w-[5px] cursor-col-resize hover:bg-primary/20 z-20"
+      onMouseDown={handleMouseDown}
+    />
+  );
+};
+
 const PriorityListView: React.FC<PriorityListViewProps> = ({
   leads, userId, profiles = [], proposals = [],
   onLeadUpdated, onGenerateProposal, onSendWelcome,
@@ -137,6 +164,22 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   // Sort state
   const [sortCol, setSortCol] = useState<SortCol>("sla");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  // Column widths for resizable columns
+  const [colWidths, setColWidths] = useState<number[]>([...DEFAULT_COL_WIDTHS]);
+  const baseWidthsRef = useRef<number[]>([...DEFAULT_COL_WIDTHS]);
+
+  const handleResizeStart = useCallback((colIndex: number) => {
+    baseWidthsRef.current = [...colWidths];
+  }, [colWidths]);
+
+  const handleResize = useCallback((colIndex: number, delta: number) => {
+    setColWidths(prev => {
+      const next = [...prev];
+      next[colIndex] = Math.max(60, baseWidthsRef.current[colIndex] + delta);
+      return next;
+    });
+  }, []);
 
   // Column filters
   const [filterEtapa, setFilterEtapa] = useState<string[]>([]);
@@ -169,6 +212,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return m;
   }, [profiles]);
 
+  // Map lead_id → proposal investment value
+  const proposalMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    proposals.forEach(p => {
+      if (p.lead_id && p.investment) {
+        m[p.lead_id] = p.investment;
+      }
+    });
+    return m;
+  }, [proposals]);
+
   // Build enriched rows
   const rows: LeadRow[] = useMemo(() => {
     return leads
@@ -184,6 +238,16 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         return { lead, urgency, tier, responsavel, slaMs };
       });
   }, [leads, followUpsByLead, profileMap]);
+
+  // Helper: get display value for a lead (proposal investment > lead valor_proposta)
+  const getLeadValue = useCallback((lead: Lead): { value: number | null; fromProposal: boolean } => {
+    const proposalInvestment = proposalMap[lead.id];
+    if (proposalInvestment) {
+      const parsed = parseFloat(proposalInvestment.replace(/[^\d.,]/g, "").replace(",", "."));
+      if (!isNaN(parsed) && parsed > 0) return { value: parsed, fromProposal: true };
+    }
+    return { value: (lead as any).valor_proposta || null, fromProposal: false };
+  }, [proposalMap]);
 
   // Derive filter options from data
   const stageOptions = useMemo(() => [...new Set(rows.map(r => STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage))].sort(), [rows]);
@@ -214,7 +278,12 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         case "sla": cmp = a.slaMs - b.slaMs; break;
         case "porte": cmp = (COLABORADORES_WEIGHT[a.lead.colaboradores || ""] || 0) - (COLABORADORES_WEIGHT[b.lead.colaboradores || ""] || 0); break;
         case "responsavel": cmp = a.responsavel.localeCompare(b.responsavel); break;
-        case "valor": cmp = ((a.lead as any).valor_proposta || 0) - ((b.lead as any).valor_proposta || 0); break;
+        case "valor": {
+          const va = getLeadValue(a.lead).value || 0;
+          const vb = getLeadValue(b.lead).value || 0;
+          cmp = va - vb;
+          break;
+        }
         case "ultima_ativ": {
           const da = new Date(a.lead.last_activity_at || a.lead.created_at || 0).getTime();
           const db = new Date(b.lead.last_activity_at || b.lead.created_at || 0).getTime();
@@ -223,7 +292,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       }
       return cmp * mult;
     });
-  }, [filteredRows, sortCol, sortDir]);
+  }, [filteredRows, sortCol, sortDir, getLeadValue]);
 
   const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterOrigem.length;
 
@@ -294,6 +363,22 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     try { return format(new Date(d), "dd/MM HH:mm"); } catch { return "—"; }
   };
 
+  const totalMinWidth = colWidths.reduce((a, b) => a + b, 0);
+
+  // Column definitions for headers
+  const columns = [
+    { label: "Empresa", sortKey: "empresa" as SortCol, filter: undefined },
+    { label: "Contato", sortKey: undefined, filter: undefined },
+    { label: "Etapa", sortKey: "etapa" as SortCol, filter: <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" /> },
+    { label: "SLA", sortKey: "sla" as SortCol, filter: <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" /> },
+    { label: "Porte", sortKey: "porte" as SortCol, filter: <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" /> },
+    { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
+    { label: "Próx. Ação", sortKey: undefined, filter: undefined },
+    { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
+    { label: "Origem", sortKey: undefined, filter: <ColumnFilter options={origemOptions} selected={filterOrigem} onChange={setFilterOrigem} label="Origem" /> },
+    { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: undefined },
+  ];
+
   if (rows.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'hsl(var(--color-text-muted))' }}>
@@ -304,7 +389,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Active inline filters bar */}
         {activeInlineFilters > 0 && (
           <div className="flex items-center gap-1.5 px-2 py-1 shrink-0 flex-wrap" style={{ background: 'hsl(var(--color-bg-page))' }}>
@@ -334,126 +419,118 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                <TableHead className="w-[180px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="Empresa" active={sortCol === "empresa"} dir={sortDir} onClick={() => toggleSort("empresa")} />
-                </TableHead>
-                <TableHead className="w-[120px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>Contato</span>
-                </TableHead>
-                <TableHead className="w-[110px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="Etapa" active={sortCol === "etapa"} dir={sortDir} onClick={() => toggleSort("etapa")}>
-                    <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" />
-                  </SortableHeader>
-                </TableHead>
-                <TableHead className="w-[80px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="SLA" active={sortCol === "sla"} dir={sortDir} onClick={() => toggleSort("sla")}>
-                    <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" />
-                  </SortableHeader>
-                </TableHead>
-                <TableHead className="w-[80px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="Porte" active={sortCol === "porte"} dir={sortDir} onClick={() => toggleSort("porte")}>
-                    <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" />
-                  </SortableHeader>
-                </TableHead>
-                <TableHead className="w-[110px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="Responsável" active={sortCol === "responsavel"} dir={sortDir} onClick={() => toggleSort("responsavel")}>
-                    <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" />
-                  </SortableHeader>
-                </TableHead>
-                <TableHead className="w-[160px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>Próx. Ação</span>
-                </TableHead>
-                <TableHead className="w-[100px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="Valor" active={sortCol === "valor"} dir={sortDir} onClick={() => toggleSort("valor")} />
-                </TableHead>
-                <TableHead className="w-[80px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <div className="flex items-center gap-0.5">
-                    <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>Origem</span>
-                    <ColumnFilter options={origemOptions} selected={filterOrigem} onChange={setFilterOrigem} label="Origem" />
-                  </div>
-                </TableHead>
-                <TableHead className="w-[90px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                  <SortableHeader label="Últ. Ativ." active={sortCol === "ultima_ativ"} dir={sortDir} onClick={() => toggleSort("ultima_ativ")} />
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <div className="flex-1 overflow-auto min-h-0 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
+          <table style={{ minWidth: totalMinWidth, tableLayout: "fixed" }} className="caption-bottom text-sm">
+            <thead className="[&_tr]:border-b">
+              <tr className="border-b transition-colors hover:bg-transparent" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                {columns.map((col, i) => (
+                  <th
+                    key={col.label}
+                    className="h-12 px-4 text-left align-middle font-medium sticky top-0 z-10 relative"
+                    style={{ width: colWidths[i], minWidth: 60, background: 'hsl(var(--color-bg-page))' }}
+                  >
+                    {col.sortKey ? (
+                      <SortableHeader label={col.label} active={sortCol === col.sortKey} dir={sortDir} onClick={() => toggleSort(col.sortKey!)}>
+                        {col.filter}
+                      </SortableHeader>
+                    ) : col.filter ? (
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
+                        {col.filter}
+                      </div>
+                    ) : (
+                      <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
+                    )}
+                    <ResizeHandle onResize={(delta) => {
+                      setColWidths(prev => {
+                        const next = [...prev];
+                        next[i] = Math.max(60, DEFAULT_COL_WIDTHS[i] + delta);
+                        return next;
+                      });
+                    }} />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
               {sortedRows.map(row => {
                 const stageColor = STAGE_COLORS[row.lead.kanban_stage] || "#9E9E9E";
+                const { value: displayValue, fromProposal } = getLeadValue(row.lead);
                 return (
-                  <TableRow
+                  <tr
                     key={row.lead.id}
-                    className="cursor-pointer transition-colors"
+                    className="border-b transition-colors cursor-pointer hover:bg-muted/50"
                     style={{ borderLeft: `4px solid ${URGENCY_COLORS[row.urgency]}` }}
                     onClick={() => { setDrawerLead(row.lead); setDrawerOpen(true); }}
                   >
-                    <TableCell className="py-2 px-3">
-                      <span className="text-xs font-semibold truncate block max-w-[170px]" style={{ color: 'hsl(var(--color-text-primary))' }}>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[0] }}>
+                      <span className="text-xs font-semibold truncate block" style={{ color: 'hsl(var(--color-text-primary))' }}>
                         {row.lead.company || "Sem empresa"}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
-                      <span className="text-xs truncate block max-w-[110px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[1] }}>
+                      <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
                         {row.lead.name}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[2] }}>
                       <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
                         {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[3] }}>
                       <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
                         style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
                         {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[4] }}>
                       <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
                         {row.tier}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
-                      <span className="text-xs truncate block max-w-[100px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[5] }}>
+                      <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
                         {row.responsavel}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
-                      <span className="text-xs italic truncate block max-w-[150px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[6] }}>
+                      <span className="text-xs italic truncate block" style={{ color: 'hsl(var(--color-text-muted))' }}>
                         {(row.lead as any).proxima_acao || "—"}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
-                      <span className="text-xs font-medium" style={{ color: (row.lead as any).valor_proposta ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
-                        {formatValue((row.lead as any).valor_proposta)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[7] }}>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-medium" style={{ color: displayValue ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+                          {formatValue(displayValue)}
+                        </span>
+                        {fromProposal && (
+                          <span className="text-[9px]" style={{ color: 'hsl(var(--color-text-muted))' }}>(proposta)</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[8] }}>
                       <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
                         {row.lead.origem}
                       </span>
-                    </TableCell>
-                    <TableCell className="py-2 px-3">
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[9] }}>
                       <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
                         {formatDate(row.lead.last_activity_at || row.lead.created_at)}
                       </span>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
               })}
               {sortedRows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-sm" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                <tr className="border-b">
+                  <td colSpan={10} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       </div>
 
