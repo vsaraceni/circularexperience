@@ -1,8 +1,10 @@
 import { useMemo, useState, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronUp, ChevronDown, Filter, X } from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
-import PriorityCard from "./PriorityCard";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
 import SubmissionDialog from "./SubmissionDialog";
@@ -11,34 +13,118 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
+import { format } from "date-fns";
 import type { Lead } from "./LeadList";
 
-const COLABORADORES_WEIGHT: Record<string, number> = {
-  "mais_de_2000": 6, "acima_de_2000": 6,
-  "501_a_2000": 5, "101_a_500": 4,
-  "51_a_100": 3, "até_100": 3,
-  "11_a_50": 2, "1_a_10": 1,
+const STAGE_LABELS: Record<string, string> = {
+  novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
+  call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição",
 };
 
-const GROUP_CONFIG: { key: UrgencyLevel; label: string; bg: string; border: string; icon: string }[] = [
-  { key: "critical", label: "Vencidos — ação imediata", bg: "#FEF2F2", border: "#FECACA", icon: "🔴" },
-  { key: "warning", label: "Atenção — agir em breve", bg: "#FFFBEB", border: "#FDE68A", icon: "⚠️" },
-  { key: "normal", label: "No prazo", bg: "#F0FDF4", border: "#BBF7D0", icon: "✅" },
-];
+const STAGE_COLORS: Record<string, string> = {
+  novo: "#9E9E9E", boas_vindas: "#1976D2", em_contato: "#1976D2",
+  call_agendada: "#6A1B4D", proposta: "#388E3C", nutricao: "#E65100",
+};
+
+const URGENCY_COLORS: Record<UrgencyLevel, string> = {
+  critical: "#D32F2F", warning: "#F4A736", normal: "#66BB6A",
+};
+
+const URGENCY_LABELS: Record<UrgencyLevel, string> = {
+  critical: "🔴 Vencido", warning: "⚠️ Atenção", normal: "✅ No prazo",
+};
+
+const TIER_MAP: Record<string, string[]> = {
+  "Tier 1": ["501_a_2000", "mais_de_2000", "acima_de_2000"],
+  "Tier 2": ["101_a_500"],
+  "Tier 3": ["até_100", "51_a_100", "11_a_50", "1_a_10"],
+};
+
+const COLABORADORES_TIER: Record<string, string> = {};
+Object.entries(TIER_MAP).forEach(([tier, vals]) => vals.forEach(v => { COLABORADORES_TIER[v] = tier; }));
+
+const COLABORADORES_WEIGHT: Record<string, number> = {
+  "mais_de_2000": 6, "acima_de_2000": 6, "501_a_2000": 5,
+  "101_a_500": 4, "51_a_100": 3, "até_100": 3, "11_a_50": 2, "1_a_10": 1,
+};
+
+type SortCol = "empresa" | "etapa" | "sla" | "porte" | "responsavel" | "valor" | "ultima_ativ";
+type SortDir = "asc" | "desc";
 
 interface PriorityListViewProps {
   leads: Lead[];
   userId: string;
   profiles?: { id: string; full_name: string | null }[];
   proposals?: { id: string; lead_id?: string; investment: string }[];
-  sortKey?: "sla" | "oldest" | "newest" | "value" | "size";
+  sortKey?: string;
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
 }
 
+interface LeadRow {
+  lead: Lead;
+  urgency: UrgencyLevel;
+  tier: string;
+  responsavel: string;
+  slaMs: number;
+}
+
+// Inline filter popover for column headers
+const ColumnFilter = ({ options, selected, onChange, label }: {
+  options: string[]; selected: string[]; onChange: (v: string[]) => void; label: string;
+}) => {
+  const isActive = selected.length > 0;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="inline-flex items-center justify-center h-4 w-4 rounded ml-0.5 transition-colors"
+          style={{ color: isActive ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+          <Filter className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2" align="start">
+        <p className="text-[10px] font-semibold mb-1.5" style={{ color: 'hsl(var(--color-text-primary))' }}>{label}</p>
+        <div className="space-y-1 max-h-48 overflow-y-auto">
+          {options.map(opt => (
+            <label key={opt} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5">
+              <Checkbox
+                checked={selected.includes(opt)}
+                onCheckedChange={(checked) => {
+                  onChange(checked ? [...selected, opt] : selected.filter(s => s !== opt));
+                }}
+                className="h-3.5 w-3.5"
+              />
+              <span style={{ color: 'hsl(var(--color-text-secondary))' }}>{opt}</span>
+            </label>
+          ))}
+        </div>
+        {isActive && (
+          <button onClick={() => onChange([])} className="text-[10px] mt-1.5 w-full text-center"
+            style={{ color: 'hsl(var(--color-text-muted))' }}>
+            Limpar
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const SortableHeader = ({ label, active, dir, onClick, children }: {
+  label: string; active: boolean; dir: SortDir; onClick: () => void; children?: React.ReactNode;
+}) => (
+  <div className="flex items-center gap-0.5 select-none">
+    <button onClick={onClick} className="flex items-center gap-0.5 hover:opacity-80 transition-opacity"
+      style={{ color: active ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+      <span className="text-[11px] font-semibold">{label}</span>
+      {active && (dir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+    </button>
+    {children}
+  </div>
+);
+
 const PriorityListView: React.FC<PriorityListViewProps> = ({
-  leads, userId, profiles = [], proposals = [], sortKey = "sla",
+  leads, userId, profiles = [], proposals = [],
   onLeadUpdated, onGenerateProposal, onSendWelcome,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
@@ -46,8 +132,23 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [lostLead, setLostLead] = useState<Lead | null>(null);
   const [submissionLead, setSubmissionLead] = useState<Lead | null>(null);
   const [contactLead, setContactLead] = useState<Lead | null>(null);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
+
+  // Sort state
+  const [sortCol, setSortCol] = useState<SortCol>("sla");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  // Column filters
+  const [filterEtapa, setFilterEtapa] = useState<string[]>([]);
+  const [filterSla, setFilterSla] = useState<string[]>([]);
+  const [filterPorte, setFilterPorte] = useState<string[]>([]);
+  const [filterResp, setFilterResp] = useState<string[]>([]);
+  const [filterOrigem, setFilterOrigem] = useState<string[]>([]);
+
+  const toggleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
 
   const followUpsByLead = useMemo(() => {
     const map: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture: boolean }> = {};
@@ -62,50 +163,69 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return map;
   }, [allPendingFollowUps]);
 
-  const activeLeads = useMemo(() =>
-    leads.filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado"),
-  [leads]);
+  const profileMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    profiles.forEach(p => { m[p.id] = p.full_name || p.id.slice(0, 8); });
+    return m;
+  }, [profiles]);
 
-  const sortLeads = useCallback((list: Lead[]) => {
-    return [...list].sort((a, b) => {
-      if (sortKey === "value") {
-        return ((b as any).valor_proposta || 0) - ((a as any).valor_proposta || 0);
+  // Build enriched rows
+  const rows: LeadRow[] = useMemo(() => {
+    return leads
+      .filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado")
+      .map(lead => {
+        const fu = followUpsByLead[lead.id];
+        const hasPending = fu ? (fu.hasToday || fu.hasFuture) && !fu.hasOverdue : false;
+        const urgency = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPending);
+        const tier = lead.colaboradores ? (COLABORADORES_TIER[lead.colaboradores] || "—") : "—";
+        const responsavel = lead.assigned_to ? (profileMap[lead.assigned_to] || "—") : "—";
+        const refDate = lead.last_activity_at || lead.stage_updated_at;
+        const slaMs = refDate ? Date.now() - new Date(refDate).getTime() : 0;
+        return { lead, urgency, tier, responsavel, slaMs };
+      });
+  }, [leads, followUpsByLead, profileMap]);
+
+  // Derive filter options from data
+  const stageOptions = useMemo(() => [...new Set(rows.map(r => STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage))].sort(), [rows]);
+  const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "✅ No prazo"];
+  const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
+  const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
+  const origemOptions = useMemo(() => [...new Set(rows.map(r => r.lead.origem))].sort(), [rows]);
+
+  // Apply column filters
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    if (filterEtapa.length > 0) result = result.filter(r => filterEtapa.includes(STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage));
+    if (filterSla.length > 0) result = result.filter(r => filterSla.includes(URGENCY_LABELS[r.urgency]));
+    if (filterPorte.length > 0) result = result.filter(r => filterPorte.includes(r.tier));
+    if (filterResp.length > 0) result = result.filter(r => filterResp.includes(r.responsavel));
+    if (filterOrigem.length > 0) result = result.filter(r => filterOrigem.includes(r.lead.origem));
+    return result;
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterOrigem]);
+
+  // Sort
+  const sortedRows = useMemo(() => {
+    const mult = sortDir === "asc" ? 1 : -1;
+    return [...filteredRows].sort((a, b) => {
+      let cmp = 0;
+      switch (sortCol) {
+        case "empresa": cmp = (a.lead.company || "").localeCompare(b.lead.company || ""); break;
+        case "etapa": cmp = (a.lead.kanban_stage).localeCompare(b.lead.kanban_stage); break;
+        case "sla": cmp = a.slaMs - b.slaMs; break;
+        case "porte": cmp = (COLABORADORES_WEIGHT[a.lead.colaboradores || ""] || 0) - (COLABORADORES_WEIGHT[b.lead.colaboradores || ""] || 0); break;
+        case "responsavel": cmp = a.responsavel.localeCompare(b.responsavel); break;
+        case "valor": cmp = ((a.lead as any).valor_proposta || 0) - ((b.lead as any).valor_proposta || 0); break;
+        case "ultima_ativ": {
+          const da = new Date(a.lead.last_activity_at || a.lead.created_at || 0).getTime();
+          const db = new Date(b.lead.last_activity_at || b.lead.created_at || 0).getTime();
+          cmp = da - db; break;
+        }
       }
-      if (sortKey === "size") {
-        return (COLABORADORES_WEIGHT[b.colaboradores || ""] || 0) - (COLABORADORES_WEIGHT[a.colaboradores || ""] || 0);
-      }
-      if (sortKey === "oldest") {
-        return new Date(a.stage_updated_at || a.created_at || 0).getTime() - new Date(b.stage_updated_at || b.created_at || 0).getTime();
-      }
-      if (sortKey === "newest") {
-        return new Date(b.stage_updated_at || b.created_at || 0).getTime() - new Date(a.stage_updated_at || a.created_at || 0).getTime();
-      }
-      const sizeA = COLABORADORES_WEIGHT[a.colaboradores || ""] || 0;
-      const sizeB = COLABORADORES_WEIGHT[b.colaboradores || ""] || 0;
-      if (sizeB !== sizeA) return sizeB - sizeA;
-      const valA = (a as any).valor_proposta || 0;
-      const valB = (b as any).valor_proposta || 0;
-      if (valB !== valA) return valB - valA;
-      return new Date(a.stage_updated_at || a.created_at || 0).getTime() - new Date(b.stage_updated_at || b.created_at || 0).getTime();
+      return cmp * mult;
     });
-  }, [sortKey]);
+  }, [filteredRows, sortCol, sortDir]);
 
-  const groups = useMemo(() => {
-    const grouped: Record<UrgencyLevel, Lead[]> = { critical: [], warning: [], normal: [] };
-    activeLeads.forEach(lead => {
-      const fu = followUpsByLead[lead.id];
-      const hasPending = fu ? (fu.hasToday || fu.hasFuture) && !fu.hasOverdue : false;
-      const level = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPending);
-      grouped[level].push(lead);
-    });
-    return {
-      critical: sortLeads(grouped.critical),
-      warning: sortLeads(grouped.warning),
-      normal: sortLeads(grouped.normal),
-    };
-  }, [activeLeads, followUpsByLead, sortLeads]);
-
-  const toggle = (key: string) => setCollapsed(prev => ({ ...prev, [key]: !prev[key] }));
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterOrigem.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -121,7 +241,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         toast.success("Lead fechado! 🎉");
         onLeadUpdated();
         break;
-      default: break;
     }
   };
 
@@ -157,7 +276,25 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     setContactLead(null);
   };
 
-  if (activeLeads.length === 0) {
+  const formatSla = (row: LeadRow) => {
+    const ms = row.slaMs;
+    if (ms <= 0) return "agora";
+    const hours = Math.floor(ms / 3600000);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  };
+
+  const formatValue = (val: number | null | undefined) => {
+    if (!val) return "—";
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 }).format(val);
+  };
+
+  const formatDate = (d: string | null | undefined) => {
+    if (!d) return "—";
+    try { return format(new Date(d), "dd/MM HH:mm"); } catch { return "—"; }
+  };
+
+  if (rows.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-sm" style={{ color: 'hsl(var(--color-text-muted))' }}>
         Nenhum lead ativo encontrado.
@@ -167,44 +304,157 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex-1 overflow-y-auto px-2 pb-4 space-y-3">
-        {GROUP_CONFIG.map(group => {
-          const items = groups[group.key];
-          if (items.length === 0) return null;
-          const isCollapsed = collapsed[group.key];
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Active inline filters bar */}
+        {activeInlineFilters > 0 && (
+          <div className="flex items-center gap-1.5 px-2 py-1 shrink-0 flex-wrap" style={{ background: 'hsl(var(--color-bg-page))' }}>
+            <span className="text-[10px] font-medium" style={{ color: 'hsl(var(--color-text-muted))' }}>Filtros da tabela:</span>
+            {filterEtapa.map(v => <Badge key={`e-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterEtapa(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            {filterSla.map(v => <Badge key={`s-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterSla(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            {filterPorte.map(v => <Badge key={`p-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterPorte(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            {filterResp.map(v => <Badge key={`r-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterResp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            {filterOrigem.map(v => <Badge key={`o-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterOrigem(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterOrigem([]); }}
+              className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
+              Limpar todos
+            </button>
+          </div>
+        )}
 
-          return (
-            <div key={group.key} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${group.border}` }}>
-              <button
-                onClick={() => toggle(group.key)}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
-                style={{ background: group.bg, color: 'hsl(var(--color-text-primary))' }}
-              >
-                {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                <span>{group.icon} {group.label}</span>
-                <Badge className="ml-auto h-5 px-2 text-[10px] font-bold" style={{ background: group.border, color: 'hsl(var(--color-text-primary))' }}>
-                  {items.length}
-                </Badge>
-              </button>
-              {!isCollapsed && (
-                <div className="p-2 space-y-1.5" style={{ background: 'hsl(var(--background))' }}>
-                  {items.map(lead => {
-                    const fu = followUpsByLead[lead.id];
-                    const hasPending = fu ? (fu.hasToday || fu.hasFuture) && !fu.hasOverdue : false;
-                    return (
-                      <PriorityCard
-                        key={lead.id}
-                        lead={lead}
-                        hasPendingFollowUp={hasPending}
-                        onClick={(l) => { setDrawerLead(l); setDrawerOpen(true); }}
-                      />
-                    );
-                  })}
-                </div>
+        {/* Summary */}
+        <div className="flex items-center gap-2 px-2 py-1 shrink-0">
+          <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+            {sortedRows.length} lead{sortedRows.length !== 1 ? "s" : ""}
+          </span>
+          {sortedRows.length !== rows.length && (
+            <span className="text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+              (de {rows.length} ativos)
+            </span>
+          )}
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                <TableHead className="w-[180px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="Empresa" active={sortCol === "empresa"} dir={sortDir} onClick={() => toggleSort("empresa")} />
+                </TableHead>
+                <TableHead className="w-[120px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>Contato</span>
+                </TableHead>
+                <TableHead className="w-[110px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="Etapa" active={sortCol === "etapa"} dir={sortDir} onClick={() => toggleSort("etapa")}>
+                    <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" />
+                  </SortableHeader>
+                </TableHead>
+                <TableHead className="w-[80px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="SLA" active={sortCol === "sla"} dir={sortDir} onClick={() => toggleSort("sla")}>
+                    <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" />
+                  </SortableHeader>
+                </TableHead>
+                <TableHead className="w-[80px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="Porte" active={sortCol === "porte"} dir={sortDir} onClick={() => toggleSort("porte")}>
+                    <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" />
+                  </SortableHeader>
+                </TableHead>
+                <TableHead className="w-[110px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="Responsável" active={sortCol === "responsavel"} dir={sortDir} onClick={() => toggleSort("responsavel")}>
+                    <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" />
+                  </SortableHeader>
+                </TableHead>
+                <TableHead className="w-[160px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>Próx. Ação</span>
+                </TableHead>
+                <TableHead className="w-[100px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="Valor" active={sortCol === "valor"} dir={sortDir} onClick={() => toggleSort("valor")} />
+                </TableHead>
+                <TableHead className="w-[80px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>Origem</span>
+                    <ColumnFilter options={origemOptions} selected={filterOrigem} onChange={setFilterOrigem} label="Origem" />
+                  </div>
+                </TableHead>
+                <TableHead className="w-[90px] sticky top-0 z-10" style={{ background: 'hsl(var(--color-bg-page))' }}>
+                  <SortableHeader label="Últ. Ativ." active={sortCol === "ultima_ativ"} dir={sortDir} onClick={() => toggleSort("ultima_ativ")} />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRows.map(row => {
+                const stageColor = STAGE_COLORS[row.lead.kanban_stage] || "#9E9E9E";
+                return (
+                  <TableRow
+                    key={row.lead.id}
+                    className="cursor-pointer transition-colors"
+                    style={{ borderLeft: `4px solid ${URGENCY_COLORS[row.urgency]}` }}
+                    onClick={() => { setDrawerLead(row.lead); setDrawerOpen(true); }}
+                  >
+                    <TableCell className="py-2 px-3">
+                      <span className="text-xs font-semibold truncate block max-w-[170px]" style={{ color: 'hsl(var(--color-text-primary))' }}>
+                        {row.lead.company || "Sem empresa"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-xs truncate block max-w-[110px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                        {row.lead.name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
+                        {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
+                        style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
+                        {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                        {row.tier}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-xs truncate block max-w-[100px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                        {row.responsavel}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-xs italic truncate block max-w-[150px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                        {(row.lead as any).proxima_acao || "—"}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-xs font-medium" style={{ color: (row.lead as any).valor_proposta ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+                        {formatValue((row.lead as any).valor_proposta)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                        {row.lead.origem}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-2 px-3">
+                      <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                        {formatDate(row.lead.last_activity_at || row.lead.created_at)}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {sortedRows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={10} className="text-center py-8 text-sm" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                    Nenhum lead encontrado com os filtros selecionados.
+                  </TableCell>
+                </TableRow>
               )}
-            </div>
-          );
-        })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       <LeadDrawer
