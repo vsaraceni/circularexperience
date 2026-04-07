@@ -78,9 +78,6 @@ export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
             className="h-8 cursor-pointer"
             onClick={() => navigate("/admin/pipeline")}
           />
-          <span className="hidden md:inline text-sm font-medium" style={{ color: 'hsl(var(--color-text-muted))' }}>
-            CRM
-          </span>
 
           {/* Desktop nav icons */}
           <div className="hidden md:flex items-center gap-0.5 ml-2 rounded-lg p-0.5" style={{ background: 'hsl(var(--color-bg-subtle))' }}>
