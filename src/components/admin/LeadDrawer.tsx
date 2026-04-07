@@ -293,7 +293,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   <AccordionContent>
                     <div className="space-y-2">
                       <InfoRow icon={<User className="h-4 w-4" />} label="Contato" value={lead.name} linkedin={lead.name} company={lead.company} />
-                      <InfoRow icon={<Mail className="h-4 w-4" />} label="E-mail" value={lead.email} />
+                      <InfoRow icon={<Mail className="h-4 w-4" />} label="E-mail" value={lead.email} copyable />
                       {lead.telefone && (
                         <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={lead.telefone} whatsapp={lead.telefone} />
                       )}
