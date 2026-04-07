@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Plus, Search, Eye, ArrowLeft, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal, ListChecks, Kanban } from "lucide-react";
+import { Plus, Search, Eye, ArrowLeft, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal, Table2, Kanban } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
