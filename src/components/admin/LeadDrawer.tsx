@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +12,7 @@ import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
   Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
-  Target, DollarSign, ChevronRight,
+  ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -31,7 +31,7 @@ import { useTemplatesWithOverrides, useSaveTemplateOverride, useDeleteTemplateOv
 import { useLeadFollowUps, useCreateFollowUp, useCompleteFollowUp } from "@/hooks/useFollowUps";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
+
 import { cn } from "@/lib/utils";
 import type { Lead } from "./LeadList";
 
@@ -71,17 +71,22 @@ interface LeadDrawerProps {
   profiles?: { id: string; full_name: string | null }[];
   onNoteAdded?: () => void;
   isAdmin?: boolean;
+  defaultTab?: string;
 }
 
-const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded, isAdmin }) => {
-  const [noteText, setNoteText] = useState("");
-  const [savingNote, setSavingNote] = useState(false);
+const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQuickAction, userId, profiles = [], onNoteAdded, isAdmin, defaultTab = "resumo" }) => {
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [refreshKey, setRefreshKey] = useState(0);
   const [enriching, setEnriching] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [followUpNote, setFollowUpNote] = useState("");
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const navigate = useNavigate();
+
+  // Sync defaultTab when drawer opens with a specific tab
+  useEffect(() => {
+    if (open) setActiveTab(defaultTab);
+  }, [open, defaultTab]);
 
   const { data: templates = [], isLoading: loadingTemplates } = useTemplatesWithOverrides(
     lead?.kanban_stage || "",
@@ -145,27 +150,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
     }
   };
 
-  const handleSaveNote = async () => {
-    if (!noteText.trim() || !userId) return;
-    setSavingNote(true);
-    try {
-      await supabase.from("lead_activities").insert({
-        lead_id: lead.id,
-        user_id: userId,
-        activity_type: "nota_manual",
-        content: noteText.trim(),
-      });
-      await supabase.from("leads").update({ last_activity_at: new Date().toISOString() }).eq("id", lead.id);
-      setNoteText("");
-      setRefreshKey((k) => k + 1);
-      onNoteAdded?.();
-      toast.success("Nota salva!");
-    } catch {
-      toast.error("Erro ao salvar nota");
-    } finally {
-      setSavingNote(false);
-    }
-  };
 
   const handleCopyTemplate = async (t: TemplateWithOverride) => {
     const text = getCurrentText(t);
@@ -248,7 +232,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="resumo" className="flex flex-col flex-1 min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
           <TabsList className="w-full grid grid-cols-3 shrink-0">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="followups" className="gap-1">
@@ -266,19 +250,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               {/* Action fields */}
               {lead.kanban_stage !== "perdido" && lead.kanban_stage !== "fechado" && (
                 <div className="mb-4 space-y-3 rounded-lg border p-3" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--muted) / 0.3)' }}>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                      <Target className="h-3 w-3" /> Próxima Ação
-                    </label>
-                    <ProximaAcaoField leadId={lead.id} initialValue={(lead as any).proxima_acao || ""} onSaved={onNoteAdded} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                      <DollarSign className="h-3 w-3" /> Valor da Proposta
-                    </label>
-                    <ValorPropostaField leadId={lead.id} initialValue={(lead as any).valor_proposta} onSaved={onNoteAdded} />
-                  </div>
-                  <AdvanceStageButton lead={lead} userId={userId} onDone={onNoteAdded} />
+                  <AdvanceStageButton lead={lead} userId={userId} onDone={() => { onNoteAdded?.(); setActiveTab("followups"); }} />
                 </div>
               )}
               <Accordion type="single" collapsible defaultValue="lead-data">
@@ -510,14 +482,20 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </TabsContent>
 
           <TabsContent value="followups" className="mt-4 overflow-hidden">
-            <div className="space-y-3 mb-4">
-              <p className="text-sm font-medium text-foreground">Agendar follow-up</p>
+            <div className="space-y-3 mb-4 rounded-lg border p-3" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--muted) / 0.3)' }}>
+              <p className="text-sm font-medium text-foreground">Agendar próximo passo</p>
+              <Textarea
+                placeholder="Qual a próxima ação? (obrigatório)"
+                value={followUpNote}
+                onChange={(e) => setFollowUpNote(e.target.value)}
+                className="text-xs min-h-[60px] resize-y"
+              />
               <div className="flex items-center gap-2">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1 w-[140px] justify-start", !followUpDate && "text-muted-foreground")}>
+                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1 w-[160px] justify-start", !followUpDate && "text-muted-foreground")}>
                       <Calendar className="h-3 w-3" />
-                      {followUpDate ? format(followUpDate, "dd/MM/yyyy") : "Data"}
+                      {followUpDate ? format(followUpDate, "dd/MM/yyyy") : "Data (obrigatório)"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -531,23 +509,17 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     />
                   </PopoverContent>
                 </Popover>
-                <Input
-                  placeholder="Nota (opcional)"
-                  value={followUpNote}
-                  onChange={(e) => setFollowUpNote(e.target.value)}
-                  className="h-8 text-xs flex-1"
-                />
                 <Button
                   size="sm"
-                  className="h-8 text-xs"
-                  disabled={!followUpDate || createFollowUp.isPending}
+                  className="h-8 text-xs flex-1"
+                  disabled={!followUpDate || !followUpNote.trim() || createFollowUp.isPending}
                   onClick={async () => {
-                    if (!followUpDate || !userId) return;
+                    if (!followUpDate || !followUpNote.trim() || !userId) return;
                     await createFollowUp.mutateAsync({
                       leadId: lead.id,
                       userId,
                       dueDate: format(followUpDate, "yyyy-MM-dd"),
-                      note: followUpNote || undefined,
+                      note: followUpNote.trim(),
                     });
                     setFollowUpDate(undefined);
                     setFollowUpNote("");
@@ -624,17 +596,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </TabsContent>
 
           <TabsContent value="atividades" className="mt-4 overflow-y-auto space-y-4">
-            <div className="space-y-2 shrink-0">
-              <Textarea
-                placeholder="Adicionar nota..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                className="min-h-[60px] text-sm"
-              />
-              <Button size="sm" disabled={!noteText.trim() || savingNote} onClick={handleSaveNote}>
-                {savingNote ? "Salvando..." : "Salvar nota"}
-              </Button>
-            </div>
             <ActivityTimeline leadId={lead.id} refreshKey={refreshKey} />
           </TabsContent>
         </Tabs>
@@ -762,80 +723,6 @@ function BriefingField({ leadId, initialValue, onSaved }: { leadId: string; init
 
 
 const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
-
-function ProximaAcaoField({ leadId, initialValue, onSaved }: { leadId: string; initialValue: string; onSaved?: () => void }) {
-  const [text, setText] = useState(initialValue);
-  const [saving, setSaving] = useState(false);
-  const dirty = text !== initialValue;
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await supabase.from("leads").update({ proxima_acao: text || null } as any).eq("id", leadId);
-      toast.success("Próxima ação salva!");
-      onSaved?.();
-    } catch {
-      toast.error("Erro ao salvar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="flex gap-2">
-      <Input
-        placeholder="Ex: Ligar terça às 14h"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        className="h-8 text-xs flex-1"
-      />
-      {dirty && (
-        <Button size="sm" className="h-8 px-2 text-xs" disabled={saving} onClick={handleSave}>
-          <Save className="h-3 w-3" />
-        </Button>
-      )}
-    </div>
-  );
-}
-
-function ValorPropostaField({ leadId, initialValue, onSaved }: { leadId: string; initialValue?: number | null; onSaved?: () => void }) {
-  const [value, setValue] = useState(initialValue != null ? String(initialValue) : "");
-  const [saving, setSaving] = useState(false);
-  const dirty = value !== (initialValue != null ? String(initialValue) : "");
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const numVal = value ? parseFloat(value.replace(/[^\d.,]/g, "").replace(",", ".")) : null;
-      await supabase.from("leads").update({ valor_proposta: numVal } as any).eq("id", leadId);
-      toast.success("Valor salvo!");
-      onSaved?.();
-    } catch {
-      toast.error("Erro ao salvar");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="flex gap-2">
-      <div className="relative flex-1">
-        <span className="absolute left-2 top-1.5 text-xs text-muted-foreground">R$</span>
-        <Input
-          placeholder="0,00"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="h-8 text-xs pl-8"
-        />
-      </div>
-      {dirty && (
-        <Button size="sm" className="h-8 px-2 text-xs" disabled={saving} onClick={handleSave}>
-          <Save className="h-3 w-3" />
-        </Button>
-      )}
-    </div>
-  );
-}
 
 function AdvanceStageButton({ lead, userId, onDone }: { lead: Lead; userId?: string; onDone?: () => void }) {
   const [loading, setLoading] = useState(false);
