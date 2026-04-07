@@ -31,7 +31,7 @@ import { useTemplatesWithOverrides, useSaveTemplateOverride, useDeleteTemplateOv
 import { useLeadFollowUps, useCreateFollowUp, useCompleteFollowUp } from "@/hooks/useFollowUps";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarWidget } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
+
 import { cn } from "@/lib/utils";
 import type { Lead } from "./LeadList";
 
