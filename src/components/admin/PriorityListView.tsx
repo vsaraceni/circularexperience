@@ -396,7 +396,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <div className="h-full flex flex-col overflow-hidden min-h-0">
         {/* Active inline filters bar */}
         {activeInlineFilters > 0 && (
           <div className="flex items-center gap-1.5 px-2 py-1 shrink-0 flex-wrap" style={{ background: 'hsl(var(--color-bg-page))' }}>
