@@ -51,7 +51,7 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
 type SortCol = "empresa" | "etapa" | "sla" | "porte" | "responsavel" | "valor" | "ultima_ativ";
 type SortDir = "asc" | "desc";
 
-const DEFAULT_COL_WIDTHS = [180, 120, 110, 80, 80, 110, 160, 100, 80, 90];
+const DEFAULT_COL_WIDTHS = [180, 120, 110, 80, 80, 110, 160, 140, 100];
 
 interface PriorityListViewProps {
   leads: Lead[];
