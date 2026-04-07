@@ -255,6 +255,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       }
 
       onLeadUpdated();
+
+      // Open drawer on follow-ups tab after successful stage move
+      const updatedLead = { ...lead, kanban_stage: newStage, stage_updated_at: new Date().toISOString() };
+      setDrawerLead(updatedLead as Lead);
+      setDrawerTab("followups");
+      setDrawerOpen(true);
     } catch (err: any) {
       toast.error("Erro ao mover lead: " + (err.message || ""));
     }
@@ -546,7 +552,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   profiles={profiles}
                   proposals={stageProposals}
                   followUpsByLead={followUpsByLead}
-                  onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerOpen(true); }}
+                  onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerTab("resumo"); setDrawerOpen(true); }}
                   onQuickAction={handleQuickAction}
                 />
               );
@@ -580,6 +586,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         profiles={profiles}
         onNoteAdded={onLeadUpdated}
         isAdmin
+        defaultTab={drawerTab}
       />
 
       <LostDialog
