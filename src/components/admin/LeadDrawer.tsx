@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -250,7 +250,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </div>
         </SheetHeader>
 
-        <Tabs defaultValue="resumo" className="flex flex-col flex-1 min-h-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
           <TabsList className="w-full grid grid-cols-3 shrink-0">
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="followups" className="gap-1">
@@ -268,19 +268,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
               {/* Action fields */}
               {lead.kanban_stage !== "perdido" && lead.kanban_stage !== "fechado" && (
                 <div className="mb-4 space-y-3 rounded-lg border p-3" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--muted) / 0.3)' }}>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                      <Target className="h-3 w-3" /> Próxima Ação
-                    </label>
-                    <ProximaAcaoField leadId={lead.id} initialValue={(lead as any).proxima_acao || ""} onSaved={onNoteAdded} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-1">
-                      <DollarSign className="h-3 w-3" /> Valor da Proposta
-                    </label>
-                    <ValorPropostaField leadId={lead.id} initialValue={(lead as any).valor_proposta} onSaved={onNoteAdded} />
-                  </div>
-                  <AdvanceStageButton lead={lead} userId={userId} onDone={onNoteAdded} />
+                  <AdvanceStageButton lead={lead} userId={userId} onDone={() => { onNoteAdded?.(); setActiveTab("followups"); }} />
                 </div>
               )}
               <Accordion type="single" collapsible defaultValue="lead-data">
@@ -533,16 +521,16 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     />
                   </PopoverContent>
                 </Popover>
-                <Input
-                  placeholder="Nota (opcional)"
+                <Textarea
+                  placeholder="Próxima ação (obrigatório)"
                   value={followUpNote}
                   onChange={(e) => setFollowUpNote(e.target.value)}
-                  className="h-8 text-xs flex-1"
+                  className="h-8 text-xs flex-1 min-h-[60px]"
                 />
                 <Button
                   size="sm"
                   className="h-8 text-xs"
-                  disabled={!followUpDate || createFollowUp.isPending}
+                  disabled={!followUpDate || !followUpNote.trim() || createFollowUp.isPending}
                   onClick={async () => {
                     if (!followUpDate || !userId) return;
                     await createFollowUp.mutateAsync({
@@ -626,17 +614,6 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </TabsContent>
 
           <TabsContent value="atividades" className="mt-4 overflow-y-auto space-y-4">
-            <div className="space-y-2 shrink-0">
-              <Textarea
-                placeholder="Adicionar nota..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                className="min-h-[60px] text-sm"
-              />
-              <Button size="sm" disabled={!noteText.trim() || savingNote} onClick={handleSaveNote}>
-                {savingNote ? "Salvando..." : "Salvar nota"}
-              </Button>
-            </div>
             <ActivityTimeline leadId={lead.id} refreshKey={refreshKey} />
           </TabsContent>
         </Tabs>
