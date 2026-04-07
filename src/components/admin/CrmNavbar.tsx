@@ -15,8 +15,7 @@ import logoOriginal from "@/assets/movimento-circular-logo.png";
 import logoCrm from "@/assets/crm-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 
-const isCrmDomain = typeof window !== "undefined" && window.location.hostname.startsWith("crm.");
-const logo = isCrmDomain ? logoCrm : logoOriginal;
+const logo = logoCrm;
 
 type ModuleKey = "pipeline" | "propostas" | "dashboard" | "painel" | "performance";
 
