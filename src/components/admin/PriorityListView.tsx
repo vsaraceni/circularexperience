@@ -51,7 +51,7 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
 type SortCol = "empresa" | "etapa" | "sla" | "porte" | "responsavel" | "valor" | "ultima_ativ";
 type SortDir = "asc" | "desc";
 
-const DEFAULT_COL_WIDTHS = [180, 120, 110, 80, 80, 110, 160, 140, 100];
+const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 80, 110, 160, 140, 100];
 
 interface PriorityListViewProps {
   leads: Lead[];
@@ -377,6 +377,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const columns = [
     { label: "Empresa", sortKey: "empresa" as SortCol, filter: undefined },
     { label: "Contato", sortKey: undefined, filter: undefined },
+    { label: "Telefone", sortKey: undefined, filter: undefined },
     { label: "Etapa", sortKey: "etapa" as SortCol, filter: <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" /> },
     { label: "SLA", sortKey: "sla" as SortCol, filter: <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" /> },
     { label: "Porte", sortKey: "porte" as SortCol, filter: <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" /> },
@@ -479,7 +480,22 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                         {row.lead.name}
                       </span>
                     </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[2] }}>
+                    <td className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[2] }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const phone = row.lead.telefone || "";
+                        if (!phone) return;
+                        const copyText = `${phone}, ${row.lead.name}, ${row.lead.company || ""}`;
+                        navigator.clipboard.writeText(copyText);
+                        toast.success("Copiado!");
+                      }}
+                      title={row.lead.telefone ? "Clique para copiar" : undefined}
+                    >
+                      <span className="text-xs truncate block" style={{ color: row.lead.telefone ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+                        {row.lead.telefone || "—"}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[3] }}>
                       <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
                         {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
                       </Badge>
@@ -525,7 +541,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
               })}
               {sortedRows.length === 0 && (
                 <tr className="border-b">
-                  <td colSpan={9} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                  <td colSpan={10} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
                   </td>
                 </tr>
