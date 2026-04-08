@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Copy, Search } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Copy, Search, FileText, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
@@ -175,6 +176,8 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   const defaultValidity = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
 
   const [recentProposals, setRecentProposals] = useState<RecentProposal[]>([]);
+  const [briefingNotes, setBriefingNotes] = useState<string>("");
+  const [briefingOpen, setBriefingOpen] = useState(true);
 
   const [form, setForm] = useState({
     company_name: proposal?.company_name || prefill?.company_name || "",
@@ -202,6 +205,19 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
       });
   }, []);
 
+  useEffect(() => {
+    const leadId = prefill?.lead_id || proposal?.lead_id;
+    if (!leadId) return;
+    supabase
+      .from("leads")
+      .select("briefing_notes")
+      .eq("id", leadId)
+      .single()
+      .then(({ data }) => {
+        if (data?.briefing_notes) setBriefingNotes(data.briefing_notes);
+      });
+  }, [prefill?.lead_id, proposal?.lead_id]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data: any = { ...form };
@@ -215,6 +231,27 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
 
   return (
     <div className="bg-card rounded-2xl border border-border p-6">
+      {briefingNotes && (
+        <Collapsible open={briefingOpen} onOpenChange={setBriefingOpen} className="mb-6">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 w-full text-left text-sm font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
+            >
+              <FileText className="h-4 w-4" />
+              Briefing do Lead
+              <ChevronDown className={`h-4 w-4 ml-auto transition-transform ${briefingOpen ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div
+              className="mt-3 p-4 bg-muted border border-border rounded-lg text-sm text-foreground prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: briefingNotes }}
+            />
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
       <h2 className="text-xl font-bold text-foreground mb-6">
         {proposal ? "Editar Proposta" : "Nova Proposta"}
       </h2>
