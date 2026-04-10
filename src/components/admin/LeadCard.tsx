@@ -38,6 +38,13 @@ const TOOLTIP_MAP: Record<string, string> = {
 
 const LOST_STAGES = new Set(["boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao"]);
 
+function getTierInfo(colaboradores?: string | null) {
+  if (colaboradores === "500+") return { label: "Tier 1", desc: "500+ colaboradores", color: "#F4A736" };
+  if (colaboradores === "101-500") return { label: "Tier 2", desc: "101-500 colaboradores", color: "#2FB2C0" };
+  if (colaboradores && colaboradores !== "") return { label: "Tier 3", desc: "Até 100 colaboradores", color: "#9E9E9E" };
+  return null;
+}
+
 const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactNode; label: string; action: string; disabled?: boolean; primary?: boolean }[] => {
   switch (lead.kanban_stage) {
     case "novo":
@@ -111,6 +118,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
   const hasPendingFollowUp = followUpStatus ? (followUpStatus.hasToday || !!followUpStatus.hasFuture) && !followUpStatus.hasOverdue : false;
   const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPendingFollowUp);
   const isCritical = urgencyLevel === "critical";
+  const tierInfo = getTierInfo(lead.colaboradores);
   const showLostIcon = LOST_STAGES.has(lead.kanban_stage);
   const nextAction = getNextActionLabel(lead, hasProposal);
   const actions = getStageActions(lead, hasProposal);
@@ -164,7 +172,16 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
       {/* Row 1: Company + Urgency Badge */}
       <div className="flex items-start justify-between gap-1 mb-1.5">
         <h4 className="font-semibold text-[14px] truncate flex items-center gap-1" style={{ color: 'hsl(var(--color-text-primary))' }}>
-          <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
+          {tierInfo ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: tierInfo.color }} aria-hidden="true" />
+              </TooltipTrigger>
+              <TooltipContent>{tierInfo.label} — {tierInfo.desc}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
+          )}
           {lead.company || "Sem empresa"}
         </h4>
         <div className="flex items-center gap-1 shrink-0">
