@@ -38,6 +38,13 @@ const TOOLTIP_MAP: Record<string, string> = {
 
 const LOST_STAGES = new Set(["boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao"]);
 
+function getTierInfo(colaboradores?: string | null) {
+  if (colaboradores === "500+") return { label: "Tier 1", desc: "500+ colaboradores", color: "#F4A736" };
+  if (colaboradores === "101-500") return { label: "Tier 2", desc: "101-500 colaboradores", color: "#2FB2C0" };
+  if (colaboradores && colaboradores !== "") return { label: "Tier 3", desc: "Até 100 colaboradores", color: "#9E9E9E" };
+  return null;
+}
+
 const getStageActions = (lead: Lead, hasProposal: boolean): { icon: React.ReactNode; label: string; action: string; disabled?: boolean; primary?: boolean }[] => {
   switch (lead.kanban_stage) {
     case "novo":
