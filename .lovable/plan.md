@@ -1,30 +1,31 @@
 
 
-## Exibir Briefing do Lead — Card colapsável acima do formulário
+## Exibir Tier do Lead no Card — Ícone colorido + tooltip
 
-### Mudanças em `src/components/admin/ProposalForm.tsx`
+### Lógica de tier
 
-**1. Buscar briefing do lead**
-- Usar `useEffect` para buscar `briefing_notes` da tabela `leads` pelo `lead_id` (de `prefill?.lead_id` ou `proposal?.lead_id`)
-- Armazenar em estado local `briefingNotes`
+```typescript
+function getTierInfo(colaboradores?: string | null) {
+  if (colaboradores === "500+") return { label: "Tier 1", desc: "500+ colaboradores", color: "#F4A736" };
+  if (colaboradores === "101-500") return { label: "Tier 2", desc: "101-500 colaboradores", color: "#2FB2C0" };
+  if (colaboradores && colaboradores !== "") return { label: "Tier 3", desc: "Até 100 colaboradores", color: "#9E9E9E" };
+  return null;
+}
+```
 
-**2. Renderizar card colapsável acima do formulário**
-- Usar componente `Collapsible` (já existe em `src/components/ui/collapsible.tsx`)
-- Exibir apenas quando `briefingNotes` tiver conteúdo
-- Título: "Briefing do Lead" com ícone `FileText`
-- Inicia expandido por padrão
-- Conteúdo renderizado como HTML (via `dangerouslySetInnerHTML`) em modo somente leitura, com estilo suave (bg-muted, border, rounded)
-- Botão de toggle (chevron) para expandir/recolher
+### Mudanças em `src/components/admin/LeadCard.tsx`
 
-**3. Imports adicionais**
-- `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` de `@/components/ui/collapsible`
-- `FileText`, `ChevronDown` de `lucide-react`
+1. Calcular tier a partir de `lead.colaboradores` (campo já disponível no objeto `Lead`)
+2. Envolver o ícone `Building2` existente (linha do nome da empresa) com `Tooltip` + `TooltipTrigger`/`TooltipContent`
+3. Aplicar a cor do tier ao ícone via `style={{ color: tierInfo.color }}`
+4. Tooltip exibe: "Tier 1 — 500+ colaboradores"
+5. Se não houver dados de colaboradores, manter o ícone cinza atual sem tooltip de tier
 
 ### Arquivo impactado
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin/ProposalForm.tsx` | Fetch briefing + card colapsável acima do form |
+| `src/components/admin/LeadCard.tsx` | Colorir `Building2` por tier + tooltip |
 
-Sem migração SQL necessária.
+Sem migração SQL.
 
