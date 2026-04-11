@@ -121,7 +121,6 @@ export function useNotifications(userId: string | undefined) {
             toast.warning(label, {
               description: n.title,
               duration: 10000,
-              important: true,
             });
             flashTabTitle("NOVO LEAD!");
           } else {
