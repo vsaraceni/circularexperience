@@ -253,6 +253,7 @@ const Pipeline = () => {
   });
   const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
   const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
+  const [priorityVisibleLeads, setPriorityVisibleLeads] = useState<Lead[]>([]);
   const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length + filterTier.length;
 
   const handleExportCSV = () => {
@@ -572,7 +573,7 @@ const Pipeline = () => {
                 </DropdownMenuItem>
                 {viewMode === "priorities" && (
                   <DropdownMenuItem onClick={() => setBulkEmailOpen(true)}>
-                    <Mail className="h-4 w-4 mr-2" /> Enviar email em massa ({filteredLeads.filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado").length})
+                    <Mail className="h-4 w-4 mr-2" /> Enviar email em massa ({priorityVisibleLeads.length})
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -611,6 +612,7 @@ const Pipeline = () => {
                 onLeadUpdated={fetchLeads}
                 onGenerateProposal={handleGenerateProposal}
                 onSendWelcome={handleSendWelcomeFromKanban}
+                onFilteredLeadsChange={setPriorityVisibleLeads}
               />
             )}
           </div>
@@ -619,7 +621,7 @@ const Pipeline = () => {
         <BulkEmailDialog
           open={bulkEmailOpen}
           onOpenChange={setBulkEmailOpen}
-          leads={filteredLeads}
+          leads={viewMode === "priorities" ? priorityVisibleLeads : filteredLeads}
           userId={user!.id}
         />
         </>

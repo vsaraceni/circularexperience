@@ -62,6 +62,7 @@ interface PriorityListViewProps {
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
+  onFilteredLeadsChange?: (leads: Lead[]) => void;
 }
 
 interface LeadRow {
@@ -152,7 +153,7 @@ const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
 
 const PriorityListView: React.FC<PriorityListViewProps> = ({
   leads, userId, profiles = [], proposals = [],
-  onLeadUpdated, onGenerateProposal, onSendWelcome,
+  onLeadUpdated, onGenerateProposal, onSendWelcome, onFilteredLeadsChange,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -274,6 +275,11 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     
     return result;
   }, [rows, filterEtapa, filterSla, filterPorte, filterResp]);
+
+  // Emit filtered leads to parent
+  useEffect(() => {
+    onFilteredLeadsChange?.(filteredRows.map(r => r.lead));
+  }, [filteredRows, onFilteredLeadsChange]);
 
   // Sort
   const sortedRows = useMemo(() => {
