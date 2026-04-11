@@ -34,7 +34,6 @@ function playNotificationSound() {
     gain.gain.value = 0.3;
     osc.start();
     osc.stop(ctx.currentTime + 0.15);
-    // Second beep after 200ms
     setTimeout(() => {
       try {
         const osc2 = ctx.createOscillator();
@@ -69,7 +68,6 @@ function flashTabTitle(message: string) {
 
 export function useNotifications(userId: string | undefined) {
   const qc = useQueryClient();
-  const isFirstLoad = useRef(true);
 
   const query = useQuery({
     queryKey: ["notifications", userId],
@@ -86,13 +84,25 @@ export function useNotifications(userId: string | undefined) {
     enabled: !!userId,
   });
 
-  // Realtime subscription with sound + toast + tab flash
+  return query;
+}
+
+/**
+ * Single realtime subscription for notifications.
+ * Call this ONCE (e.g. in CrmNavbar or NotificationBell parent).
+ * Handles sound, toast, tab flash on new notifications.
+ */
+export function useNotificationRealtime(userId: string | undefined) {
+  const qc = useQueryClient();
+  const readyRef = useRef(false);
+
   useEffect(() => {
     if (!userId) return;
-    isFirstLoad.current = true;
+    readyRef.current = false;
 
+    const channelName = `notifications_rt_${userId.slice(0, 8)}`;
     const channel = supabase
-      .channel("notifications_realtime")
+      .channel(channelName)
       .on("postgres_changes", {
         event: "INSERT",
         schema: "public",
@@ -101,10 +111,7 @@ export function useNotifications(userId: string | undefined) {
       }, (payload: any) => {
         qc.invalidateQueries({ queryKey: ["notifications", userId] });
 
-        if (isFirstLoad.current) {
-          isFirstLoad.current = false;
-          return;
-        }
+        if (!readyRef.current) return;
 
         const n = payload.new;
         if (n) {
@@ -116,7 +123,6 @@ export function useNotifications(userId: string | undefined) {
 
           const label = TYPE_LABELS[n.type] || "🔔 Notificação";
 
-          // Aggressive toast for new_lead
           if (n.type === "new_lead") {
             toast.warning(label, {
               description: n.title,
@@ -132,14 +138,15 @@ export function useNotifications(userId: string | undefined) {
           }
         }
       })
-      .subscribe(() => {
-        setTimeout(() => { isFirstLoad.current = false; }, 2000);
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          // Wait a moment to avoid playing sounds for events that were in-flight
+          setTimeout(() => { readyRef.current = true; }, 1500);
+        }
       });
 
     return () => { supabase.removeChannel(channel); };
   }, [userId, qc]);
-
-  return query;
 }
 
 export function useUnreadCount(userId: string | undefined) {
