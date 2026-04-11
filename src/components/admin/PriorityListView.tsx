@@ -62,6 +62,7 @@ interface PriorityListViewProps {
   onLeadUpdated: () => void;
   onGenerateProposal: (lead: Lead) => void;
   onSendWelcome: (lead: Lead) => void;
+  onFilteredLeadsChange?: (leads: Lead[]) => void;
 }
 
 interface LeadRow {
