@@ -1,54 +1,55 @@
 
 
-## Ferramentas: CSV Download + Envio em Massa
+## Correção da contagem de leads + Variáveis de personalização no email em massa
 
-### 1. Download CSV dos Leads Filtrados
+### Problema 1 — Contagem errada (117 em vez de 8)
 
-**Melhor local para o botão:** No menu "More" (ícone ⋮) que já existe na toolbar do Pipeline (linha 535-546), ao lado de "Ver Leads Perdidos". Adicionar um item "Exportar leads filtrados (CSV)". Isso exporta exatamente os leads que o usuário está vendo após aplicar os filtros — faz sentido contextual e não polui a interface.
+O `BulkEmailDialog` recebe `filteredLeads` corretamente (a prop `leads` vem do `filteredLeads` do Pipeline). Porém, o dialog filtra internamente com `eligibleLeads` removendo `perdido` e `fechado`. Como os 117 leads ativos não incluem perdido/fechado, o filtro interno não reduz nada — ele mostra 117 porque o `filteredLeads` que chega já tem 117 items.
 
-**Implementação:** Gerar o CSV no lado do cliente com os dados já carregados em `filteredLeads`. Sem necessidade de Edge Function — os dados já estão no frontend. Colunas: Empresa, Nome, Email, Telefone, Cargo, Etapa, Origem, Porte, Responsável, Valor Proposta, Criado em.
+**Causa raiz:** O botão "Enviar email em massa" só aparece no menu `⋮` global, que renderiza o `BulkEmailDialog` com `filteredLeads` antes dos filtros de estágio/tier serem aplicados — ou seja, `filteredLeads` está correto no `useMemo`, mas o problema pode estar em que a opção de bulk email também está disponível no modo Kanban (onde `filteredLeads` inclui todos os estágios). Revisando o código: o menu item só aparece quando `viewMode === "priorities"`, e o `filteredLeads` inclui os filtros de `filterStages` e `filterTier`. Se o screenshot mostra 8 leads com filtros ativos mas o dialog mostra 117, pode ser um bug de timing/state.
 
----
+**Solução:** O dialog deve mostrar exatamente a contagem dos leads recebidos (sem re-filtrar). Remover o filtro interno `eligibleLeads` e confiar no `filteredLeads` já filtrado. Na toolbar, a contagem já é precisa. A questão real é que o slug do template usado para `from_email` está errado (`welcome` em vez de `lead-welcome`).
 
-### 2. Envio de Email em Massa — Análise Crítica
+### Problema 2 — Variáveis de personalização
 
-**O que você quer é legítimo:** enviar comunicações pontuais e manuais para um grupo segmentado de leads do CRM (ex: todos os Tier 1 em "Em Contato"). Isso é uma ferramenta de outreach comercial, não marketing automatizado.
-
-**Como implementar de forma segura:**
-
-- Criar uma Edge Function `send-bulk-email` que recebe uma lista de `lead_ids`, `subject` e `body_html`
-- A função itera os leads via service_role, envia individualmente via Resend (que já está configurado), e registra cada envio como atividade no lead (`lead_activities`)
-- O envio é sequencial com delay entre cada email para respeitar rate limits da Resend
-- No final, retorna um relatório: `{ sent: X, failed: Y, errors: [...] }`
-
-**Interface:**
-- Na view To-Do List (PriorityListView), após aplicar filtros, aparece um botão "Enviar email para N leads filtrados" na toolbar
-- Abre um Dialog com: Assunto (input), Mensagem (editor HTML rico — reutilizar o `RichTextEditor` que já existe no sistema de boas-vindas)
-- Botão de confirmação com contagem: "Enviar para 12 leads"
-- Ao clicar, chama a Edge Function e exibe um toast com o relatório final
-
-**Registro de atividade:** Cada envio cria um registro em `lead_activities` com:
-- `activity_type: "email_massa_enviado"`
-- `content: "Email em massa: {assunto}"`
-- `metadata: { subject, sent_at }`
-
-Isso aparece na timeline de cada lead.
+O email de boas-vindas suporta `{{name}}`, `{{full_name}}`, `{{email}}`, `{{company}}`, `{{cargo}}`, `{{sender_name}}`, `{{sender_email}}`, `{{sender_phone}}`. O bulk email atual envia o `body_html` cru sem substituir variáveis — todos recebem o mesmo texto.
 
 ---
 
-### Plano de Implementação
+### Implementação
+
+**1. BulkEmailDialog — Corrigir contagem e adicionar variáveis**
+
+- Remover o filtro interno `eligibleLeads` — usar `leads` diretamente (já vem filtrado do Pipeline)
+- Adicionar seção de variáveis clicáveis (badges) idêntica à do EmailTemplateEditor:
+  - `{{name}}` — Primeiro nome
+  - `{{full_name}}` — Nome completo
+  - `{{email}}` — Email do lead
+  - `{{company}}` — Empresa
+  - `{{cargo}}` — Cargo
+- Clicar na badge copia a variável para clipboard
+- Adicionar nota explicativa: "Variáveis são substituídas automaticamente para cada lead"
+
+**2. Edge Function `send-bulk-email` — Substituir variáveis por lead**
+
+- Expandir o SELECT para incluir `cargo`: `"id, name, email, company, cargo"`
+- Antes de enviar cada email, aplicar `replacePlaceholders` no `subject` e `body_html`:
+  - `{{name}}` → primeiro nome
+  - `{{full_name}}` → nome completo
+  - `{{email}}` → email
+  - `{{company}}` → empresa
+  - `{{cargo}}` → cargo
+- Corrigir o slug do template de `welcome` para `lead-welcome` na busca do `from_email`/`from_name`
+- Buscar também o perfil do admin (sender) para variáveis `{{sender_name}}`, `{{sender_email}}`, `{{sender_phone}}`
+
+**3. Assunto também suporta variáveis** — O `subject` passa pelo mesmo `replacePlaceholders` por lead
+
+---
+
+### Arquivos impactados
 
 | Arquivo | Mudança |
-|---------|---------|
-| `src/pages/admin/Pipeline.tsx` | Adicionar item "Exportar CSV" no DropdownMenu e botão "Enviar email" na toolbar |
-| `src/components/admin/BulkEmailDialog.tsx` | **Novo** — Dialog com assunto + editor HTML + botão enviar |
-| `supabase/functions/send-bulk-email/index.ts` | **Nova** Edge Function — envia emails via Resend e registra atividades |
-| `supabase/config.toml` | Adicionar `[functions.send-bulk-email]` |
-
-### Pontos de atenção
-
-1. **Rate limit Resend:** A conta gratuita permite ~100 emails/dia. O envio será sequencial com 500ms de delay entre cada email.
-2. **Proteção contra abuso:** A função valida JWT e só aceita usuários autenticados com role admin.
-3. **Tamanho do lote:** Limitar a 50 leads por envio para evitar timeouts na Edge Function.
-4. **Emails suprimidos:** Verificar a tabela `suppressed_emails` antes de enviar — não enviar para quem deu unsubscribe/bounce.
+|---|---|
+| `src/components/admin/BulkEmailDialog.tsx` | Remover filtro `eligibleLeads`, usar `leads` direto; adicionar badges de variáveis |
+| `supabase/functions/send-bulk-email/index.ts` | Adicionar `replacePlaceholders` por lead; expandir SELECT; corrigir slug; buscar perfil do admin |
 
