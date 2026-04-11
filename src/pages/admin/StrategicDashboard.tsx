@@ -15,10 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import {
   TrendingUp,
-  CheckCircle2,
   Briefcase,
   Phone,
-  ArrowLeft,
   Settings,
   Target,
   DollarSign,
@@ -26,6 +24,7 @@ import {
   Percent,
 } from "lucide-react";
 import CrmNavbar from "@/components/admin/CrmNavbar";
+import EvolutionCharts from "@/components/admin/EvolutionCharts";
 import { useStrategicDashboard, type CampaignKPI, type Campaign, type CampaignGoals } from "@/hooks/useStrategicDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
