@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2, Copy } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 
 interface Lead {
@@ -23,25 +24,38 @@ interface BulkEmailDialogProps {
   userId: string;
 }
 
+const VARIABLES = [
+  { tag: "{{name}}", label: "Primeiro nome" },
+  { tag: "{{full_name}}", label: "Nome completo" },
+  { tag: "{{email}}", label: "Email" },
+  { tag: "{{company}}", label: "Empresa" },
+  { tag: "{{cargo}}", label: "Cargo" },
+  { tag: "{{sender_name}}", label: "Seu nome" },
+  { tag: "{{sender_email}}", label: "Seu email" },
+  { tag: "{{sender_phone}}", label: "Seu telefone" },
+];
+
 const BulkEmailDialog: React.FC<BulkEmailDialogProps> = ({ open, onOpenChange, leads, userId }) => {
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
   const [sending, setSending] = useState(false);
 
-  // Filter out lost/closed leads
-  const eligibleLeads = leads.filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado");
+  const handleCopyVariable = (tag: string) => {
+    navigator.clipboard.writeText(tag);
+    toast.success(`${tag} copiado`);
+  };
 
   const handleSend = async () => {
     if (!subject.trim()) { toast.error("Preencha o assunto"); return; }
     if (!bodyHtml.trim() || bodyHtml === "<p></p>") { toast.error("Preencha a mensagem"); return; }
-    if (eligibleLeads.length === 0) { toast.error("Nenhum lead elegível"); return; }
-    if (eligibleLeads.length > 50) { toast.error("Máximo de 50 leads por envio"); return; }
+    if (leads.length === 0) { toast.error("Nenhum lead selecionado"); return; }
+    if (leads.length > 50) { toast.error("Máximo de 50 leads por envio"); return; }
 
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-bulk-email", {
         body: {
-          lead_ids: eligibleLeads.map(l => l.id),
+          lead_ids: leads.map(l => l.id),
           subject: subject.trim(),
           body_html: bodyHtml,
         },
@@ -77,7 +91,7 @@ const BulkEmailDialog: React.FC<BulkEmailDialogProps> = ({ open, onOpenChange, l
             Enviar email em massa
           </DialogTitle>
           <DialogDescription>
-            Enviar para {eligibleLeads.length} lead{eligibleLeads.length !== 1 ? "s" : ""} filtrado{eligibleLeads.length !== 1 ? "s" : ""}
+            Enviar para {leads.length} lead{leads.length !== 1 ? "s" : ""} filtrado{leads.length !== 1 ? "s" : ""}
           </DialogDescription>
         </DialogHeader>
 
@@ -102,6 +116,28 @@ const BulkEmailDialog: React.FC<BulkEmailDialogProps> = ({ open, onOpenChange, l
             />
           </div>
 
+          <div>
+            <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--color-text-muted))' }}>
+              Variáveis disponíveis <span className="font-normal">(clique para copiar)</span>
+            </Label>
+            <div className="flex flex-wrap gap-1.5">
+              {VARIABLES.map(v => (
+                <Badge
+                  key={v.tag}
+                  variant="outline"
+                  className="cursor-pointer hover:bg-accent transition-colors text-[11px] gap-1"
+                  onClick={() => handleCopyVariable(v.tag)}
+                >
+                  <Copy className="h-3 w-3" />
+                  {v.tag} <span className="font-normal opacity-70">— {v.label}</span>
+                </Badge>
+              ))}
+            </div>
+            <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--color-text-muted))' }}>
+              Variáveis são substituídas automaticamente para cada lead
+            </p>
+          </div>
+
           <div className="text-[11px] space-y-1 p-3 rounded-lg" style={{ background: 'hsl(var(--color-bg-page))', color: 'hsl(var(--color-text-muted))' }}>
             <p>• Máximo de 50 leads por envio</p>
             <p>• Emails suprimidos (bounce/unsubscribe) são ignorados automaticamente</p>
@@ -121,7 +157,7 @@ const BulkEmailDialog: React.FC<BulkEmailDialogProps> = ({ open, onOpenChange, l
             {sending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
             ) : (
-              <>Enviar para {eligibleLeads.length} lead{eligibleLeads.length !== 1 ? "s" : ""}</>
+              <>Enviar para {leads.length} lead{leads.length !== 1 ? "s" : ""}</>
             )}
           </Button>
         </DialogFooter>

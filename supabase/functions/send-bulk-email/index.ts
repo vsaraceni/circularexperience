@@ -6,13 +6,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+function replacePlaceholders(
+  text: string,
+  lead: { name: string; email: string; company?: string | null; cargo?: string | null },
+  sender: { full_name?: string | null; email?: string | null; phone?: string | null }
+): string {
+  const firstName = lead.name.split(" ")[0];
+  return text
+    .replace(/\{\{name\}\}/g, firstName)
+    .replace(/\{\{full_name\}\}/g, lead.name)
+    .replace(/\{\{email\}\}/g, lead.email)
+    .replace(/\{\{company\}\}/g, lead.company || "")
+    .replace(/\{\{cargo\}\}/g, lead.cargo || "")
+    .replace(/\{\{sender_name\}\}/g, sender.full_name || "")
+    .replace(/\{\{sender_email\}\}/g, sender.email || "")
+    .replace(/\{\{sender_phone\}\}/g, sender.phone || "");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Validate auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -32,7 +48,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the caller is admin
     const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -61,7 +76,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Parse and validate input
     const body = await req.json();
     const { lead_ids, subject, body_html } = body;
 
@@ -90,10 +104,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch leads
+    // Fetch leads with cargo
     const { data: leads, error: leadsError } = await supabase
       .from("leads")
-      .select("id, name, email, company")
+      .select("id, name, email, company, cargo")
       .in("id", lead_ids);
 
     if (leadsError || !leads) {
@@ -103,17 +117,30 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch sender profile
+    const { data: senderProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const sender = {
+      full_name: senderProfile?.full_name || "",
+      email: senderProfile?.email || user.email || "",
+      phone: senderProfile?.phone || "",
+    };
+
     // Fetch suppressed emails
     const { data: suppressed } = await supabase
       .from("suppressed_emails")
       .select("email");
     const suppressedSet = new Set((suppressed || []).map((s: any) => s.email.toLowerCase()));
 
-    // Get sender info from email_templates (welcome slug)
+    // Get sender info from email_templates
     const { data: tpl } = await supabase
       .from("email_templates")
       .select("from_email, from_name")
-      .eq("slug", "welcome")
+      .eq("slug", "lead-welcome")
       .maybeSingle();
 
     const fromEmail = tpl?.from_email || "contato@notify.crm.movimentocircular.io";
@@ -125,11 +152,13 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
 
     for (const lead of leads) {
-      // Check suppression
       if (suppressedSet.has(lead.email.toLowerCase())) {
         suppressedCount++;
         continue;
       }
+
+      const personalizedSubject = replacePlaceholders(subject, lead, sender);
+      const personalizedBody = replacePlaceholders(body_html, lead, sender);
 
       try {
         const res = await fetch("https://api.resend.com/emails", {
@@ -141,21 +170,19 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: `${fromName} <${fromEmail}>`,
             to: [lead.email],
-            subject,
-            html: body_html,
+            subject: personalizedSubject,
+            html: personalizedBody,
           }),
         });
 
         if (res.ok) {
           sent++;
-
-          // Log activity
           await supabase.from("lead_activities").insert({
             lead_id: lead.id,
             user_id: user.id,
             activity_type: "email_massa_enviado",
-            content: `Email em massa: ${subject}`,
-            metadata: { subject, sent_at: new Date().toISOString() },
+            content: `Email em massa: ${personalizedSubject}`,
+            metadata: { subject: personalizedSubject, sent_at: new Date().toISOString() },
           });
         } else {
           const errBody = await res.text();
@@ -167,7 +194,6 @@ Deno.serve(async (req) => {
         errors.push(`${lead.email}: ${err.message}`);
       }
 
-      // Rate limit: 500ms between sends
       if (leads.indexOf(lead) < leads.length - 1) {
         await new Promise((r) => setTimeout(r, 500));
       }
