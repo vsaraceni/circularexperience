@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.export-proposals-leads]
 verify_jwt = false
+
+[functions.send-bulk-email]
+verify_jwt = false

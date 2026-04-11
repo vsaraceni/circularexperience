@@ -614,6 +614,13 @@ const Pipeline = () => {
             )}
           </div>
         </div>
+
+        <BulkEmailDialog
+          open={bulkEmailOpen}
+          onOpenChange={setBulkEmailOpen}
+          leads={filteredLeads}
+          userId={user!.id}
+        />
       )}
     </div>
   );
