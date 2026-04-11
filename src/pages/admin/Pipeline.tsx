@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Plus, Search, Eye, ArrowLeft, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal, Table2, Kanban } from "lucide-react";
+import { Plus, Search, Eye, ArrowLeft, MoreVertical, AlertTriangle, ArrowDownAZ, Clock, SlidersHorizontal, Table2, Kanban, Download, Mail } from "lucide-react";
 import { getUrgencyLevel } from "@/components/admin/UrgencyBadge";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
 import { subDays } from "date-fns";
@@ -20,6 +20,7 @@ import PriorityListView from "@/components/admin/PriorityListView";
 import ProposalForm from "@/components/admin/ProposalForm";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import DailyBriefing from "@/components/admin/DailyBriefing";
+import BulkEmailDialog from "@/components/admin/BulkEmailDialog";
 
 import type { Proposal } from "./Proposals";
 
@@ -251,7 +252,30 @@ const Pipeline = () => {
     try { return (localStorage.getItem("pipeline_view") as "kanban" | "priorities") || "kanban"; } catch { return "kanban"; }
   });
   const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
+  const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
   const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length + filterTier.length;
+
+  const handleExportCSV = () => {
+    const headers = ["Empresa", "Nome", "Email", "Telefone", "Cargo", "Etapa", "Origem", "Porte", "Responsável", "Valor Proposta", "Criado em"];
+    const stageLabels: Record<string, string> = { novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato", call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado", perdido: "Perdido" };
+    const profileMap: Record<string, string> = {};
+    profiles.forEach(p => { profileMap[p.id] = p.full_name || ""; });
+    const rows = filteredLeads.map(l => [
+      l.company || "", l.name, l.email, l.telefone || "", l.cargo || "",
+      stageLabels[l.kanban_stage] || l.kanban_stage, l.origem,
+      l.colaboradores || "", l.assigned_to ? (profileMap[l.assigned_to] || "") : "",
+      l.valor_proposta ? String(l.valor_proposta) : "",
+      l.created_at ? new Date(l.created_at).toLocaleDateString("pt-BR") : "",
+    ]);
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = [headers.map(escape).join(","), ...rows.map(r => r.map(escape).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success(`${filteredLeads.length} leads exportados`);
+  };
 
   const TIER_OPTIONS = [
     { id: "tier1", label: "Tier 1 (500+)" },
@@ -542,6 +566,14 @@ const Pipeline = () => {
                 <DropdownMenuItem onClick={() => setShowLost(true)}>
                   <Eye className="h-4 w-4 mr-2" /> Ver Leads Perdidos
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <Download className="h-4 w-4 mr-2" /> Exportar CSV ({filteredLeads.length} leads)
+                </DropdownMenuItem>
+                {viewMode === "priorities" && (
+                  <DropdownMenuItem onClick={() => setBulkEmailOpen(true)}>
+                    <Mail className="h-4 w-4 mr-2" /> Enviar email em massa ({filteredLeads.filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado").length})
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
