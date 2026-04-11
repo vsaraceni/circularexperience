@@ -25,10 +25,46 @@ const TYPE_LABELS: Record<string, string> = {
 
 function playNotificationSound() {
   try {
-    const audio = new Audio("/notification.mp3");
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.value = 0.3;
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    // Second beep after 200ms
+    setTimeout(() => {
+      try {
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.frequency.value = 1100;
+        gain2.gain.value = 0.3;
+        osc2.start();
+        osc2.stop(ctx.currentTime + 0.15);
+      } catch {}
+    }, 200);
   } catch {}
+}
+
+function flashTabTitle(message: string) {
+  if (document.visibilityState === "visible") return;
+  const original = document.title;
+  let on = true;
+  const interval = setInterval(() => {
+    document.title = on ? `🔔 ${message}` : original;
+    on = !on;
+  }, 1000);
+  const stop = () => {
+    clearInterval(interval);
+    document.title = original;
+    document.removeEventListener("visibilitychange", stop);
+  };
+  document.addEventListener("visibilitychange", stop, { once: true });
+  setTimeout(stop, 30000);
 }
 
 export function useNotifications(userId: string | undefined) {
@@ -39,7 +75,7 @@ export function useNotifications(userId: string | undefined) {
     queryKey: ["notifications", userId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("notifications" as any)
+        .from("notifications")
         .select("*")
         .eq("user_id", userId!)
         .order("created_at", { ascending: false })
@@ -50,7 +86,7 @@ export function useNotifications(userId: string | undefined) {
     enabled: !!userId,
   });
 
-  // Realtime subscription with sound + toast
+  // Realtime subscription with sound + toast + tab flash
   useEffect(() => {
     if (!userId) return;
     isFirstLoad.current = true;
@@ -65,7 +101,6 @@ export function useNotifications(userId: string | undefined) {
       }, (payload: any) => {
         qc.invalidateQueries({ queryKey: ["notifications", userId] });
 
-        // Skip sound/toast on first load
         if (isFirstLoad.current) {
           isFirstLoad.current = false;
           return;
@@ -75,20 +110,29 @@ export function useNotifications(userId: string | undefined) {
         if (n) {
           playNotificationSound();
 
-          // Vibrate on mobile
           if (navigator.vibrate) {
             navigator.vibrate(200);
           }
 
           const label = TYPE_LABELS[n.type] || "🔔 Notificação";
-          toast(label, {
-            description: n.title,
-            duration: 6000,
-          });
+
+          // Aggressive toast for new_lead
+          if (n.type === "new_lead") {
+            toast.warning(label, {
+              description: n.title,
+              duration: 10000,
+            });
+            flashTabTitle("NOVO LEAD!");
+          } else {
+            toast(label, {
+              description: n.title,
+              duration: 6000,
+            });
+            flashTabTitle(n.title || "Nova notificação");
+          }
         }
       })
       .subscribe(() => {
-        // After subscribe, mark first load done after a short delay
         setTimeout(() => { isFirstLoad.current = false; }, 2000);
       });
 
@@ -102,7 +146,6 @@ export function useUnreadCount(userId: string | undefined) {
   const { data: notifications = [] } = useNotifications(userId);
   const unread = notifications.filter(n => !n.read).length;
 
-  // Badge on tab title
   useEffect(() => {
     const baseTitle = "Pipeline Comercial";
     document.title = unread > 0 ? `(${unread}) ${baseTitle}` : baseTitle;
@@ -116,8 +159,8 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: async ({ id, userId }: { id: string; userId: string }) => {
       const { error } = await supabase
-        .from("notifications" as any)
-        .update({ read: true } as any)
+        .from("notifications")
+        .update({ read: true })
         .eq("id", id);
       if (error) throw error;
       return userId;
@@ -133,8 +176,8 @@ export function useMarkAllRead() {
   return useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase
-        .from("notifications" as any)
-        .update({ read: true } as any)
+        .from("notifications")
+        .update({ read: true })
         .eq("user_id", userId)
         .eq("read", false);
       if (error) throw error;
