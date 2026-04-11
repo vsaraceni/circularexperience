@@ -622,7 +622,8 @@ const Pipeline = () => {
           leads={filteredLeads}
           userId={user!.id}
         />
-      )}
+        </>
+      )
     </div>
   );
 };
