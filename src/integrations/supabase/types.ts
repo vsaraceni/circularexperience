@@ -875,6 +875,35 @@ export type Database = {
         Args: { target_date?: string }
         Returns: undefined
       }
+      get_proposal_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          author_email: string | null
+          author_name: string | null
+          author_phone: string | null
+          company_name: string
+          considerations: string | null
+          contact_name: string
+          contact_role: string | null
+          created_at: string | null
+          created_by: string
+          event_date: string | null
+          id: string
+          investment: string | null
+          lead_id: string | null
+          scope: string | null
+          slug: string
+          status: string
+          title: string
+          valid_until: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "proposals"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
