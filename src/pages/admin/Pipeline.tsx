@@ -350,6 +350,7 @@ const Pipeline = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'hsl(var(--color-brand))' }} />
         </div>
       ) : (
+        <>
         <div className="flex-1 flex flex-col overflow-hidden px-2 md:px-4 pt-2">
           {/* Toolbar */}
           <div className="flex items-center gap-2 mb-2 shrink-0 flex-wrap">
