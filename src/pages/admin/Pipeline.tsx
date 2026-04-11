@@ -253,6 +253,7 @@ const Pipeline = () => {
   });
   const [prioritySortKey, setPrioritySortKey] = useState<"sla" | "oldest" | "newest" | "value" | "size">("sla");
   const [bulkEmailOpen, setBulkEmailOpen] = useState(false);
+  const [priorityVisibleLeads, setPriorityVisibleLeads] = useState<Lead[]>([]);
   const activeFilterCount = [filterOrigem, filterOwner, filterPeriod, filterStatus].filter(v => v !== "all").length + filterStages.length + filterTier.length;
 
   const handleExportCSV = () => {
@@ -611,6 +612,7 @@ const Pipeline = () => {
                 onLeadUpdated={fetchLeads}
                 onGenerateProposal={handleGenerateProposal}
                 onSendWelcome={handleSendWelcomeFromKanban}
+                onFilteredLeadsChange={setPriorityVisibleLeads}
               />
             )}
           </div>

@@ -276,6 +276,11 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return result;
   }, [rows, filterEtapa, filterSla, filterPorte, filterResp]);
 
+  // Emit filtered leads to parent
+  useEffect(() => {
+    onFilteredLeadsChange?.(filteredRows.map(r => r.lead));
+  }, [filteredRows, onFilteredLeadsChange]);
+
   // Sort
   const sortedRows = useMemo(() => {
     const mult = sortDir === "asc" ? 1 : -1;
