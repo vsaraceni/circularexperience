@@ -82,9 +82,7 @@ const ProposalView = () => {
   useEffect(() => {
     const fetchData = async () => {
       const { data, error } = await supabase
-        .from("proposals")
-        .select("*")
-        .eq("slug", slug)
+        .rpc("get_proposal_by_slug", { p_slug: slug })
         .maybeSingle();
 
       if (error || !data) {
