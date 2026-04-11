@@ -153,7 +153,7 @@ const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
 
 const PriorityListView: React.FC<PriorityListViewProps> = ({
   leads, userId, profiles = [], proposals = [],
-  onLeadUpdated, onGenerateProposal, onSendWelcome,
+  onLeadUpdated, onGenerateProposal, onSendWelcome, onFilteredLeadsChange,
 }) => {
   const [drawerLead, setDrawerLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
