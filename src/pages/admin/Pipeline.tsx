@@ -623,7 +623,7 @@ const Pipeline = () => {
           userId={user!.id}
         />
         </>
-      )
+      )}
     </div>
   );
 };
