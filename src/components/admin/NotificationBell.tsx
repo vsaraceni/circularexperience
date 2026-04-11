@@ -27,6 +27,7 @@ const TYPE_ICONS: Record<string, string> = {
 const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead }) => {
   const [open, setOpen] = useState(false);
   const { data: notifications = [] } = useNotifications(userId);
+  useNotificationRealtime(userId);
   const unreadCount = useUnreadCount(userId);
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllRead();
