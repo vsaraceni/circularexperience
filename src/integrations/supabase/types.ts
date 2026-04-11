@@ -44,6 +44,87 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_snapshots: {
+        Row: {
+          acoes_sdr_dia: number
+          conv_bv_contato: number | null
+          conv_call_proposta: number | null
+          conv_contato_call: number | null
+          conv_novo_bv: number | null
+          conv_nutricao_fechado: number | null
+          conv_proposta_nutricao: number | null
+          created_at: string
+          id: string
+          leads_boas_vindas: number
+          leads_call_agendada: number
+          leads_em_contato: number
+          leads_fechado: number
+          leads_novo: number
+          leads_novos_dia: number
+          leads_nutricao: number
+          leads_perdido: number
+          leads_proposta: number
+          pct_agendamentos: number
+          pct_em_contato: number
+          pct_propostas: number
+          pipeline_value: number
+          snapshot_date: string
+          total_leads: number
+        }
+        Insert: {
+          acoes_sdr_dia?: number
+          conv_bv_contato?: number | null
+          conv_call_proposta?: number | null
+          conv_contato_call?: number | null
+          conv_novo_bv?: number | null
+          conv_nutricao_fechado?: number | null
+          conv_proposta_nutricao?: number | null
+          created_at?: string
+          id?: string
+          leads_boas_vindas?: number
+          leads_call_agendada?: number
+          leads_em_contato?: number
+          leads_fechado?: number
+          leads_novo?: number
+          leads_novos_dia?: number
+          leads_nutricao?: number
+          leads_perdido?: number
+          leads_proposta?: number
+          pct_agendamentos?: number
+          pct_em_contato?: number
+          pct_propostas?: number
+          pipeline_value?: number
+          snapshot_date: string
+          total_leads?: number
+        }
+        Update: {
+          acoes_sdr_dia?: number
+          conv_bv_contato?: number | null
+          conv_call_proposta?: number | null
+          conv_contato_call?: number | null
+          conv_novo_bv?: number | null
+          conv_nutricao_fechado?: number | null
+          conv_proposta_nutricao?: number | null
+          created_at?: string
+          id?: string
+          leads_boas_vindas?: number
+          leads_call_agendada?: number
+          leads_em_contato?: number
+          leads_fechado?: number
+          leads_novo?: number
+          leads_novos_dia?: number
+          leads_nutricao?: number
+          leads_perdido?: number
+          leads_proposta?: number
+          pct_agendamentos?: number
+          pct_em_contato?: number
+          pct_propostas?: number
+          pipeline_value?: number
+          snapshot_date?: string
+          total_leads?: number
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -789,6 +870,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      generate_daily_snapshot: {
+        Args: { target_date?: string }
+        Returns: undefined
       }
       has_role: {
         Args: {
