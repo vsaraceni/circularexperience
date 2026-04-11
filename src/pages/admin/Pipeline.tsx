@@ -573,7 +573,7 @@ const Pipeline = () => {
                 </DropdownMenuItem>
                 {viewMode === "priorities" && (
                   <DropdownMenuItem onClick={() => setBulkEmailOpen(true)}>
-                    <Mail className="h-4 w-4 mr-2" /> Enviar email em massa ({filteredLeads.filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado").length})
+                    <Mail className="h-4 w-4 mr-2" /> Enviar email em massa ({priorityVisibleLeads.length})
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -621,7 +621,7 @@ const Pipeline = () => {
         <BulkEmailDialog
           open={bulkEmailOpen}
           onOpenChange={setBulkEmailOpen}
-          leads={filteredLeads}
+          leads={viewMode === "priorities" ? priorityVisibleLeads : filteredLeads}
           userId={user!.id}
         />
         </>
