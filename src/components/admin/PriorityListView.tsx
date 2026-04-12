@@ -543,12 +543,12 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                         {row.responsavel}
                       </span>
                     </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[6] }}>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[7] }}>
                       <span className="text-xs italic truncate block" style={{ color: 'hsl(var(--color-text-muted))' }}>
                         {(row.lead as any).proxima_acao || "—"}
                       </span>
                     </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[7] }}>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[9] }}>
                       <div className="flex flex-col">
                         <span className="text-xs font-medium" style={{ color: displayValue ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
                           {formatValue(displayValue)}
@@ -568,7 +568,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
               })}
               {sortedRows.length === 0 && (
                 <tr className="border-b">
-                  <td colSpan={10} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                  <td colSpan={11} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
                   </td>
                 </tr>
