@@ -1,60 +1,41 @@
 
 
-## Coluna "Última Atividade" — Exibir tipo da atividade + data
+## Melhorias na To-Do List + Cópia WhatsApp no Card
 
-### Problema atual
+### 1. Nova coluna "Follow-up" — último FUp registrado
 
-A célula mostra apenas `last_activity_at` (timestamp do lead), sem indicar **qual** foi a atividade. O tipo/conteúdo está na tabela `lead_activities`, que não é carregada no PriorityListView.
+Adicionar uma nova coluna na tabela mostrando o follow-up **mais recente** de cada lead (pendente ou concluído), com data agendada e nota. Diferente da coluna "Próx. Ação" que mostra apenas o próximo pendente.
 
-### Solução
+- Buscar todos os follow-ups (não só pendentes) via query adicional a `lead_follow_ups` ordenado por `created_at desc`
+- Montar `latestFollowUpMap`: `lead_id → { note, due_date, completed, created_at }`
+- Exibir na célula: data + nota truncada; se concluído, texto riscado ou com ✅
+- Filtro: "📋 Com FUp" / "📭 Sem FUp"
+- Adicionar à lista de colunas e ao `DEFAULT_COL_WIDTHS`
 
-**1. Buscar a última atividade de cada lead** — nova query no componente
+### 2. Corrigir dimensionamento de colunas (resize)
 
-- Fazer uma query única: `lead_activities` ordenada por `created_at desc`, agrupada por `lead_id` (pegar apenas a mais recente de cada lead)
-- Alternativa mais simples e eficiente: buscar todas as atividades mais recentes via query com `distinct on` não disponível no SDK — então buscar as atividades ordenadas por `created_at desc` com limit razoável e montar um map `lead_id → { activity_type, content, created_at }` pegando apenas a primeira ocorrência de cada lead
-- Armazenar num `lastActivityMap` via `useMemo`
+O `ResizeHandle` atual tem um bug: usa `DEFAULT_COL_WIDTHS[i] + delta` em vez de acumular a partir da largura atual. Cada drag recalcula sobre o valor original.
 
-**2. Exibir na célula**
+- Corrigir para usar `baseWidthsRef` corretamente: capturar o width atual no `mousedown` e somar o delta sobre ele
 
-Formato:
-```text
-📞 Call agendada
-14 Abr 2025
+### 3. Highlight na linha ao hover
+
+A classe `hover:bg-muted/50` já existe no `<tr>`. Vou reforçar com uma cor mais visível para tornar o efeito perceptível.
+
+### 4. Copiar "telefone, nome, empresa" no WhatsApp (Card do Kanban)
+
+No `KanbanBoard.tsx`, alterar o case `copy_whatsapp` para copiar o formato:
 ```
-
-- Linha 1: ícone pequeno (reutilizar o ICON_MAP do ActivityTimeline) + label legível do tipo
-- Linha 2: data formatada (como já está hoje)
-- Se não houver atividade registrada, mostrar só a data como fallback
-
-**3. Mapa de labels legíveis** para os `activity_type`:
-
-```text
-lead_recebido → "Lead recebido"
-welcome_enviado → "Welcome enviado"  
-stage_mudou → "Mudou de etapa"
-call_agendada → "Call agendada"
-whatsapp_enviado → "WhatsApp enviado"
-proposta_gerada → "Proposta gerada"
-nota_manual → "Nota adicionada"
-contato_registrado → "Contato registrado"
-...etc
+telefone, nome, empresa
 ```
-
-**4. Filtro na coluna** — por tipo de última atividade
-
-- Opções dinâmicas: extrair os tipos únicos presentes nos leads filtrados
-- Ex: filtrar para ver "todos os leads cuja última atividade foi WhatsApp enviado"
-- Adicionar `filterUltimaAtiv` state + `ColumnFilter` no header
-
-**5. Ordenação** — já funciona (ordena por data), manter como está
-
----
+em vez de apenas o telefone.
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/PriorityListView.tsx` | Query de `lead_activities`, montar `lastActivityMap`, atualizar célula, adicionar filtro por tipo |
+| `src/components/admin/PriorityListView.tsx` | Nova coluna "Follow-up", corrigir resize, melhorar hover, ajustar `DEFAULT_COL_WIDTHS` |
+| `src/components/admin/KanbanBoard.tsx` | `copy_whatsapp` → copiar "telefone, nome, empresa" |
 
 Nenhuma migração necessária.
 
