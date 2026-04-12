@@ -277,7 +277,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     if (filterPorte.length > 0) result = result.filter(r => filterPorte.includes(r.tier));
     if (filterResp.length > 0) result = result.filter(r => filterResp.includes(r.responsavel));
     if (filterCalor.length > 0) result = result.filter(r => {
-      const label = r.lead.lead_heat ? CALOR_LABEL_MAP[r.lead.lead_heat] : null;
+      const heat = r.lead.lead_heat;
+      const label = heat != null ? CALOR_LABEL_MAP[heat] : null;
       return label ? filterCalor.includes(label) : false;
     });
     
