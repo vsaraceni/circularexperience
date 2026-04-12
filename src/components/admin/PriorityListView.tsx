@@ -213,6 +213,9 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   // Fetch latest activity per lead
   const [lastActivities, setLastActivities] = useState<{ lead_id: string; activity_type: string; content: string | null; created_at: string }[]>([]);
+  // Fetch ALL follow-ups (including completed) for "Follow-up" column
+  const [allFollowUps, setAllFollowUps] = useState<{ lead_id: string; note: string | null; due_date: string; completed: boolean; created_at: string }[]>([]);
+
   useEffect(() => {
     const fetchActivities = async () => {
       const { data } = await supabase
@@ -222,8 +225,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         .limit(500);
       setLastActivities((data || []) as any);
     };
+    const fetchAllFollowUps = async () => {
+      const { data } = await supabase
+        .from("lead_follow_ups")
+        .select("lead_id, note, due_date, completed, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      setAllFollowUps((data || []) as any);
+    };
     fetchActivities();
-  }, [leads]); // re-fetch when leads change
+    fetchAllFollowUps();
+  }, [leads]);
 
   const lastActivityMap = useMemo(() => {
     const map: Record<string, { activity_type: string; content: string | null; created_at: string }> = {};
@@ -235,25 +247,23 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return map;
   }, [lastActivities]);
 
+  // Map lead_id → latest follow-up (most recent by created_at)
+  const latestFollowUpMap = useMemo(() => {
+    const map: Record<string, { note: string | null; due_date: string; completed: boolean; created_at: string }> = {};
+    allFollowUps.forEach(f => {
+      if (!map[f.lead_id]) {
+        map[f.lead_id] = { note: f.note, due_date: f.due_date, completed: f.completed, created_at: f.created_at };
+      }
+    });
+    return map;
+  }, [allFollowUps]);
+
   // Sort state
   const [sortCol, setSortCol] = useState<SortCol>("sla");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // Column widths for resizable columns
   const [colWidths, setColWidths] = useState<number[]>([...DEFAULT_COL_WIDTHS]);
-  const baseWidthsRef = useRef<number[]>([...DEFAULT_COL_WIDTHS]);
-
-  const handleResizeStart = useCallback((colIndex: number) => {
-    baseWidthsRef.current = [...colWidths];
-  }, [colWidths]);
-
-  const handleResize = useCallback((colIndex: number, delta: number) => {
-    setColWidths(prev => {
-      const next = [...prev];
-      next[colIndex] = Math.max(60, baseWidthsRef.current[colIndex] + delta);
-      return next;
-    });
-  }, []);
 
   // Column filters
   const [filterEtapa, setFilterEtapa] = useState<string[]>([]);
