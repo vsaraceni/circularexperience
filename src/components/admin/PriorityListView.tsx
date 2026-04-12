@@ -373,8 +373,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const label = hasAction ? "✅ Com próxima ação" : "⚠️ Sem próxima ação";
       return filterProxAcao.includes(label);
     });
+    if (filterUltimaAtiv.length > 0) result = result.filter(r => {
+      const act = lastActivityMap[r.lead.id];
+      const label = act ? (ACTIVITY_LABELS[act.activity_type] || act.activity_type) : null;
+      return label ? filterUltimaAtiv.includes(label) : false;
+    });
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, nextFollowUpMap]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, nextFollowUpMap, lastActivityMap]);
 
   // Emit filtered leads to parent
   useEffect(() => {
