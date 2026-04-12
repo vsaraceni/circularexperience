@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
-  ChevronUp, ChevronDown, Filter, X, AlertTriangle,
+  ChevronUp, ChevronDown, Filter, X, AlertTriangle, CalendarCheck,
   Mail, Send, ArrowRight, Phone, FileText, Linkedin,
   MessageSquare, XCircle, CheckCircle, Activity,
 } from "lucide-react";
