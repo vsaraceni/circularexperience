@@ -1,8 +1,11 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Filter, X, AlertTriangle } from "lucide-react";
+import {
+  ChevronUp, ChevronDown, Filter, X, AlertTriangle,
+  Mail, Send, ArrowRight, Phone, FileText, Linkedin,
+  MessageSquare, XCircle, CheckCircle, Activity,
+} from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import LeadDrawer from "./LeadDrawer";
@@ -14,8 +17,48 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
+
 import { format } from "date-fns";
 import type { Lead } from "./LeadList";
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  lead_recebido: "Lead recebido",
+  welcome_enviado: "Welcome enviado",
+  stage_mudou: "Mudou de etapa",
+  call_agendada: "Call agendada",
+  call_realizada: "Call realizada",
+  proposta_gerada: "Proposta gerada",
+  proposta_enviada: "Proposta enviada",
+  linkedin_adicionado: "LinkedIn adicionado",
+  whatsapp_enviado: "WhatsApp enviado",
+  perdido: "Perdido",
+  fechado: "Fechado",
+  nota: "Nota",
+  nota_manual: "Nota adicionada",
+  contato_registrado: "Contato registrado",
+  follow_up_agendado: "Follow-up agendado",
+  follow_up_concluido: "Follow-up concluído",
+  email_enviado: "E-mail enviado",
+  assigned: "Atribuído",
+};
+
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  lead_recebido: <Mail className="h-3 w-3 text-blue-400" />,
+  welcome_enviado: <Send className="h-3 w-3 text-emerald-400" />,
+  stage_mudou: <ArrowRight className="h-3 w-3 text-purple-400" />,
+  call_agendada: <Phone className="h-3 w-3 text-amber-400" />,
+  call_realizada: <Phone className="h-3 w-3 text-emerald-400" />,
+  proposta_gerada: <FileText className="h-3 w-3 text-primary" />,
+  proposta_enviada: <Send className="h-3 w-3 text-primary" />,
+  linkedin_adicionado: <Linkedin className="h-3 w-3 text-blue-500" />,
+  whatsapp_enviado: <MessageSquare className="h-3 w-3 text-emerald-500" />,
+  perdido: <XCircle className="h-3 w-3 text-red-400" />,
+  fechado: <CheckCircle className="h-3 w-3 text-emerald-400" />,
+  nota_manual: <MessageSquare className="h-3 w-3 text-blue-300" />,
+  contato_registrado: <Phone className="h-3 w-3 text-blue-400" />,
+  follow_up_agendado: <Activity className="h-3 w-3 text-amber-400" />,
+  follow_up_concluido: <CheckCircle className="h-3 w-3 text-emerald-400" />,
+};
 
 const STAGE_LABELS: Record<string, string> = {
   novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
@@ -163,6 +206,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [contactLead, setContactLead] = useState<Lead | null>(null);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
+  // Fetch latest activity per lead
+  const [lastActivities, setLastActivities] = useState<{ lead_id: string; activity_type: string; content: string | null; created_at: string }[]>([]);
+  useEffect(() => {
+    const fetchActivities = async () => {
+      const { data } = await supabase
+        .from("lead_activities")
+        .select("lead_id, activity_type, content, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      setLastActivities((data || []) as any);
+    };
+    fetchActivities();
+  }, [leads]); // re-fetch when leads change
+
+  const lastActivityMap = useMemo(() => {
+    const map: Record<string, { activity_type: string; content: string | null; created_at: string }> = {};
+    lastActivities.forEach(a => {
+      if (!map[a.lead_id]) {
+        map[a.lead_id] = { activity_type: a.activity_type, content: a.content, created_at: a.created_at };
+      }
+    });
+    return map;
+  }, [lastActivities]);
+
   // Sort state
   const [sortCol, setSortCol] = useState<SortCol>("sla");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -190,6 +257,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterResp, setFilterResp] = useState<string[]>([]);
   const [filterCalor, setFilterCalor] = useState<string[]>([]);
   const [filterProxAcao, setFilterProxAcao] = useState<string[]>([]);
+  const [filterUltimaAtiv, setFilterUltimaAtiv] = useState<string[]>([]);
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -278,6 +346,14 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   const proxAcaoOptions = ["✅ Com próxima ação", "⚠️ Sem próxima ação"];
+  const ultimaAtivOptions = useMemo(() => {
+    const types = new Set<string>();
+    rows.forEach(r => {
+      const act = lastActivityMap[r.lead.id];
+      if (act) types.add(ACTIVITY_LABELS[act.activity_type] || act.activity_type);
+    });
+    return [...types].sort();
+  }, [rows, lastActivityMap]);
 
   const CALOR_LABEL_MAP: Record<number, string> = { 0: "❄️ Frio", 1: "🟡 Baixo", 2: "🟡🟠 Médio", 3: "🟡🟠🔴 Alto" };
 
@@ -297,8 +373,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const label = hasAction ? "✅ Com próxima ação" : "⚠️ Sem próxima ação";
       return filterProxAcao.includes(label);
     });
+    if (filterUltimaAtiv.length > 0) result = result.filter(r => {
+      const act = lastActivityMap[r.lead.id];
+      const label = act ? (ACTIVITY_LABELS[act.activity_type] || act.activity_type) : null;
+      return label ? filterUltimaAtiv.includes(label) : false;
+    });
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, nextFollowUpMap]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, nextFollowUpMap, lastActivityMap]);
 
   // Emit filtered leads to parent
   useEffect(() => {
@@ -338,7 +419,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     });
   }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -421,7 +502,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
     { label: "Próx. Ação", sortKey: "prox_acao" as SortCol, filter: <ColumnFilter options={proxAcaoOptions} selected={filterProxAcao} onChange={setFilterProxAcao} label="Próx. Ação" /> },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
-    { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: undefined },
+    { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: <ColumnFilter options={ultimaAtivOptions} selected={filterUltimaAtiv} onChange={setFilterUltimaAtiv} label="Última Atividade" /> },
   ];
 
   if (rows.length === 0) {
@@ -445,7 +526,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterResp.map(v => <Badge key={`r-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterResp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterProxAcao.map(v => <Badge key={`pa-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterProxAcao(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); }}
+            {filterUltimaAtiv.map(v => <Badge key={`ua-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterUltimaAtiv(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
@@ -602,9 +684,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                       </div>
                     </td>
                     <td className="py-2 px-3 align-middle" style={{ width: colWidths[8] }}>
-                      <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
-                        {formatDate(row.lead.last_activity_at || row.lead.created_at)}
-                      </span>
+                      {(() => {
+                        const act = lastActivityMap[row.lead.id];
+                        const dateStr = formatDate(row.lead.last_activity_at || row.lead.created_at);
+                        if (!act) {
+                          return (
+                            <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                              {dateStr}
+                            </span>
+                          );
+                        }
+                        const icon = ACTIVITY_ICONS[act.activity_type] || <Activity className="h-3 w-3 text-muted-foreground" />;
+                        const label = ACTIVITY_LABELS[act.activity_type] || act.activity_type;
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                              {icon}
+                              <span className="truncate max-w-[100px]">{label}</span>
+                            </span>
+                            <span className="text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                              {dateStr}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );
