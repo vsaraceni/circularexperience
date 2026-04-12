@@ -422,7 +422,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterSla.map(v => <Badge key={`s-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterSla(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterPorte.map(v => <Badge key={`p-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterPorte(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterResp.map(v => <Badge key={`r-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterResp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); }}
+            {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
