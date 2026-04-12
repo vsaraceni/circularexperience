@@ -265,10 +265,10 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "✅ No prazo"];
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
-  const calorOptions = ["🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
+  const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   
 
-  const CALOR_LABEL_MAP: Record<number, string> = { 1: "🟡 Baixo", 2: "🟡🟠 Médio", 3: "🟡🟠🔴 Alto" };
+  const CALOR_LABEL_MAP: Record<number, string> = { 0: "❄️ Frio", 1: "🟡 Baixo", 2: "🟡🟠 Médio", 3: "🟡🟠🔴 Alto" };
 
   const filteredRows = useMemo(() => {
     let result = rows;
@@ -277,7 +277,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     if (filterPorte.length > 0) result = result.filter(r => filterPorte.includes(r.tier));
     if (filterResp.length > 0) result = result.filter(r => filterResp.includes(r.responsavel));
     if (filterCalor.length > 0) result = result.filter(r => {
-      const label = r.lead.lead_heat ? CALOR_LABEL_MAP[r.lead.lead_heat] : null;
+      const heat = r.lead.lead_heat;
+      const label = heat != null ? CALOR_LABEL_MAP[heat] : null;
       return label ? filterCalor.includes(label) : false;
     });
     
