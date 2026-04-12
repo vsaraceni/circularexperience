@@ -1,37 +1,44 @@
 
 
-## Adicionar estado "Frio" (❄️) ao sistema de Calor
+## Coluna "Próx. Ação" — Mostrar Follow-up Agendado + Alerta
 
-### Conceito
+### Problema atual
 
-Adicionar o valor `0` ao campo `lead_heat` para representar um lead **frio** — resposta negativa, sem interesse, quase perdido. A escala passa a ser:
+A coluna "Próx. Ação" (linha 547-551) exibe o campo de texto `proxima_acao` do lead, que está vazio para todos os leads. O dado relevante são os **follow-ups agendados** (`lead_follow_ups`), que já são carregados pelo hook `useAllPendingFollowUps`.
 
-```text
-Frio (0):   ❄️ (ícone de gelo azul, ou bolinha azul)
-Calor 1:    🟡
-Calor 2:    🟡🟠
-Calor 3:    🟡🟠🔴
-Sem definir: ○○○
-```
+### Solução
 
-Visualmente: um ícone de floco de neve (Snowflake do Lucide) em azul `#42A5F5` à esquerda das 3 bolinhas. Quando `lead_heat === 0`, o floco fica ativo (azul) e as bolinhas ficam apagadas. Clicar no floco alterna entre frio e nulo. Clicar em qualquer bolinha remove o estado frio.
+**1. Substituir o conteúdo da célula** para exibir o próximo follow-up pendente (nota + data), usando o `followUpsByLead` e o array `allPendingFollowUps` que já existem no componente.
 
-### Implementação
+- Criar um `nextFollowUpMap` (useMemo) que mapeia `lead_id → { note, due_date }` do follow-up mais próximo ainda não concluído
+- Na célula, exibir: data formatada + nota truncada (ex: "14/04 — Ligar para confirmar")
+- Se vencido: texto em vermelho
+- Se hoje: texto em laranja
+- Se futuro: texto em cinza normal
 
-**1. `HeatDots.tsx`** — Adicionar ícone Snowflake clicável antes das bolinhas
-- Importar `Snowflake` do Lucide
-- Quando `value === 0`: floco azul ativo, bolinhas apagadas
-- Clicar no floco: se já é 0, volta a null; senão, seta 0
-- Clicar em bolinha: comportamento atual (seta 1/2/3, remove o estado frio)
+**2. Leads sem follow-up agendado** — ícone de alerta discreto
 
-**2. `PriorityListView.tsx`** — Adicionar "❄️ Frio" como opção no filtro de Calor
+- Exibir um `⚠` amarelo pequeno com tooltip "Sem próxima ação definida" quando o lead não tem nenhum follow-up pendente
+- Usar `AlertTriangle` do Lucide (12px, cor `#F4A736`)
 
-**3. Nenhuma migração necessária** — o campo `lead_heat integer` já aceita 0
+**3. Filtro na coluna** — "Com próxima ação" / "Sem próxima ação"
+
+- Adicionar `filterProxAcao` state com opções: `["✅ Com próxima ação", "⚠️ Sem próxima ação"]`
+- Adicionar `ColumnFilter` no header da coluna "Próx. Ação"
+- Filtrar no `filteredRows`: checar se o lead tem follow-up pendente no map
+
+**4. Tornar a coluna ordenável**
+
+- Adicionar `"prox_acao"` ao tipo `SortCol`
+- Ordenar por `due_date` do próximo follow-up (leads sem follow-up vão ao final)
+
+---
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/HeatDots.tsx` | Adicionar Snowflake para valor 0 |
-| `src/components/admin/PriorityListView.tsx` | Adicionar "Frio" no filtro de calor |
+| `src/components/admin/PriorityListView.tsx` | Substituir conteúdo da célula "Próx. Ação" por follow-up; adicionar filtro e sort; adicionar ícone de alerta |
+
+Nenhuma migração necessária — os dados já existem na tabela `lead_follow_ups`.
 
