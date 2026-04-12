@@ -528,7 +528,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                         {row.tier}
                       </span>
                     </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[5] }}>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[5] }}
+                      onClick={(e) => e.stopPropagation()}>
+                      <HeatDots
+                        value={row.lead.lead_heat}
+                        onChange={async (v) => {
+                          await supabase.from("leads").update({ lead_heat: v }).eq("id", row.lead.id);
+                          onLeadUpdated();
+                        }}
+                      />
+                    </td>
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[6] }}>
                       <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
                         {row.responsavel}
                       </span>
