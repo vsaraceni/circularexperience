@@ -684,9 +684,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                       </div>
                     </td>
                     <td className="py-2 px-3 align-middle" style={{ width: colWidths[8] }}>
-                      <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
-                        {formatDate(row.lead.last_activity_at || row.lead.created_at)}
-                      </span>
+                      {(() => {
+                        const act = lastActivityMap[row.lead.id];
+                        const dateStr = formatDate(row.lead.last_activity_at || row.lead.created_at);
+                        if (!act) {
+                          return (
+                            <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                              {dateStr}
+                            </span>
+                          );
+                        }
+                        const icon = ACTIVITY_ICONS[act.activity_type] || <Activity className="h-3 w-3 text-muted-foreground" />;
+                        const label = ACTIVITY_LABELS[act.activity_type] || act.activity_type;
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                              {icon}
+                              <span className="truncate max-w-[100px]">{label}</span>
+                            </span>
+                            <span className="text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                              {dateStr}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );
