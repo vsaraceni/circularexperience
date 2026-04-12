@@ -286,6 +286,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                           size="md"
                         />
                       </div>
+                      <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><User className="h-4 w-4" /></span>
                         <span className="text-muted-foreground text-xs w-16 shrink-0">Responsável</span>
                         <Select
