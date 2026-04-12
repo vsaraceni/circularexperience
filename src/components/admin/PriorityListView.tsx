@@ -1,7 +1,7 @@
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
-  ChevronUp, ChevronDown, Filter, X, AlertTriangle, CalendarCheck,
+  ChevronUp, ChevronDown, Filter, X, AlertTriangle,
   Mail, Send, ArrowRight, Phone, FileText, Linkedin,
   MessageSquare, XCircle, CheckCircle, Activity,
 } from "lucide-react";
@@ -273,6 +273,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterCalor, setFilterCalor] = useState<string[]>([]);
   const [filterProxAcao, setFilterProxAcao] = useState<string[]>([]);
   const [filterUltimaAtiv, setFilterUltimaAtiv] = useState<string[]>([]);
+  const [filterFollowUp, setFilterFollowUp] = useState<string[]>([]);
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -361,6 +362,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   const proxAcaoOptions = ["✅ Com próxima ação", "⚠️ Sem próxima ação"];
+  const followUpFilterOptions = ["📋 Com FUp", "📭 Sem FUp"];
   const ultimaAtivOptions = useMemo(() => {
     const types = new Set<string>();
     rows.forEach(r => {
@@ -393,8 +395,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const label = act ? (ACTIVITY_LABELS[act.activity_type] || act.activity_type) : null;
       return label ? filterUltimaAtiv.includes(label) : false;
     });
+    if (filterFollowUp.length > 0) result = result.filter(r => {
+      const hasFu = !!latestFollowUpMap[r.lead.id];
+      const label = hasFu ? "📋 Com FUp" : "📭 Sem FUp";
+      return filterFollowUp.includes(label);
+    });
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, nextFollowUpMap, lastActivityMap]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, filterFollowUp, nextFollowUpMap, lastActivityMap, latestFollowUpMap]);
 
   // Emit filtered leads to parent
   useEffect(() => {
@@ -429,12 +436,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
           const fb = nextFollowUpMap[b.lead.id]?.due_date || "9999";
           cmp = fa.localeCompare(fb); break;
         }
+        case "follow_up": {
+          const fua = latestFollowUpMap[a.lead.id]?.due_date || "0000";
+          const fub = latestFollowUpMap[b.lead.id]?.due_date || "0000";
+          cmp = fua.localeCompare(fub); break;
+        }
       }
       return cmp * mult;
     });
-  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap]);
+  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap, latestFollowUpMap]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length + filterFollowUp.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -518,6 +530,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Próx. Ação", sortKey: "prox_acao" as SortCol, filter: <ColumnFilter options={proxAcaoOptions} selected={filterProxAcao} onChange={setFilterProxAcao} label="Próx. Ação" /> },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
     { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: <ColumnFilter options={ultimaAtivOptions} selected={filterUltimaAtiv} onChange={setFilterUltimaAtiv} label="Última Atividade" /> },
+    { label: "Follow-up", sortKey: "follow_up" as SortCol, filter: <ColumnFilter options={followUpFilterOptions} selected={filterFollowUp} onChange={setFilterFollowUp} label="Follow-up" /> },
   ];
 
   if (rows.length === 0) {
