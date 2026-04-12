@@ -1,36 +1,52 @@
 
 
-## Coluna "Próx. Ação" — Mostrar Follow-up Agendado + Alerta
+## Coluna "Última Atividade" — Exibir tipo da atividade + data
 
 ### Problema atual
 
-A coluna "Próx. Ação" (linha 547-551) exibe o campo de texto `proxima_acao` do lead, que está vazio para todos os leads. O dado relevante são os **follow-ups agendados** (`lead_follow_ups`), que já são carregados pelo hook `useAllPendingFollowUps`.
+A célula mostra apenas `last_activity_at` (timestamp do lead), sem indicar **qual** foi a atividade. O tipo/conteúdo está na tabela `lead_activities`, que não é carregada no PriorityListView.
 
 ### Solução
 
-**1. Substituir o conteúdo da célula** para exibir o próximo follow-up pendente (nota + data), usando o `followUpsByLead` e o array `allPendingFollowUps` que já existem no componente.
+**1. Buscar a última atividade de cada lead** — nova query no componente
 
-- Criar um `nextFollowUpMap` (useMemo) que mapeia `lead_id → { note, due_date }` do follow-up mais próximo ainda não concluído
-- Na célula, exibir: data formatada + nota truncada (ex: "14/04 — Ligar para confirmar")
-- Se vencido: texto em vermelho
-- Se hoje: texto em laranja
-- Se futuro: texto em cinza normal
+- Fazer uma query única: `lead_activities` ordenada por `created_at desc`, agrupada por `lead_id` (pegar apenas a mais recente de cada lead)
+- Alternativa mais simples e eficiente: buscar todas as atividades mais recentes via query com `distinct on` não disponível no SDK — então buscar as atividades ordenadas por `created_at desc` com limit razoável e montar um map `lead_id → { activity_type, content, created_at }` pegando apenas a primeira ocorrência de cada lead
+- Armazenar num `lastActivityMap` via `useMemo`
 
-**2. Leads sem follow-up agendado** — ícone de alerta discreto
+**2. Exibir na célula**
 
-- Exibir um `⚠` amarelo pequeno com tooltip "Sem próxima ação definida" quando o lead não tem nenhum follow-up pendente
-- Usar `AlertTriangle` do Lucide (12px, cor `#F4A736`)
+Formato:
+```text
+📞 Call agendada
+14 Abr 2025
+```
 
-**3. Filtro na coluna** — "Com próxima ação" / "Sem próxima ação"
+- Linha 1: ícone pequeno (reutilizar o ICON_MAP do ActivityTimeline) + label legível do tipo
+- Linha 2: data formatada (como já está hoje)
+- Se não houver atividade registrada, mostrar só a data como fallback
 
-- Adicionar `filterProxAcao` state com opções: `["✅ Com próxima ação", "⚠️ Sem próxima ação"]`
-- Adicionar `ColumnFilter` no header da coluna "Próx. Ação"
-- Filtrar no `filteredRows`: checar se o lead tem follow-up pendente no map
+**3. Mapa de labels legíveis** para os `activity_type`:
 
-**4. Tornar a coluna ordenável**
+```text
+lead_recebido → "Lead recebido"
+welcome_enviado → "Welcome enviado"  
+stage_mudou → "Mudou de etapa"
+call_agendada → "Call agendada"
+whatsapp_enviado → "WhatsApp enviado"
+proposta_gerada → "Proposta gerada"
+nota_manual → "Nota adicionada"
+contato_registrado → "Contato registrado"
+...etc
+```
 
-- Adicionar `"prox_acao"` ao tipo `SortCol`
-- Ordenar por `due_date` do próximo follow-up (leads sem follow-up vão ao final)
+**4. Filtro na coluna** — por tipo de última atividade
+
+- Opções dinâmicas: extrair os tipos únicos presentes nos leads filtrados
+- Ex: filtrar para ver "todos os leads cuja última atividade foi WhatsApp enviado"
+- Adicionar `filterUltimaAtiv` state + `ColumnFilter` no header
+
+**5. Ordenação** — já funciona (ordena por data), manter como está
 
 ---
 
@@ -38,7 +54,7 @@ A coluna "Próx. Ação" (linha 547-551) exibe o campo de texto `proxima_acao` d
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/PriorityListView.tsx` | Substituir conteúdo da célula "Próx. Ação" por follow-up; adicionar filtro e sort; adicionar ícone de alerta |
+| `src/components/admin/PriorityListView.tsx` | Query de `lead_activities`, montar `lastActivityMap`, atualizar célula, adicionar filtro por tipo |
 
-Nenhuma migração necessária — os dados já existem na tabela `lead_follow_ups`.
+Nenhuma migração necessária.
 
