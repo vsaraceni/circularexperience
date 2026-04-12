@@ -92,10 +92,10 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
   "101_a_500": 4, "51_a_100": 3, "até_100": 3, "11_a_50": 2, "1_a_10": 1,
 };
 
-type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao";
+type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao" | "follow_up";
 type SortDir = "asc" | "desc";
 
-const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100];
+const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100, 150];
 
 interface PriorityListViewProps {
   leads: Lead[];
@@ -170,14 +170,19 @@ const SortableHeader = ({ label, active, dir, onClick, children }: {
   </div>
 );
 
-// Drag handle for resizing columns
-const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
+// Drag handle for resizing columns — captures current width on mousedown
+const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw }: { colIndex: number; colWidths: number[]; setColWidths: React.Dispatch<React.SetStateAction<number[]>> }) => {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
+    const startWidth = cw[colIndex];
     const onMove = (ev: MouseEvent) => {
-      onResize(ev.clientX - startX);
+      setCw(prev => {
+        const next = [...prev];
+        next[colIndex] = Math.max(60, startWidth + (ev.clientX - startX));
+        return next;
+      });
     };
     const onUp = () => {
       document.removeEventListener("mousemove", onMove);
@@ -185,7 +190,7 @@ const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-  }, [onResize]);
+  }, [colIndex, cw, setCw]);
 
   return (
     <div
