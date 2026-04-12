@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronUp, ChevronDown, Filter, X, AlertTriangle,
@@ -92,10 +92,10 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
   "101_a_500": 4, "51_a_100": 3, "até_100": 3, "11_a_50": 2, "1_a_10": 1,
 };
 
-type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao";
+type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao" | "follow_up";
 type SortDir = "asc" | "desc";
 
-const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100];
+const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100, 150];
 
 interface PriorityListViewProps {
   leads: Lead[];
@@ -170,14 +170,19 @@ const SortableHeader = ({ label, active, dir, onClick, children }: {
   </div>
 );
 
-// Drag handle for resizing columns
-const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
+// Drag handle for resizing columns — captures current width on mousedown
+const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw }: { colIndex: number; colWidths: number[]; setColWidths: React.Dispatch<React.SetStateAction<number[]>> }) => {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
+    const startWidth = cw[colIndex];
     const onMove = (ev: MouseEvent) => {
-      onResize(ev.clientX - startX);
+      setCw(prev => {
+        const next = [...prev];
+        next[colIndex] = Math.max(60, startWidth + (ev.clientX - startX));
+        return next;
+      });
     };
     const onUp = () => {
       document.removeEventListener("mousemove", onMove);
@@ -185,7 +190,7 @@ const ResizeHandle = ({ onResize }: { onResize: (delta: number) => void }) => {
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-  }, [onResize]);
+  }, [colIndex, cw, setCw]);
 
   return (
     <div
@@ -208,6 +213,9 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   // Fetch latest activity per lead
   const [lastActivities, setLastActivities] = useState<{ lead_id: string; activity_type: string; content: string | null; created_at: string }[]>([]);
+  // Fetch ALL follow-ups (including completed) for "Follow-up" column
+  const [allFollowUps, setAllFollowUps] = useState<{ lead_id: string; note: string | null; due_date: string; completed: boolean; created_at: string }[]>([]);
+
   useEffect(() => {
     const fetchActivities = async () => {
       const { data } = await supabase
@@ -217,8 +225,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         .limit(500);
       setLastActivities((data || []) as any);
     };
+    const fetchAllFollowUps = async () => {
+      const { data } = await supabase
+        .from("lead_follow_ups")
+        .select("lead_id, note, due_date, completed, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      setAllFollowUps((data || []) as any);
+    };
     fetchActivities();
-  }, [leads]); // re-fetch when leads change
+    fetchAllFollowUps();
+  }, [leads]);
 
   const lastActivityMap = useMemo(() => {
     const map: Record<string, { activity_type: string; content: string | null; created_at: string }> = {};
@@ -230,25 +247,23 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return map;
   }, [lastActivities]);
 
+  // Map lead_id → latest follow-up (most recent by created_at)
+  const latestFollowUpMap = useMemo(() => {
+    const map: Record<string, { note: string | null; due_date: string; completed: boolean; created_at: string }> = {};
+    allFollowUps.forEach(f => {
+      if (!map[f.lead_id]) {
+        map[f.lead_id] = { note: f.note, due_date: f.due_date, completed: f.completed, created_at: f.created_at };
+      }
+    });
+    return map;
+  }, [allFollowUps]);
+
   // Sort state
   const [sortCol, setSortCol] = useState<SortCol>("sla");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // Column widths for resizable columns
   const [colWidths, setColWidths] = useState<number[]>([...DEFAULT_COL_WIDTHS]);
-  const baseWidthsRef = useRef<number[]>([...DEFAULT_COL_WIDTHS]);
-
-  const handleResizeStart = useCallback((colIndex: number) => {
-    baseWidthsRef.current = [...colWidths];
-  }, [colWidths]);
-
-  const handleResize = useCallback((colIndex: number, delta: number) => {
-    setColWidths(prev => {
-      const next = [...prev];
-      next[colIndex] = Math.max(60, baseWidthsRef.current[colIndex] + delta);
-      return next;
-    });
-  }, []);
 
   // Column filters
   const [filterEtapa, setFilterEtapa] = useState<string[]>([]);
@@ -258,6 +273,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterCalor, setFilterCalor] = useState<string[]>([]);
   const [filterProxAcao, setFilterProxAcao] = useState<string[]>([]);
   const [filterUltimaAtiv, setFilterUltimaAtiv] = useState<string[]>([]);
+  const [filterFollowUp, setFilterFollowUp] = useState<string[]>([]);
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -346,6 +362,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   const proxAcaoOptions = ["✅ Com próxima ação", "⚠️ Sem próxima ação"];
+  const followUpFilterOptions = ["📋 Com FUp", "📭 Sem FUp"];
   const ultimaAtivOptions = useMemo(() => {
     const types = new Set<string>();
     rows.forEach(r => {
@@ -378,8 +395,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const label = act ? (ACTIVITY_LABELS[act.activity_type] || act.activity_type) : null;
       return label ? filterUltimaAtiv.includes(label) : false;
     });
+    if (filterFollowUp.length > 0) result = result.filter(r => {
+      const hasFu = !!latestFollowUpMap[r.lead.id];
+      const label = hasFu ? "📋 Com FUp" : "📭 Sem FUp";
+      return filterFollowUp.includes(label);
+    });
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, nextFollowUpMap, lastActivityMap]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, filterFollowUp, nextFollowUpMap, lastActivityMap, latestFollowUpMap]);
 
   // Emit filtered leads to parent
   useEffect(() => {
@@ -414,12 +436,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
           const fb = nextFollowUpMap[b.lead.id]?.due_date || "9999";
           cmp = fa.localeCompare(fb); break;
         }
+        case "follow_up": {
+          const fua = latestFollowUpMap[a.lead.id]?.due_date || "0000";
+          const fub = latestFollowUpMap[b.lead.id]?.due_date || "0000";
+          cmp = fua.localeCompare(fub); break;
+        }
       }
       return cmp * mult;
     });
-  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap]);
+  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap, latestFollowUpMap]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length + filterFollowUp.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -503,6 +530,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Próx. Ação", sortKey: "prox_acao" as SortCol, filter: <ColumnFilter options={proxAcaoOptions} selected={filterProxAcao} onChange={setFilterProxAcao} label="Próx. Ação" /> },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
     { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: <ColumnFilter options={ultimaAtivOptions} selected={filterUltimaAtiv} onChange={setFilterUltimaAtiv} label="Última Atividade" /> },
+    { label: "Follow-up", sortKey: "follow_up" as SortCol, filter: <ColumnFilter options={followUpFilterOptions} selected={filterFollowUp} onChange={setFilterFollowUp} label="Follow-up" /> },
   ];
 
   if (rows.length === 0) {
@@ -527,7 +555,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterProxAcao.map(v => <Badge key={`pa-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterProxAcao(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterUltimaAtiv.map(v => <Badge key={`ua-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterUltimaAtiv(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); }}
+            {filterFollowUp.map(v => <Badge key={`fu-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterFollowUp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); setFilterFollowUp([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
@@ -569,13 +598,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                     ) : (
                       <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
                     )}
-                    <ResizeHandle onResize={(delta) => {
-                      setColWidths(prev => {
-                        const next = [...prev];
-                        next[i] = Math.max(60, DEFAULT_COL_WIDTHS[i] + delta);
-                        return next;
-                      });
-                    }} />
+                    <ResizeHandle colIndex={i} colWidths={colWidths} setColWidths={setColWidths} />
                   </th>
                 ))}
               </tr>
@@ -587,7 +610,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                 return (
                   <tr
                     key={row.lead.id}
-                    className="border-b transition-colors cursor-pointer hover:bg-muted/50"
+                    className="border-b transition-all cursor-pointer hover:bg-accent/40"
                     style={{ borderLeft: `4px solid ${URGENCY_COLORS[row.urgency]}` }}
                     onClick={() => { setDrawerLead(row.lead); setDrawerOpen(true); }}
                   >
@@ -709,12 +732,35 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                         );
                       })()}
                     </td>
+                    {/* Follow-up column */}
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[11] }}>
+                      {(() => {
+                        const fu = latestFollowUpMap[row.lead.id];
+                        if (!fu) {
+                          return (
+                            <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>—</span>
+                          );
+                        }
+                        const dateStr = format(new Date(fu.due_date + "T00:00:00"), "dd/MM");
+                        const noteStr = fu.note ? ` — ${fu.note}` : "";
+                        const full = `${dateStr}${noteStr}`;
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-[11px] truncate block ${fu.completed ? "line-through" : ""}`}
+                              style={{ color: fu.completed ? 'hsl(var(--color-text-muted))' : 'hsl(var(--color-text-secondary))' }}
+                              title={full}>
+                              {fu.completed ? "✅ " : ""}{full.length > 22 ? full.slice(0, 22) + "…" : full}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 );
               })}
               {sortedRows.length === 0 && (
                 <tr className="border-b">
-                  <td colSpan={11} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                  <td colSpan={12} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
                   </td>
                 </tr>
