@@ -9,6 +9,7 @@ import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
 import SubmissionDialog from "./SubmissionDialog";
 import ContactDialog from "./ContactDialog";
+import HeatDots from "./HeatDots";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,10 +49,10 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
   "101_a_500": 4, "51_a_100": 3, "até_100": 3, "11_a_50": 2, "1_a_10": 1,
 };
 
-type SortCol = "empresa" | "etapa" | "sla" | "porte" | "responsavel" | "valor" | "ultima_ativ";
+type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ";
 type SortDir = "asc" | "desc";
 
-const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 80, 110, 160, 140, 100];
+const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100];
 
 interface PriorityListViewProps {
   leads: Lead[];
@@ -187,6 +188,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterSla, setFilterSla] = useState<string[]>([]);
   const [filterPorte, setFilterPorte] = useState<string[]>([]);
   const [filterResp, setFilterResp] = useState<string[]>([]);
+  const [filterCalor, setFilterCalor] = useState<string[]>([]);
   
 
   const toggleSort = (col: SortCol) => {
@@ -263,18 +265,24 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "✅ No prazo"];
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
+  const calorOptions = ["🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   
 
-  // Apply column filters
+  const CALOR_LABEL_MAP: Record<number, string> = { 1: "🟡 Baixo", 2: "🟡🟠 Médio", 3: "🟡🟠🔴 Alto" };
+
   const filteredRows = useMemo(() => {
     let result = rows;
     if (filterEtapa.length > 0) result = result.filter(r => filterEtapa.includes(STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage));
     if (filterSla.length > 0) result = result.filter(r => filterSla.includes(URGENCY_LABELS[r.urgency]));
     if (filterPorte.length > 0) result = result.filter(r => filterPorte.includes(r.tier));
     if (filterResp.length > 0) result = result.filter(r => filterResp.includes(r.responsavel));
+    if (filterCalor.length > 0) result = result.filter(r => {
+      const label = r.lead.lead_heat ? CALOR_LABEL_MAP[r.lead.lead_heat] : null;
+      return label ? filterCalor.includes(label) : false;
+    });
     
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor]);
 
   // Emit filtered leads to parent
   useEffect(() => {
@@ -291,6 +299,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         case "etapa": cmp = (a.lead.kanban_stage).localeCompare(b.lead.kanban_stage); break;
         case "sla": cmp = a.slaMs - b.slaMs; break;
         case "porte": cmp = (COLABORADORES_WEIGHT[a.lead.colaboradores || ""] || 0) - (COLABORADORES_WEIGHT[b.lead.colaboradores || ""] || 0); break;
+        case "calor": cmp = (a.lead.lead_heat || 0) - (b.lead.lead_heat || 0); break;
         case "responsavel": cmp = a.responsavel.localeCompare(b.responsavel); break;
         case "valor": {
           const va = getLeadValue(a.lead).value || 0;
@@ -308,7 +317,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     });
   }, [filteredRows, sortCol, sortDir, getLeadValue]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
