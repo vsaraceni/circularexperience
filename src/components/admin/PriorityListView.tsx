@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
-import { useQuery } from "@tanstack/react-query";
+
 import { format } from "date-fns";
 import type { Lead } from "./LeadList";
 
