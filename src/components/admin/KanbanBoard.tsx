@@ -322,7 +322,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       case "copy_whatsapp":
         if (lead.telefone) {
           try {
-            await navigator.clipboard.writeText(lead.telefone);
+            const copyText = `${lead.telefone}, ${lead.name}${lead.company ? `, ${lead.company}` : ""}`;
+            await navigator.clipboard.writeText(copyText);
             toast.success("Número copiado!");
           } catch {
             toast.error("Erro ao copiar");
