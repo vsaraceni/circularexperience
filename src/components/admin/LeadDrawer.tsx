@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import UrgencyBadge from "./UrgencyBadge";
 import ActivityTimeline from "./ActivityTimeline";
+import HeatDots from "./HeatDots";
 import {
   replaceVariables,
   hasManualVariables,
@@ -273,6 +274,18 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                       <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo ? lead.cargo.replace(/_/g, " ").replace(/^./, c => c.toUpperCase()) : "—"} />
                       <InfoRow icon={<Building2 className="h-4 w-4" />} label="Porte" value={formatColaboradores(lead.colaboradores)} />
                       <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground shrink-0"><Sparkles className="h-4 w-4" /></span>
+                        <span className="text-muted-foreground text-xs w-16 shrink-0">Calor</span>
+                        <HeatDots
+                          value={lead.lead_heat}
+                          onChange={async (v) => {
+                            await supabase.from("leads").update({ lead_heat: v }).eq("id", lead.id);
+                            toast.success("Calor atualizado!");
+                            onNoteAdded?.();
+                          }}
+                          size="md"
+                        />
+                      </div>
                         <span className="text-muted-foreground shrink-0"><User className="h-4 w-4" /></span>
                         <span className="text-muted-foreground text-xs w-16 shrink-0">Responsável</span>
                         <Select
