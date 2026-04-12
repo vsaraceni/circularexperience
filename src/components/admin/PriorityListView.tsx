@@ -1,6 +1,10 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Filter, X, AlertTriangle } from "lucide-react";
+import {
+  ChevronUp, ChevronDown, Filter, X, AlertTriangle,
+  Mail, Send, ArrowRight, Phone, FileText, Linkedin,
+  MessageSquare, XCircle, CheckCircle, Activity,
+} from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,8 +18,48 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAllPendingFollowUps } from "@/hooks/useFollowUps";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import type { Lead } from "./LeadList";
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  lead_recebido: "Lead recebido",
+  welcome_enviado: "Welcome enviado",
+  stage_mudou: "Mudou de etapa",
+  call_agendada: "Call agendada",
+  call_realizada: "Call realizada",
+  proposta_gerada: "Proposta gerada",
+  proposta_enviada: "Proposta enviada",
+  linkedin_adicionado: "LinkedIn adicionado",
+  whatsapp_enviado: "WhatsApp enviado",
+  perdido: "Perdido",
+  fechado: "Fechado",
+  nota: "Nota",
+  nota_manual: "Nota adicionada",
+  contato_registrado: "Contato registrado",
+  follow_up_agendado: "Follow-up agendado",
+  follow_up_concluido: "Follow-up concluído",
+  email_enviado: "E-mail enviado",
+  assigned: "Atribuído",
+};
+
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  lead_recebido: <Mail className="h-3 w-3 text-blue-400" />,
+  welcome_enviado: <Send className="h-3 w-3 text-emerald-400" />,
+  stage_mudou: <ArrowRight className="h-3 w-3 text-purple-400" />,
+  call_agendada: <Phone className="h-3 w-3 text-amber-400" />,
+  call_realizada: <Phone className="h-3 w-3 text-emerald-400" />,
+  proposta_gerada: <FileText className="h-3 w-3 text-primary" />,
+  proposta_enviada: <Send className="h-3 w-3 text-primary" />,
+  linkedin_adicionado: <Linkedin className="h-3 w-3 text-blue-500" />,
+  whatsapp_enviado: <MessageSquare className="h-3 w-3 text-emerald-500" />,
+  perdido: <XCircle className="h-3 w-3 text-red-400" />,
+  fechado: <CheckCircle className="h-3 w-3 text-emerald-400" />,
+  nota_manual: <MessageSquare className="h-3 w-3 text-blue-300" />,
+  contato_registrado: <Phone className="h-3 w-3 text-blue-400" />,
+  follow_up_agendado: <Activity className="h-3 w-3 text-amber-400" />,
+  follow_up_concluido: <CheckCircle className="h-3 w-3 text-emerald-400" />,
+};
 
 const STAGE_LABELS: Record<string, string> = {
   novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
