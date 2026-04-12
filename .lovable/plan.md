@@ -1,41 +1,47 @@
 
 
-## Melhorias na To-Do List + Cópia WhatsApp no Card
+## Melhorias na To-Do List: Remover Follow-up, Reformatar Próx. Ação, Reordenar Colunas
 
-### 1. Nova coluna "Follow-up" — último FUp registrado
+### 1. Deletar coluna "Follow-up"
 
-Adicionar uma nova coluna na tabela mostrando o follow-up **mais recente** de cada lead (pendente ou concluído), com data agendada e nota. Diferente da coluna "Próx. Ação" que mostra apenas o próximo pendente.
+- Remover do array `columns` (índice 11)
+- Remover `DEFAULT_COL_WIDTHS[11]`
+- Remover `filterFollowUp` state, `followUpFilterOptions`, referências no `filteredRows` e barra de filtros
+- Remover `latestFollowUpMap`, `allFollowUps` state e fetch de `lead_follow_ups`
+- Remover sort case `"follow_up"` e do tipo `SortCol`
+- Remover célula `<td>` do Follow-up no render
+- Ajustar `colSpan` do empty state
 
-- Buscar todos os follow-ups (não só pendentes) via query adicional a `lead_follow_ups` ordenado por `created_at desc`
-- Montar `latestFollowUpMap`: `lead_id → { note, due_date, completed, created_at }`
-- Exibir na célula: data + nota truncada; se concluído, texto riscado ou com ✅
-- Filtro: "📋 Com FUp" / "📭 Sem FUp"
-- Adicionar à lista de colunas e ao `DEFAULT_COL_WIDTHS`
+### 2. Coluna "Próx. Ação" — layout em duas linhas
 
-### 2. Corrigir dimensionamento de colunas (resize)
+Reformatar a célula (linhas 673-697) para:
 
-O `ResizeHandle` atual tem um bug: usa `DEFAULT_COL_WIDTHS[i] + delta` em vez de acumular a partir da largura atual. Cada drag recalcula sobre o valor original.
-
-- Corrigir para usar `baseWidthsRef` corretamente: capturar o width atual no `mousedown` e somar o delta sobre ele
-
-### 3. Highlight na linha ao hover
-
-A classe `hover:bg-muted/50` já existe no `<tr>`. Vou reforçar com uma cor mais visível para tornar o efeito perceptível.
-
-### 4. Copiar "telefone, nome, empresa" no WhatsApp (Card do Kanban)
-
-No `KanbanBoard.tsx`, alterar o case `copy_whatsapp` para copiar o formato:
+```text
+Ligar para confirmar     ← nota (linha 1, texto principal)
+14/04                    ← data (linha 2, menor, com cor por status)
 ```
-telefone, nome, empresa
-```
-em vez de apenas o telefone.
+
+- Linha 1: nota do follow-up (truncada, cor normal)
+- Linha 2: data formatada, colorida (vermelho=vencido, laranja=hoje, cinza=futuro)
+- Sem follow-up: manter ⚠️ como está
+
+### 3. Drag-and-drop para reordenar colunas (persistente)
+
+Implementar reordenação de colunas via HTML5 drag & drop nos `<th>`:
+
+- State `colOrder: number[]` — array de índices que define a ordem de exibição (ex: `[0,1,2,3,4,5,6,7,8,9,10]`)
+- Inicializar do `localStorage` (key: `todolist_col_order`)
+- No `<th>`: `draggable`, `onDragStart` (guarda índice), `onDragOver` (previne default), `onDrop` (reordena array)
+- Renderizar headers e cells na ordem definida por `colOrder`
+- Persistir no `localStorage` a cada mudança
+- Cursor `grab` no header para indicar arrasto
+- `colWidths` acompanha a reordenação
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/PriorityListView.tsx` | Nova coluna "Follow-up", corrigir resize, melhorar hover, ajustar `DEFAULT_COL_WIDTHS` |
-| `src/components/admin/KanbanBoard.tsx` | `copy_whatsapp` → copiar "telefone, nome, empresa" |
+| `src/components/admin/PriorityListView.tsx` | Todas as mudanças acima |
 
 Nenhuma migração necessária.
 
