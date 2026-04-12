@@ -1,38 +1,59 @@
 
 
-## Correção da Contagem + Progresso Visual de Envio
+## Edição de Leads + Campo "Calor" (Prioridade) do Lead
 
-### Diagnóstico da discrepância
+### Análise de impacto
 
-O `BulkEmailDialog` recebe `filteredLeads` do Pipeline (143 leads após filtros globais). Mas a PriorityListView tem **filtros internos por coluna** (Etapa, SLA, Porte, Responsável) nas linhas 185-188 que reduzem os 143 para 30. O dialog não tem acesso a esses filtros internos — por isso mostra 143 quando deveria mostrar 30.
+O campo `calor` (heat/priority 1-3) é um novo atributo do lead, armazenado no banco como `lead_heat` (integer nullable, valores 1/2/3). Ele precisa ser:
+- Persistido no banco (nova coluna na tabela `leads`)
+- Editável inline na To-Do List (clique direto nas bolinhas)
+- Filtrável e ordenável como as demais colunas
+- Visível no Drawer (aba Resumo)
+- Incluído no tipo `Lead` do frontend
 
-### Solução
+### Representação visual
 
-**1. Passar os leads já filtrados pela PriorityListView ao dialog**
+```text
+Calor 1:  🟡         (1 bolinha amarela)
+Calor 2:  🟡🟠       (1 amarela + 1 laranja)  
+Calor 3:  🟡🟠🔴     (1 amarela + 1 laranja + 1 vermelha)
+Sem calor: ○○○       (3 bolinhas cinza/vazias)
+```
 
-- Adicionar uma prop `onFilteredLeadsChange` na `PriorityListView` que emite o array `filteredRows` sempre que muda
-- No `Pipeline.tsx`, capturar esse array em um state `priorityFilteredLeads`
-- Passar `priorityFilteredLeads` (quando em modo priorities) ao `BulkEmailDialog` em vez de `filteredLeads`
-- Isso garante que o dialog receba exatamente os leads visíveis na tabela
+Cores: `#F4A736` (amarela), `#E65100` (laranja), `#D32F2F` (vermelha).
 
-**2. Progresso visual de envio em tempo real**
+---
 
-Mudar a arquitetura: em vez de enviar todos os IDs numa única chamada, enviar **um lead por vez** do frontend, atualizando o progresso visualmente.
+### Plano de implementação
 
-- Criar estado `sendProgress: { current: number, total: number, sent: number, failed: number } | null`
-- No `handleSend`, iterar sobre os leads chamando a Edge Function com `lead_ids: [id]` (um de cada vez)
-- A cada resposta, atualizar o progresso: "Enviando 3/30... ✅ 2 enviados"
-- Mostrar uma barra de progresso animada + contadores em tempo real
-- Botão muda para "Cancelar envio" durante o processo (com flag `abortRef`)
-- No final, exibir resumo completo
+**1. Migração — adicionar coluna `lead_heat` na tabela `leads`**
+- `ALTER TABLE leads ADD COLUMN lead_heat integer DEFAULT NULL;`
+- Valores permitidos: NULL (não definido), 1, 2, 3
 
-**3. UI do progresso no dialog**
+**2. Atualizar tipo `Lead`** em `src/components/admin/LeadList.tsx`
+- Adicionar `lead_heat?: number | null;`
 
-Quando `sendProgress !== null`, substituir o formulário por uma tela de progresso:
-- Barra de progresso (`Progress` component)
-- Texto: "Enviando email 3 de 30..."
-- Contadores: ✅ Enviados: 2 · ❌ Falhas: 0 · ⏭️ Suprimidos: 1
-- Botão "Cancelar" para interromper o envio
+**3. Componente `HeatDots`** — novo componente reutilizável
+- Recebe `value: number | null` e `onChange?: (v: number) => void`
+- Renderiza 3 círculos (SVG ou divs) com as cores definidas
+- Se `onChange` existe, cada bolinha é clicável para definir o valor (clicar na mesma remove = volta a null)
+- Sem onChange, é apenas visual
+
+**4. To-Do List (`PriorityListView.tsx`)**
+- Adicionar coluna "Calor" entre "Porte" e "Responsável"
+- Header com `SortableHeader` + `ColumnFilter` (opções: "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto")
+- Célula usa `HeatDots` com `onChange` inline — clique faz update direto no Supabase sem abrir modal
+- `e.stopPropagation()` para não abrir o drawer ao clicar
+- Sortable: leads com calor 3 ficam no topo (desc)
+- Ajustar `DEFAULT_COL_WIDTHS` para incluir nova coluna (70px)
+- Adicionar state `filterCalor` e lógica no `filteredRows`
+
+**5. Drawer — aba Resumo (`LeadDrawer.tsx`)**
+- Dentro do accordion "Dados do Lead", adicionar nova `InfoRow` com `HeatDots` editável
+- Ao clicar, faz update no Supabase e dispara `onNoteAdded`
+
+**6. Edição geral do lead (`LeadEditDialog.tsx`)**
+- O dialog de edição já existe. Incluir o campo `lead_heat` nele também, como um seletor simples (ou HeatDots)
 
 ---
 
@@ -40,8 +61,12 @@ Quando `sendProgress !== null`, substituir o formulário por uma tela de progres
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/PriorityListView.tsx` | Adicionar prop `onFilteredLeadsChange` que emite `filteredRows` via `useEffect` |
-| `src/pages/admin/Pipeline.tsx` | Capturar leads filtrados da PriorityListView; passar ao BulkEmailDialog |
-| `src/components/admin/BulkEmailDialog.tsx` | Envio sequencial lead-a-lead com progresso visual, barra de progresso, botão cancelar |
-| `supabase/functions/send-bulk-email/index.ts` | Sem mudança (já suporta 1 lead por chamada) |
+| Migração SQL | `ADD COLUMN lead_heat integer` |
+| `src/components/admin/LeadList.tsx` | Adicionar `lead_heat` ao tipo `Lead` |
+| `src/components/admin/HeatDots.tsx` | **Novo** — componente visual das bolinhas |
+| `src/components/admin/PriorityListView.tsx` | Nova coluna, filtro, sort, edição inline |
+| `src/components/admin/LeadDrawer.tsx` | Linha no resumo com HeatDots editável |
+| `src/components/admin/LeadEditDialog.tsx` | Campo lead_heat no form |
+| `src/components/admin/PriorityCard.tsx` | Exibir HeatDots (read-only) |
+| `src/components/admin/LeadCard.tsx` | Exibir HeatDots (read-only) no Kanban |
 
