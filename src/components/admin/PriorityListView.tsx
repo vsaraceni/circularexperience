@@ -6,7 +6,6 @@ import {
   MessageSquare, XCircle, CheckCircle, Activity,
 } from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import LeadDrawer from "./LeadDrawer";
