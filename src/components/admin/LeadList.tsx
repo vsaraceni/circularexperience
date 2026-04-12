@@ -49,6 +49,7 @@ export interface Lead {
   campaign_id?: string | null;
   valor_proposta?: number | null;
   proxima_acao?: string | null;
+  lead_heat?: number | null;
 }
 
 interface AuthorDefaults {

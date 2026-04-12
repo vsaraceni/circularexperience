@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Building2, User, Briefcase, Target, DollarSign } from "lucide-react";
 import UrgencyBadge from "./UrgencyBadge";
+import HeatDots from "./HeatDots";
 import type { Lead } from "./LeadList";
 
 const STAGE_LABELS: Record<string, string> = {
@@ -87,6 +88,11 @@ const PriorityCard: React.FC<PriorityCardProps> = ({ lead, hasPendingFollowUp, o
           {porteLabel && (
             <span className="flex items-center gap-1">
               <Building2 className="h-3 w-3 shrink-0" /> {porteLabel}
+            </span>
+          )}
+          {lead.lead_heat != null && lead.lead_heat > 0 && (
+            <span className="flex items-center gap-1">
+              <HeatDots value={lead.lead_heat} size="sm" />
             </span>
           )}
         </div>

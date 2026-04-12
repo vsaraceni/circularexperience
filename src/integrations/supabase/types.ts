@@ -370,6 +370,7 @@ export type Database = {
           id: string
           kanban_stage: string
           last_activity_at: string | null
+          lead_heat: number | null
           linkedin_added: boolean | null
           lost_at_stage: string | null
           lost_notes: string | null
@@ -409,6 +410,7 @@ export type Database = {
           id?: string
           kanban_stage?: string
           last_activity_at?: string | null
+          lead_heat?: number | null
           linkedin_added?: boolean | null
           lost_at_stage?: string | null
           lost_notes?: string | null
@@ -448,6 +450,7 @@ export type Database = {
           id?: string
           kanban_stage?: string
           last_activity_at?: string | null
+          lead_heat?: number | null
           linkedin_added?: boolean | null
           lost_at_stage?: string | null
           lost_notes?: string | null

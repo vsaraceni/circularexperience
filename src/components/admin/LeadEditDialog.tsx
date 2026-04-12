@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Archive } from "lucide-react";
+import HeatDots from "./HeatDots";
 import type { Lead } from "./LeadList";
 
 interface LeadEditDialogProps {
@@ -27,6 +28,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
     telefone: "",
     origem: "",
     mensagem: "",
+    lead_heat: null as number | null,
   });
 
   useEffect(() => {
@@ -39,6 +41,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
         telefone: lead.telefone || "",
         origem: lead.origem || "",
         mensagem: lead.mensagem || "",
+        lead_heat: lead.lead_heat ?? null,
       });
     }
   }, [lead, open]);
@@ -57,6 +60,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           telefone: form.telefone,
           origem: form.origem,
           mensagem: form.mensagem,
+          lead_heat: form.lead_heat,
         })
         .eq("id", lead.id);
 
@@ -134,6 +138,12 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           <div>
             <Label htmlFor="edit-mensagem">Mensagem</Label>
             <Textarea id="edit-mensagem" value={form.mensagem} onChange={(e) => setForm({ ...form, mensagem: e.target.value })} rows={4} />
+          </div>
+          <div>
+            <Label>Calor (Prioridade)</Label>
+            <div className="mt-1">
+              <HeatDots value={form.lead_heat} onChange={(v) => setForm({ ...form, lead_heat: v })} size="md" />
+            </div>
           </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
