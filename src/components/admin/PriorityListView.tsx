@@ -396,6 +396,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Etapa", sortKey: "etapa" as SortCol, filter: <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" /> },
     { label: "SLA", sortKey: "sla" as SortCol, filter: <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" /> },
     { label: "Porte", sortKey: "porte" as SortCol, filter: <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" /> },
+    { label: "Calor", sortKey: "calor" as SortCol, filter: <ColumnFilter options={calorOptions} selected={filterCalor} onChange={setFilterCalor} label="Calor" /> },
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
     { label: "Próx. Ação", sortKey: undefined, filter: undefined },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
