@@ -419,7 +419,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     });
   }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -502,7 +502,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
     { label: "Próx. Ação", sortKey: "prox_acao" as SortCol, filter: <ColumnFilter options={proxAcaoOptions} selected={filterProxAcao} onChange={setFilterProxAcao} label="Próx. Ação" /> },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
-    { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: undefined },
+    { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: <ColumnFilter options={ultimaAtivOptions} selected={filterUltimaAtiv} onChange={setFilterUltimaAtiv} label="Última Atividade" /> },
   ];
 
   if (rows.length === 0) {
@@ -526,7 +526,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterResp.map(v => <Badge key={`r-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterResp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterProxAcao.map(v => <Badge key={`pa-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterProxAcao(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); }}
+            {filterUltimaAtiv.map(v => <Badge key={`ua-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterUltimaAtiv(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
