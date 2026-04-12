@@ -257,6 +257,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterResp, setFilterResp] = useState<string[]>([]);
   const [filterCalor, setFilterCalor] = useState<string[]>([]);
   const [filterProxAcao, setFilterProxAcao] = useState<string[]>([]);
+  const [filterUltimaAtiv, setFilterUltimaAtiv] = useState<string[]>([]);
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
