@@ -1,0 +1,1 @@
+ALTER TABLE public.leads ADD COLUMN lead_heat integer DEFAULT NULL;
