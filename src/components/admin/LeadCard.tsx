@@ -1,4 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
+import HeatDots from "./HeatDots";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -187,6 +188,9 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
           {lead.company || "Sem empresa"}
         </h4>
         <div className="flex items-center gap-1 shrink-0">
+          {lead.lead_heat != null && lead.lead_heat > 0 && (
+            <HeatDots value={lead.lead_heat} size="sm" />
+          )}
           <UrgencyBadge
             stage={lead.kanban_stage}
             stageUpdatedAt={lead.stage_updated_at || null}
