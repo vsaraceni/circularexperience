@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChevronUp, ChevronDown, Filter, X } from "lucide-react";
+import { ChevronUp, ChevronDown, Filter, X, AlertTriangle } from "lucide-react";
 import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -49,7 +49,7 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
   "101_a_500": 4, "51_a_100": 3, "até_100": 3, "11_a_50": 2, "1_a_10": 1,
 };
 
-type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ";
+type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao";
 type SortDir = "asc" | "desc";
 
 const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100];
@@ -189,7 +189,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterPorte, setFilterPorte] = useState<string[]>([]);
   const [filterResp, setFilterResp] = useState<string[]>([]);
   const [filterCalor, setFilterCalor] = useState<string[]>([]);
-  
+  const [filterProxAcao, setFilterProxAcao] = useState<string[]>([]);
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -205,6 +205,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       if (due < today) map[f.lead_id].hasOverdue = true;
       else if (due.getTime() === today.getTime()) map[f.lead_id].hasToday = true;
       else map[f.lead_id].hasFuture = true;
+    });
+    return map;
+  }, [allPendingFollowUps]);
+
+  // Map lead_id → next pending follow-up (closest due_date)
+  const nextFollowUpMap = useMemo(() => {
+    const map: Record<string, { note: string | null; due_date: string }> = {};
+    allPendingFollowUps.forEach(f => {
+      if (!map[f.lead_id] || f.due_date < map[f.lead_id].due_date) {
+        map[f.lead_id] = { note: f.note, due_date: f.due_date };
+      }
     });
     return map;
   }, [allPendingFollowUps]);
@@ -266,7 +277,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
-  
+  const proxAcaoOptions = ["✅ Com próxima ação", "⚠️ Sem próxima ação"];
 
   const CALOR_LABEL_MAP: Record<number, string> = { 0: "❄️ Frio", 1: "🟡 Baixo", 2: "🟡🟠 Médio", 3: "🟡🟠🔴 Alto" };
 
@@ -281,9 +292,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const label = heat != null ? CALOR_LABEL_MAP[heat] : null;
       return label ? filterCalor.includes(label) : false;
     });
-    
+    if (filterProxAcao.length > 0) result = result.filter(r => {
+      const hasAction = !!nextFollowUpMap[r.lead.id];
+      const label = hasAction ? "✅ Com próxima ação" : "⚠️ Sem próxima ação";
+      return filterProxAcao.includes(label);
+    });
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, nextFollowUpMap]);
 
   // Emit filtered leads to parent
   useEffect(() => {
@@ -313,12 +328,17 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
           const db = new Date(b.lead.last_activity_at || b.lead.created_at || 0).getTime();
           cmp = da - db; break;
         }
+        case "prox_acao": {
+          const fa = nextFollowUpMap[a.lead.id]?.due_date || "9999";
+          const fb = nextFollowUpMap[b.lead.id]?.due_date || "9999";
+          cmp = fa.localeCompare(fb); break;
+        }
       }
       return cmp * mult;
     });
-  }, [filteredRows, sortCol, sortDir, getLeadValue]);
+  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -399,7 +419,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Porte", sortKey: "porte" as SortCol, filter: <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" /> },
     { label: "Calor", sortKey: "calor" as SortCol, filter: <ColumnFilter options={calorOptions} selected={filterCalor} onChange={setFilterCalor} label="Calor" /> },
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
-    { label: "Próx. Ação", sortKey: undefined, filter: undefined },
+    { label: "Próx. Ação", sortKey: "prox_acao" as SortCol, filter: <ColumnFilter options={proxAcaoOptions} selected={filterProxAcao} onChange={setFilterProxAcao} label="Próx. Ação" /> },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
     { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: undefined },
   ];
@@ -424,7 +444,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterPorte.map(v => <Badge key={`p-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterPorte(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterResp.map(v => <Badge key={`r-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterResp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); }}
+            {filterProxAcao.map(v => <Badge key={`pa-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterProxAcao(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
@@ -545,9 +566,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                       </span>
                     </td>
                     <td className="py-2 px-3 align-middle" style={{ width: colWidths[7] }}>
-                      <span className="text-xs italic truncate block" style={{ color: 'hsl(var(--color-text-muted))' }}>
-                        {(row.lead as any).proxima_acao || "—"}
-                      </span>
+                      {(() => {
+                        const nfu = nextFollowUpMap[row.lead.id];
+                        if (!nfu) {
+                          return (
+                            <span className="inline-flex items-center gap-1 text-xs" title="Sem próxima ação definida">
+                              <AlertTriangle className="h-3 w-3 shrink-0" style={{ color: '#F4A736' }} />
+                              <span style={{ color: 'hsl(var(--color-text-muted))' }}>—</span>
+                            </span>
+                          );
+                        }
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        const due = new Date(nfu.due_date + "T00:00:00");
+                        const isOverdue = due < today;
+                        const isToday = due.getTime() === today.getTime();
+                        const dateColor = isOverdue ? '#D32F2F' : isToday ? '#E65100' : 'hsl(var(--color-text-secondary))';
+                        const dateStr = format(due, "dd/MM");
+                        const noteStr = nfu.note ? ` — ${nfu.note}` : "";
+                        const full = `${dateStr}${noteStr}`;
+                        return (
+                          <span className="text-xs truncate block" style={{ color: dateColor }} title={full}>
+                            {full.length > 24 ? full.slice(0, 24) + "…" : full}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-2 px-3 align-middle" style={{ width: colWidths[9] }}>
                       <div className="flex flex-col">
