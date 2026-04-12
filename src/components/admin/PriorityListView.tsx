@@ -346,6 +346,14 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   const proxAcaoOptions = ["✅ Com próxima ação", "⚠️ Sem próxima ação"];
+  const ultimaAtivOptions = useMemo(() => {
+    const types = new Set<string>();
+    rows.forEach(r => {
+      const act = lastActivityMap[r.lead.id];
+      if (act) types.add(ACTIVITY_LABELS[act.activity_type] || act.activity_type);
+    });
+    return [...types].sort();
+  }, [rows, lastActivityMap]);
 
   const CALOR_LABEL_MAP: Record<number, string> = { 0: "❄️ Frio", 1: "🟡 Baixo", 2: "🟡🟠 Médio", 3: "🟡🟠🔴 Alto" };
 
