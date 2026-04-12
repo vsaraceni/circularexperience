@@ -1,72 +1,37 @@
 
 
-## Edição de Leads + Campo "Calor" (Prioridade) do Lead
+## Adicionar estado "Frio" (❄️) ao sistema de Calor
 
-### Análise de impacto
+### Conceito
 
-O campo `calor` (heat/priority 1-3) é um novo atributo do lead, armazenado no banco como `lead_heat` (integer nullable, valores 1/2/3). Ele precisa ser:
-- Persistido no banco (nova coluna na tabela `leads`)
-- Editável inline na To-Do List (clique direto nas bolinhas)
-- Filtrável e ordenável como as demais colunas
-- Visível no Drawer (aba Resumo)
-- Incluído no tipo `Lead` do frontend
-
-### Representação visual
+Adicionar o valor `0` ao campo `lead_heat` para representar um lead **frio** — resposta negativa, sem interesse, quase perdido. A escala passa a ser:
 
 ```text
-Calor 1:  🟡         (1 bolinha amarela)
-Calor 2:  🟡🟠       (1 amarela + 1 laranja)  
-Calor 3:  🟡🟠🔴     (1 amarela + 1 laranja + 1 vermelha)
-Sem calor: ○○○       (3 bolinhas cinza/vazias)
+Frio (0):   ❄️ (ícone de gelo azul, ou bolinha azul)
+Calor 1:    🟡
+Calor 2:    🟡🟠
+Calor 3:    🟡🟠🔴
+Sem definir: ○○○
 ```
 
-Cores: `#F4A736` (amarela), `#E65100` (laranja), `#D32F2F` (vermelha).
+Visualmente: um ícone de floco de neve (Snowflake do Lucide) em azul `#42A5F5` à esquerda das 3 bolinhas. Quando `lead_heat === 0`, o floco fica ativo (azul) e as bolinhas ficam apagadas. Clicar no floco alterna entre frio e nulo. Clicar em qualquer bolinha remove o estado frio.
 
----
+### Implementação
 
-### Plano de implementação
+**1. `HeatDots.tsx`** — Adicionar ícone Snowflake clicável antes das bolinhas
+- Importar `Snowflake` do Lucide
+- Quando `value === 0`: floco azul ativo, bolinhas apagadas
+- Clicar no floco: se já é 0, volta a null; senão, seta 0
+- Clicar em bolinha: comportamento atual (seta 1/2/3, remove o estado frio)
 
-**1. Migração — adicionar coluna `lead_heat` na tabela `leads`**
-- `ALTER TABLE leads ADD COLUMN lead_heat integer DEFAULT NULL;`
-- Valores permitidos: NULL (não definido), 1, 2, 3
+**2. `PriorityListView.tsx`** — Adicionar "❄️ Frio" como opção no filtro de Calor
 
-**2. Atualizar tipo `Lead`** em `src/components/admin/LeadList.tsx`
-- Adicionar `lead_heat?: number | null;`
-
-**3. Componente `HeatDots`** — novo componente reutilizável
-- Recebe `value: number | null` e `onChange?: (v: number) => void`
-- Renderiza 3 círculos (SVG ou divs) com as cores definidas
-- Se `onChange` existe, cada bolinha é clicável para definir o valor (clicar na mesma remove = volta a null)
-- Sem onChange, é apenas visual
-
-**4. To-Do List (`PriorityListView.tsx`)**
-- Adicionar coluna "Calor" entre "Porte" e "Responsável"
-- Header com `SortableHeader` + `ColumnFilter` (opções: "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto")
-- Célula usa `HeatDots` com `onChange` inline — clique faz update direto no Supabase sem abrir modal
-- `e.stopPropagation()` para não abrir o drawer ao clicar
-- Sortable: leads com calor 3 ficam no topo (desc)
-- Ajustar `DEFAULT_COL_WIDTHS` para incluir nova coluna (70px)
-- Adicionar state `filterCalor` e lógica no `filteredRows`
-
-**5. Drawer — aba Resumo (`LeadDrawer.tsx`)**
-- Dentro do accordion "Dados do Lead", adicionar nova `InfoRow` com `HeatDots` editável
-- Ao clicar, faz update no Supabase e dispara `onNoteAdded`
-
-**6. Edição geral do lead (`LeadEditDialog.tsx`)**
-- O dialog de edição já existe. Incluir o campo `lead_heat` nele também, como um seletor simples (ou HeatDots)
-
----
+**3. Nenhuma migração necessária** — o campo `lead_heat integer` já aceita 0
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---|---|
-| Migração SQL | `ADD COLUMN lead_heat integer` |
-| `src/components/admin/LeadList.tsx` | Adicionar `lead_heat` ao tipo `Lead` |
-| `src/components/admin/HeatDots.tsx` | **Novo** — componente visual das bolinhas |
-| `src/components/admin/PriorityListView.tsx` | Nova coluna, filtro, sort, edição inline |
-| `src/components/admin/LeadDrawer.tsx` | Linha no resumo com HeatDots editável |
-| `src/components/admin/LeadEditDialog.tsx` | Campo lead_heat no form |
-| `src/components/admin/PriorityCard.tsx` | Exibir HeatDots (read-only) |
-| `src/components/admin/LeadCard.tsx` | Exibir HeatDots (read-only) no Kanban |
+| `src/components/admin/HeatDots.tsx` | Adicionar Snowflake para valor 0 |
+| `src/components/admin/PriorityListView.tsx` | Adicionar "Frio" no filtro de calor |
 
