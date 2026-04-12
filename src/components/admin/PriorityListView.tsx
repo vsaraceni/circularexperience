@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronUp, ChevronDown, Filter, X, AlertTriangle,
@@ -92,10 +92,15 @@ const COLABORADORES_WEIGHT: Record<string, number> = {
   "101_a_500": 4, "51_a_100": 3, "até_100": 3, "11_a_50": 2, "1_a_10": 1,
 };
 
-type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao" | "follow_up";
+type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" | "valor" | "ultima_ativ" | "prox_acao";
 type SortDir = "asc" | "desc";
 
-const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 140, 100, 150];
+const NUM_COLS = 11;
+const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 100, 140];
+const COL_ORDER_KEY = "todolist_col_order";
+const COL_WIDTHS_KEY = "todolist_col_widths";
+
+const getDefaultOrder = () => Array.from({ length: NUM_COLS }, (_, i) => i);
 
 interface PriorityListViewProps {
   leads: Lead[];
@@ -213,8 +218,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   // Fetch latest activity per lead
   const [lastActivities, setLastActivities] = useState<{ lead_id: string; activity_type: string; content: string | null; created_at: string }[]>([]);
-  // Fetch ALL follow-ups (including completed) for "Follow-up" column
-  const [allFollowUps, setAllFollowUps] = useState<{ lead_id: string; note: string | null; due_date: string; completed: boolean; created_at: string }[]>([]);
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -225,16 +228,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         .limit(500);
       setLastActivities((data || []) as any);
     };
-    const fetchAllFollowUps = async () => {
-      const { data } = await supabase
-        .from("lead_follow_ups")
-        .select("lead_id, note, due_date, completed, created_at")
-        .order("created_at", { ascending: false })
-        .limit(500);
-      setAllFollowUps((data || []) as any);
-    };
     fetchActivities();
-    fetchAllFollowUps();
   }, [leads]);
 
   const lastActivityMap = useMemo(() => {
@@ -247,23 +241,66 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return map;
   }, [lastActivities]);
 
-  // Map lead_id → latest follow-up (most recent by created_at)
-  const latestFollowUpMap = useMemo(() => {
-    const map: Record<string, { note: string | null; due_date: string; completed: boolean; created_at: string }> = {};
-    allFollowUps.forEach(f => {
-      if (!map[f.lead_id]) {
-        map[f.lead_id] = { note: f.note, due_date: f.due_date, completed: f.completed, created_at: f.created_at };
-      }
-    });
-    return map;
-  }, [allFollowUps]);
-
   // Sort state
   const [sortCol, setSortCol] = useState<SortCol>("sla");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  // Column widths for resizable columns
-  const [colWidths, setColWidths] = useState<number[]>([...DEFAULT_COL_WIDTHS]);
+  // Column widths (persisted)
+  const [colWidths, setColWidths] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(COL_WIDTHS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === NUM_COLS) return parsed;
+      }
+    } catch {}
+    return [...DEFAULT_COL_WIDTHS];
+  });
+
+  // Persist col widths
+  useEffect(() => {
+    localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidths));
+  }, [colWidths]);
+
+  // Column order (persisted)
+  const [colOrder, setColOrder] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem(COL_ORDER_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === NUM_COLS) return parsed;
+      }
+    } catch {}
+    return getDefaultOrder();
+  });
+
+  useEffect(() => {
+    localStorage.setItem(COL_ORDER_KEY, JSON.stringify(colOrder));
+  }, [colOrder]);
+
+  // Drag reorder state
+  const dragColRef = useRef<number | null>(null);
+
+  const handleDragStart = (displayIdx: number) => {
+    dragColRef.current = displayIdx;
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+  const handleDrop = (targetDisplayIdx: number) => {
+    const fromIdx = dragColRef.current;
+    if (fromIdx === null || fromIdx === targetDisplayIdx) return;
+    const newOrder = [...colOrder];
+    const [moved] = newOrder.splice(fromIdx, 1);
+    newOrder.splice(targetDisplayIdx, 0, moved);
+    setColOrder(newOrder);
+    // Also reorder widths to match
+    const newWidths = [...colWidths];
+    const [movedW] = newWidths.splice(fromIdx, 1);
+    newWidths.splice(targetDisplayIdx, 0, movedW);
+    setColWidths(newWidths);
+    dragColRef.current = null;
+  };
 
   // Column filters
   const [filterEtapa, setFilterEtapa] = useState<string[]>([]);
@@ -273,7 +310,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [filterCalor, setFilterCalor] = useState<string[]>([]);
   const [filterProxAcao, setFilterProxAcao] = useState<string[]>([]);
   const [filterUltimaAtiv, setFilterUltimaAtiv] = useState<string[]>([]);
-  const [filterFollowUp, setFilterFollowUp] = useState<string[]>([]);
 
   const toggleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -362,7 +398,6 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
   const proxAcaoOptions = ["✅ Com próxima ação", "⚠️ Sem próxima ação"];
-  const followUpFilterOptions = ["📋 Com FUp", "📭 Sem FUp"];
   const ultimaAtivOptions = useMemo(() => {
     const types = new Set<string>();
     rows.forEach(r => {
@@ -395,13 +430,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const label = act ? (ACTIVITY_LABELS[act.activity_type] || act.activity_type) : null;
       return label ? filterUltimaAtiv.includes(label) : false;
     });
-    if (filterFollowUp.length > 0) result = result.filter(r => {
-      const hasFu = !!latestFollowUpMap[r.lead.id];
-      const label = hasFu ? "📋 Com FUp" : "📭 Sem FUp";
-      return filterFollowUp.includes(label);
-    });
     return result;
-  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, filterFollowUp, nextFollowUpMap, lastActivityMap, latestFollowUpMap]);
+  }, [rows, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, nextFollowUpMap, lastActivityMap]);
 
   // Emit filtered leads to parent
   useEffect(() => {
@@ -436,17 +466,12 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
           const fb = nextFollowUpMap[b.lead.id]?.due_date || "9999";
           cmp = fa.localeCompare(fb); break;
         }
-        case "follow_up": {
-          const fua = latestFollowUpMap[a.lead.id]?.due_date || "0000";
-          const fub = latestFollowUpMap[b.lead.id]?.due_date || "0000";
-          cmp = fua.localeCompare(fub); break;
-        }
       }
       return cmp * mult;
     });
-  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap, latestFollowUpMap]);
+  }, [filteredRows, sortCol, sortDir, getLeadValue, nextFollowUpMap]);
 
-  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length + filterFollowUp.length;
+  const activeInlineFilters = filterEtapa.length + filterSla.length + filterPorte.length + filterResp.length + filterCalor.length + filterProxAcao.length + filterUltimaAtiv.length;
 
   const handleQuickAction = async (lead: Lead, action: string) => {
     const now = new Date().toISOString();
@@ -517,8 +542,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   const totalMinWidth = colWidths.reduce((a, b) => a + b, 0);
 
-  // Column definitions for headers
-  const columns = [
+  // Column definitions (logical index based)
+  const columnDefs = useMemo(() => [
     { label: "Empresa", sortKey: "empresa" as SortCol, filter: undefined },
     { label: "Contato", sortKey: undefined, filter: undefined },
     { label: "Telefone", sortKey: undefined, filter: undefined },
@@ -530,8 +555,174 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Próx. Ação", sortKey: "prox_acao" as SortCol, filter: <ColumnFilter options={proxAcaoOptions} selected={filterProxAcao} onChange={setFilterProxAcao} label="Próx. Ação" /> },
     { label: "Valor", sortKey: "valor" as SortCol, filter: undefined },
     { label: "Últ. Ativ.", sortKey: "ultima_ativ" as SortCol, filter: <ColumnFilter options={ultimaAtivOptions} selected={filterUltimaAtiv} onChange={setFilterUltimaAtiv} label="Última Atividade" /> },
-    { label: "Follow-up", sortKey: "follow_up" as SortCol, filter: <ColumnFilter options={followUpFilterOptions} selected={filterFollowUp} onChange={setFilterFollowUp} label="Follow-up" /> },
-  ];
+  ], [stageOptions, filterEtapa, filterSla, filterPorte, filterResp, filterCalor, filterProxAcao, filterUltimaAtiv, slaOptions, porteOptions, respOptions, calorOptions, proxAcaoOptions, ultimaAtivOptions, sortCol, sortDir]);
+
+  // Render a cell by logical column index
+  const renderCell = (logicalIdx: number, row: LeadRow, displayIdx: number) => {
+    const stageColor = STAGE_COLORS[row.lead.kanban_stage] || "#9E9E9E";
+    const { value: displayValue, fromProposal } = getLeadValue(row.lead);
+
+    switch (logicalIdx) {
+      case 0: // Empresa
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <span className="text-xs font-semibold truncate block" style={{ color: 'hsl(var(--color-text-primary))' }}>
+              {row.lead.company || "Sem empresa"}
+            </span>
+          </td>
+        );
+      case 1: // Contato
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+              {row.lead.name}
+            </span>
+          </td>
+        );
+      case 2: // Telefone
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[displayIdx] }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const phone = row.lead.telefone || "";
+              if (!phone) return;
+              const copyText = `${phone}, ${row.lead.name}, ${row.lead.company || ""}`;
+              navigator.clipboard.writeText(copyText);
+              toast.success("Copiado!");
+            }}
+            title={row.lead.telefone ? "Clique para copiar" : undefined}
+          >
+            <span className="text-xs truncate block" style={{ color: row.lead.telefone ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+              {row.lead.telefone || "—"}
+            </span>
+          </td>
+        );
+      case 3: // Etapa
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
+              {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
+            </Badge>
+          </td>
+        );
+      case 4: // SLA
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
+              style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
+              {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
+            </span>
+          </td>
+        );
+      case 5: // Porte
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+              {row.tier}
+            </span>
+          </td>
+        );
+      case 6: // Calor
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}
+            onClick={(e) => e.stopPropagation()}>
+            <HeatDots
+              value={row.lead.lead_heat}
+              onChange={async (v) => {
+                await supabase.from("leads").update({ lead_heat: v }).eq("id", row.lead.id);
+                onLeadUpdated();
+              }}
+            />
+          </td>
+        );
+      case 7: // Responsável
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+              {row.responsavel}
+            </span>
+          </td>
+        );
+      case 8: // Próx. Ação — two lines: note on top, date below
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            {(() => {
+              const nfu = nextFollowUpMap[row.lead.id];
+              if (!nfu) {
+                return (
+                  <span className="inline-flex items-center gap-1 text-xs" title="Sem próxima ação definida">
+                    <AlertTriangle className="h-3 w-3 shrink-0" style={{ color: '#F4A736' }} />
+                    <span style={{ color: 'hsl(var(--color-text-muted))' }}>—</span>
+                  </span>
+                );
+              }
+              const today = new Date(); today.setHours(0, 0, 0, 0);
+              const due = new Date(nfu.due_date + "T00:00:00");
+              const isOverdue = due < today;
+              const isToday = due.getTime() === today.getTime();
+              const dateColor = isOverdue ? '#D32F2F' : isToday ? '#E65100' : 'hsl(var(--color-text-muted))';
+              const dateStr = format(due, "dd/MM");
+              return (
+                <div className="flex flex-col gap-0" title={nfu.note || dateStr}>
+                  {nfu.note && (
+                    <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                      {nfu.note.length > 22 ? nfu.note.slice(0, 22) + "…" : nfu.note}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-medium" style={{ color: dateColor }}>
+                    {dateStr}
+                  </span>
+                </div>
+              );
+            })()}
+          </td>
+        );
+      case 9: // Valor
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            <div className="flex flex-col">
+              <span className="text-xs font-medium" style={{ color: displayValue ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
+                {formatValue(displayValue)}
+              </span>
+              {fromProposal && (
+                <span className="text-[9px]" style={{ color: 'hsl(var(--color-text-muted))' }}>(proposta)</span>
+              )}
+            </div>
+          </td>
+        );
+      case 10: // Últ. Ativ.
+        return (
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+            {(() => {
+              const act = lastActivityMap[row.lead.id];
+              const dateStr = formatDate(row.lead.last_activity_at || row.lead.created_at);
+              if (!act) {
+                return (
+                  <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                    {dateStr}
+                  </span>
+                );
+              }
+              const icon = ACTIVITY_ICONS[act.activity_type] || <Activity className="h-3 w-3 text-muted-foreground" />;
+              const label = ACTIVITY_LABELS[act.activity_type] || act.activity_type;
+              return (
+                <div className="flex flex-col gap-0.5">
+                  <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
+                    {icon}
+                    <span className="truncate max-w-[100px]">{label}</span>
+                  </span>
+                  <span className="text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                    {dateStr}
+                  </span>
+                </div>
+              );
+            })()}
+          </td>
+        );
+      default:
+        return <td key={logicalIdx} />;
+    }
+  };
 
   if (rows.length === 0) {
     return (
@@ -555,8 +746,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterProxAcao.map(v => <Badge key={`pa-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterProxAcao(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterUltimaAtiv.map(v => <Badge key={`ua-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterUltimaAtiv(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            {filterFollowUp.map(v => <Badge key={`fu-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterFollowUp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); setFilterFollowUp([]); }}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
@@ -580,33 +770,39 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
           <table style={{ minWidth: totalMinWidth, tableLayout: "fixed" }} className="caption-bottom text-sm">
             <thead className="[&_tr]:border-b">
               <tr className="border-b transition-colors hover:bg-transparent" style={{ background: 'hsl(var(--color-bg-page))' }}>
-                {columns.map((col, i) => (
-                  <th
-                    key={col.label}
-                    className="h-12 px-4 text-left align-middle font-medium sticky top-0 z-10 relative"
-                    style={{ width: colWidths[i], minWidth: 60, background: 'hsl(var(--color-bg-page))' }}
-                  >
-                    {col.sortKey ? (
-                      <SortableHeader label={col.label} active={sortCol === col.sortKey} dir={sortDir} onClick={() => toggleSort(col.sortKey!)}>
-                        {col.filter}
-                      </SortableHeader>
-                    ) : col.filter ? (
-                      <div className="flex items-center gap-0.5">
+                {colOrder.map((logicalIdx, displayIdx) => {
+                  const col = columnDefs[logicalIdx];
+                  if (!col) return null;
+                  return (
+                    <th
+                      key={logicalIdx}
+                      className="h-12 px-4 text-left align-middle font-medium sticky top-0 z-10 relative cursor-grab active:cursor-grabbing"
+                      style={{ width: colWidths[displayIdx], minWidth: 60, background: 'hsl(var(--color-bg-page))' }}
+                      draggable
+                      onDragStart={() => handleDragStart(displayIdx)}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDrop(displayIdx)}
+                    >
+                      {col.sortKey ? (
+                        <SortableHeader label={col.label} active={sortCol === col.sortKey} dir={sortDir} onClick={() => toggleSort(col.sortKey!)}>
+                          {col.filter}
+                        </SortableHeader>
+                      ) : col.filter ? (
+                        <div className="flex items-center gap-0.5">
+                          <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
+                          {col.filter}
+                        </div>
+                      ) : (
                         <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
-                        {col.filter}
-                      </div>
-                    ) : (
-                      <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
-                    )}
-                    <ResizeHandle colIndex={i} colWidths={colWidths} setColWidths={setColWidths} />
-                  </th>
-                ))}
+                      )}
+                      <ResizeHandle colIndex={displayIdx} colWidths={colWidths} setColWidths={setColWidths} />
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="[&_tr:last-child]:border-0">
               {sortedRows.map(row => {
-                const stageColor = STAGE_COLORS[row.lead.kanban_stage] || "#9E9E9E";
-                const { value: displayValue, fromProposal } = getLeadValue(row.lead);
                 return (
                   <tr
                     key={row.lead.id}
@@ -614,153 +810,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                     style={{ borderLeft: `4px solid ${URGENCY_COLORS[row.urgency]}` }}
                     onClick={() => { setDrawerLead(row.lead); setDrawerOpen(true); }}
                   >
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[0] }}>
-                      <span className="text-xs font-semibold truncate block" style={{ color: 'hsl(var(--color-text-primary))' }}>
-                        {row.lead.company || "Sem empresa"}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[1] }}>
-                      <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
-                        {row.lead.name}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[2] }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const phone = row.lead.telefone || "";
-                        if (!phone) return;
-                        const copyText = `${phone}, ${row.lead.name}, ${row.lead.company || ""}`;
-                        navigator.clipboard.writeText(copyText);
-                        toast.success("Copiado!");
-                      }}
-                      title={row.lead.telefone ? "Clique para copiar" : undefined}
-                    >
-                      <span className="text-xs truncate block" style={{ color: row.lead.telefone ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
-                        {row.lead.telefone || "—"}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[3] }}>
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
-                        {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
-                      </Badge>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[3] }}>
-                      <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
-                        style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
-                        {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[4] }}>
-                      <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
-                        {row.tier}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[5] }}
-                      onClick={(e) => e.stopPropagation()}>
-                      <HeatDots
-                        value={row.lead.lead_heat}
-                        onChange={async (v) => {
-                          await supabase.from("leads").update({ lead_heat: v }).eq("id", row.lead.id);
-                          onLeadUpdated();
-                        }}
-                      />
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[6] }}>
-                      <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
-                        {row.responsavel}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[7] }}>
-                      {(() => {
-                        const nfu = nextFollowUpMap[row.lead.id];
-                        if (!nfu) {
-                          return (
-                            <span className="inline-flex items-center gap-1 text-xs" title="Sem próxima ação definida">
-                              <AlertTriangle className="h-3 w-3 shrink-0" style={{ color: '#F4A736' }} />
-                              <span style={{ color: 'hsl(var(--color-text-muted))' }}>—</span>
-                            </span>
-                          );
-                        }
-                        const today = new Date(); today.setHours(0, 0, 0, 0);
-                        const due = new Date(nfu.due_date + "T00:00:00");
-                        const isOverdue = due < today;
-                        const isToday = due.getTime() === today.getTime();
-                        const dateColor = isOverdue ? '#D32F2F' : isToday ? '#E65100' : 'hsl(var(--color-text-secondary))';
-                        const dateStr = format(due, "dd/MM");
-                        const noteStr = nfu.note ? ` — ${nfu.note}` : "";
-                        const full = `${dateStr}${noteStr}`;
-                        return (
-                          <span className="text-xs truncate block" style={{ color: dateColor }} title={full}>
-                            {full.length > 24 ? full.slice(0, 24) + "…" : full}
-                          </span>
-                        );
-                      })()}
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[9] }}>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-medium" style={{ color: displayValue ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
-                          {formatValue(displayValue)}
-                        </span>
-                        {fromProposal && (
-                          <span className="text-[9px]" style={{ color: 'hsl(var(--color-text-muted))' }}>(proposta)</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[8] }}>
-                      {(() => {
-                        const act = lastActivityMap[row.lead.id];
-                        const dateStr = formatDate(row.lead.last_activity_at || row.lead.created_at);
-                        if (!act) {
-                          return (
-                            <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
-                              {dateStr}
-                            </span>
-                          );
-                        }
-                        const icon = ACTIVITY_ICONS[act.activity_type] || <Activity className="h-3 w-3 text-muted-foreground" />;
-                        const label = ACTIVITY_LABELS[act.activity_type] || act.activity_type;
-                        return (
-                          <div className="flex flex-col gap-0.5">
-                            <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: 'hsl(var(--color-text-secondary))' }}>
-                              {icon}
-                              <span className="truncate max-w-[100px]">{label}</span>
-                            </span>
-                            <span className="text-[10px]" style={{ color: 'hsl(var(--color-text-muted))' }}>
-                              {dateStr}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    {/* Follow-up column */}
-                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[11] }}>
-                      {(() => {
-                        const fu = latestFollowUpMap[row.lead.id];
-                        if (!fu) {
-                          return (
-                            <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>—</span>
-                          );
-                        }
-                        const dateStr = format(new Date(fu.due_date + "T00:00:00"), "dd/MM");
-                        const noteStr = fu.note ? ` — ${fu.note}` : "";
-                        const full = `${dateStr}${noteStr}`;
-                        return (
-                          <div className="flex flex-col gap-0.5">
-                            <span className={`text-[11px] truncate block ${fu.completed ? "line-through" : ""}`}
-                              style={{ color: fu.completed ? 'hsl(var(--color-text-muted))' : 'hsl(var(--color-text-secondary))' }}
-                              title={full}>
-                              {fu.completed ? "✅ " : ""}{full.length > 22 ? full.slice(0, 22) + "…" : full}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </td>
+                    {colOrder.map((logicalIdx, displayIdx) => renderCell(logicalIdx, row, displayIdx))}
                   </tr>
                 );
               })}
               {sortedRows.length === 0 && (
                 <tr className="border-b">
-                  <td colSpan={12} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                  <td colSpan={NUM_COLS} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
                   </td>
                 </tr>
