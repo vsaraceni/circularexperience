@@ -206,6 +206,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const [contactLead, setContactLead] = useState<Lead | null>(null);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
+  // Fetch latest activity per lead
+  const [lastActivities, setLastActivities] = useState<{ lead_id: string; activity_type: string; content: string | null; created_at: string }[]>([]);
+  useEffect(() => {
+    const fetchActivities = async () => {
+      const { data } = await supabase
+        .from("lead_activities")
+        .select("lead_id, activity_type, content, created_at")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      setLastActivities((data || []) as any);
+    };
+    fetchActivities();
+  }, [leads]); // re-fetch when leads change
+
+  const lastActivityMap = useMemo(() => {
+    const map: Record<string, { activity_type: string; content: string | null; created_at: string }> = {};
+    lastActivities.forEach(a => {
+      if (!map[a.lead_id]) {
+        map[a.lead_id] = { activity_type: a.activity_type, content: a.content, created_at: a.created_at };
+      }
+    });
+    return map;
+  }, [lastActivities]);
+
   // Sort state
   const [sortCol, setSortCol] = useState<SortCol>("sla");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
