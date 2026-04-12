@@ -555,7 +555,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             {filterCalor.map(v => <Badge key={`c-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterCalor(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterProxAcao.map(v => <Badge key={`pa-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterProxAcao(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
             {filterUltimaAtiv.map(v => <Badge key={`ua-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterUltimaAtiv(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
-            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); }}
+            {filterFollowUp.map(v => <Badge key={`fu-${v}`} variant="secondary" className="text-[9px] h-5 gap-1 cursor-pointer" onClick={() => setFilterFollowUp(p => p.filter(x => x !== v))}>{v} <X className="h-2.5 w-2.5" /></Badge>)}
+            <button onClick={() => { setFilterEtapa([]); setFilterSla([]); setFilterPorte([]); setFilterResp([]); setFilterCalor([]); setFilterProxAcao([]); setFilterUltimaAtiv([]); setFilterFollowUp([]); }}
               className="text-[10px] ml-1" style={{ color: 'hsl(var(--color-brand))' }}>
               Limpar todos
             </button>
@@ -597,13 +598,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                     ) : (
                       <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
                     )}
-                    <ResizeHandle onResize={(delta) => {
-                      setColWidths(prev => {
-                        const next = [...prev];
-                        next[i] = Math.max(60, DEFAULT_COL_WIDTHS[i] + delta);
-                        return next;
-                      });
-                    }} />
+                    <ResizeHandle colIndex={i} colWidths={colWidths} setColWidths={setColWidths} />
                   </th>
                 ))}
               </tr>
@@ -615,7 +610,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                 return (
                   <tr
                     key={row.lead.id}
-                    className="border-b transition-colors cursor-pointer hover:bg-muted/50"
+                    className="border-b transition-all cursor-pointer hover:bg-accent/40"
                     style={{ borderLeft: `4px solid ${URGENCY_COLORS[row.urgency]}` }}
                     onClick={() => { setDrawerLead(row.lead); setDrawerOpen(true); }}
                   >
@@ -737,12 +732,35 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                         );
                       })()}
                     </td>
+                    {/* Follow-up column */}
+                    <td className="py-2 px-3 align-middle" style={{ width: colWidths[11] }}>
+                      {(() => {
+                        const fu = latestFollowUpMap[row.lead.id];
+                        if (!fu) {
+                          return (
+                            <span className="text-[11px]" style={{ color: 'hsl(var(--color-text-muted))' }}>—</span>
+                          );
+                        }
+                        const dateStr = format(new Date(fu.due_date + "T00:00:00"), "dd/MM");
+                        const noteStr = fu.note ? ` — ${fu.note}` : "";
+                        const full = `${dateStr}${noteStr}`;
+                        return (
+                          <div className="flex flex-col gap-0.5">
+                            <span className={`text-[11px] truncate block ${fu.completed ? "line-through" : ""}`}
+                              style={{ color: fu.completed ? 'hsl(var(--color-text-muted))' : 'hsl(var(--color-text-secondary))' }}
+                              title={full}>
+                              {fu.completed ? "✅ " : ""}{full.length > 22 ? full.slice(0, 22) + "…" : full}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 );
               })}
               {sortedRows.length === 0 && (
                 <tr className="border-b">
-                  <td colSpan={11} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
+                  <td colSpan={12} className="text-center py-8 text-sm align-middle" style={{ color: 'hsl(var(--color-text-muted))' }}>
                     Nenhum lead encontrado com os filtros selecionados.
                   </td>
                 </tr>
