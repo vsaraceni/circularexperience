@@ -61,7 +61,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const STAGE_LABELS: Record<string, string> = {
-  novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
+  novo: "Novo", boas_vindas: "Welcome", em_contato: "Em Contato",
   call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição",
 };
 
@@ -96,7 +96,8 @@ type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" |
 type SortDir = "asc" | "desc";
 
 const NUM_COLS = 11;
-const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 100, 140];
+// Percentages summing to ~100
+const DEFAULT_COL_WIDTHS = [14, 9.5, 9.5, 8.7, 6.3, 5.5, 6.3, 8.7, 12.6, 7.9, 11];
 const COL_ORDER_KEY = "todolist_col_order";
 const COL_WIDTHS_KEY = "todolist_col_widths";
 
@@ -176,16 +177,19 @@ const SortableHeader = ({ label, active, dir, onClick, children }: {
 );
 
 // Drag handle for resizing columns — captures current width on mousedown
-const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw }: { colIndex: number; colWidths: number[]; setColWidths: React.Dispatch<React.SetStateAction<number[]>> }) => {
+const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw, tableRef }: { colIndex: number; colWidths: number[]; setColWidths: React.Dispatch<React.SetStateAction<number[]>>; tableRef: React.RefObject<HTMLDivElement | null> }) => {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
     const startWidth = cw[colIndex];
+    const containerWidth = tableRef.current?.clientWidth || 1;
     const onMove = (ev: MouseEvent) => {
+      const deltaPx = ev.clientX - startX;
+      const deltaPct = (deltaPx / containerWidth) * 100;
       setCw(prev => {
         const next = [...prev];
-        next[colIndex] = Math.max(60, startWidth + (ev.clientX - startX));
+        next[colIndex] = Math.max(3, startWidth + deltaPct);
         return next;
       });
     };
@@ -195,7 +199,7 @@ const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw }: { colInd
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-  }, [colIndex, cw, setCw]);
+  }, [colIndex, cw, setCw, tableRef]);
 
   return (
     <div
