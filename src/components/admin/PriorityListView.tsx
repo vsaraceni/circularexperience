@@ -255,7 +255,11 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const saved = localStorage.getItem(COL_WIDTHS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === NUM_COLS) return parsed;
+        if (Array.isArray(parsed) && parsed.length === NUM_COLS) {
+          const sum = parsed.reduce((a: number, b: number) => a + b, 0);
+          if (sum > 200) { localStorage.removeItem(COL_WIDTHS_KEY); return [...DEFAULT_COL_WIDTHS]; }
+          return parsed;
+        }
       }
     } catch {}
     return [...DEFAULT_COL_WIDTHS];
