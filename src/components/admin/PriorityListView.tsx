@@ -569,7 +569,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     switch (logicalIdx) {
       case 0: // Empresa
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-xs font-semibold truncate block" style={{ color: 'hsl(var(--color-text-primary))' }}>
               {row.lead.company || "Sem empresa"}
             </span>
@@ -577,7 +577,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 1: // Contato
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
               {row.lead.name}
             </span>
@@ -585,7 +585,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 2: // Telefone
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[displayIdx] }}
+          <td key={logicalIdx} className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[displayIdx] + '%' }}
             onClick={(e) => {
               e.stopPropagation();
               const phone = row.lead.telefone || "";
@@ -603,7 +603,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 3: // Etapa
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
               {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
             </Badge>
@@ -611,7 +611,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 4: // SLA
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
               style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
               {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
@@ -620,7 +620,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 5: // Porte
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
               {row.tier}
             </span>
@@ -628,7 +628,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 6: // Calor
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}
             onClick={(e) => e.stopPropagation()}>
             <HeatDots
               value={row.lead.lead_heat}
@@ -641,7 +641,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 7: // Responsável
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
               {row.responsavel}
             </span>
@@ -649,7 +649,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 8: // Próx. Ação — two lines: note on top, date below
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             {(() => {
               const nfu = nextFollowUpMap[row.lead.id];
               if (!nfu) {
@@ -683,7 +683,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 9: // Valor
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <div className="flex flex-col">
               <span className="text-xs font-medium" style={{ color: displayValue ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
                 {formatValue(displayValue)}
@@ -696,7 +696,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 10: // Últ. Ativ.
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             {(() => {
               const act = lastActivityMap[row.lead.id];
               const dateStr = formatDate(row.lead.last_activity_at || row.lead.created_at);
