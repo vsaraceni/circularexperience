@@ -61,7 +61,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const STAGE_LABELS: Record<string, string> = {
-  novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
+  novo: "Novo", boas_vindas: "Welcome", em_contato: "Em Contato",
   call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição",
 };
 
@@ -96,7 +96,8 @@ type SortCol = "empresa" | "etapa" | "sla" | "porte" | "calor" | "responsavel" |
 type SortDir = "asc" | "desc";
 
 const NUM_COLS = 11;
-const DEFAULT_COL_WIDTHS = [180, 120, 120, 110, 80, 70, 80, 110, 160, 100, 140];
+// Percentages summing to ~100
+const DEFAULT_COL_WIDTHS = [14, 9.5, 9.5, 8.7, 6.3, 5.5, 6.3, 8.7, 12.6, 7.9, 11];
 const COL_ORDER_KEY = "todolist_col_order";
 const COL_WIDTHS_KEY = "todolist_col_widths";
 
@@ -176,16 +177,19 @@ const SortableHeader = ({ label, active, dir, onClick, children }: {
 );
 
 // Drag handle for resizing columns — captures current width on mousedown
-const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw }: { colIndex: number; colWidths: number[]; setColWidths: React.Dispatch<React.SetStateAction<number[]>> }) => {
+const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw, tableRef }: { colIndex: number; colWidths: number[]; setColWidths: React.Dispatch<React.SetStateAction<number[]>>; tableRef: React.RefObject<HTMLDivElement | null> }) => {
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const startX = e.clientX;
     const startWidth = cw[colIndex];
+    const containerWidth = tableRef.current?.clientWidth || 1;
     const onMove = (ev: MouseEvent) => {
+      const deltaPx = ev.clientX - startX;
+      const deltaPct = (deltaPx / containerWidth) * 100;
       setCw(prev => {
         const next = [...prev];
-        next[colIndex] = Math.max(60, startWidth + (ev.clientX - startX));
+        next[colIndex] = Math.max(3, startWidth + deltaPct);
         return next;
       });
     };
@@ -195,7 +199,7 @@ const ResizeHandle = ({ colIndex, colWidths: cw, setColWidths: setCw }: { colInd
     };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onUp);
-  }, [colIndex, cw, setCw]);
+  }, [colIndex, cw, setCw, tableRef]);
 
   return (
     <div
@@ -251,7 +255,11 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       const saved = localStorage.getItem(COL_WIDTHS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length === NUM_COLS) return parsed;
+        if (Array.isArray(parsed) && parsed.length === NUM_COLS) {
+          const sum = parsed.reduce((a: number, b: number) => a + b, 0);
+          if (sum > 200) { localStorage.removeItem(COL_WIDTHS_KEY); return [...DEFAULT_COL_WIDTHS]; }
+          return parsed;
+        }
       }
     } catch {}
     return [...DEFAULT_COL_WIDTHS];
@@ -540,7 +548,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     try { return format(new Date(d), "dd/MM HH:mm"); } catch { return "—"; }
   };
 
-  const totalMinWidth = colWidths.reduce((a, b) => a + b, 0);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Column definitions (logical index based)
   const columnDefs = useMemo(() => [
@@ -565,7 +573,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     switch (logicalIdx) {
       case 0: // Empresa
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-xs font-semibold truncate block" style={{ color: 'hsl(var(--color-text-primary))' }}>
               {row.lead.company || "Sem empresa"}
             </span>
@@ -573,7 +581,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 1: // Contato
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
               {row.lead.name}
             </span>
@@ -581,7 +589,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 2: // Telefone
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[displayIdx] }}
+          <td key={logicalIdx} className="py-2 px-3 align-middle cursor-pointer hover:bg-muted/30 transition-colors" style={{ width: colWidths[displayIdx] + '%' }}
             onClick={(e) => {
               e.stopPropagation();
               const phone = row.lead.telefone || "";
@@ -599,7 +607,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 3: // Etapa
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <Badge variant="outline" className="text-[10px] h-5 px-1.5" style={{ borderColor: stageColor, color: stageColor }}>
               {STAGE_LABELS[row.lead.kanban_stage] || row.lead.kanban_stage}
             </Badge>
@@ -607,7 +615,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 4: // SLA
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
               style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
               {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
@@ -616,7 +624,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 5: // Porte
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-[11px] font-medium" style={{ color: 'hsl(var(--color-text-secondary))' }}>
               {row.tier}
             </span>
@@ -624,7 +632,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 6: // Calor
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}
             onClick={(e) => e.stopPropagation()}>
             <HeatDots
               value={row.lead.lead_heat}
@@ -637,7 +645,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 7: // Responsável
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="text-xs truncate block" style={{ color: 'hsl(var(--color-text-secondary))' }}>
               {row.responsavel}
             </span>
@@ -645,7 +653,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 8: // Próx. Ação — two lines: note on top, date below
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             {(() => {
               const nfu = nextFollowUpMap[row.lead.id];
               if (!nfu) {
@@ -679,7 +687,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 9: // Valor
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <div className="flex flex-col">
               <span className="text-xs font-medium" style={{ color: displayValue ? 'hsl(var(--color-brand))' : 'hsl(var(--color-text-muted))' }}>
                 {formatValue(displayValue)}
@@ -692,7 +700,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         );
       case 10: // Últ. Ativ.
         return (
-          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] }}>
+          <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             {(() => {
               const act = lastActivityMap[row.lead.id];
               const dateStr = formatDate(row.lead.last_activity_at || row.lead.created_at);
@@ -766,8 +774,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto min-h-0 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
-          <table style={{ minWidth: totalMinWidth, tableLayout: "fixed" }} className="caption-bottom text-sm">
+        <div ref={tableContainerRef} className="flex-1 overflow-auto min-h-0 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
+          <table style={{ width: '100%', tableLayout: "fixed" }} className="caption-bottom text-sm">
             <thead className="[&_tr]:border-b">
               <tr className="border-b transition-colors hover:bg-transparent" style={{ background: 'hsl(var(--color-bg-page))' }}>
                 {colOrder.map((logicalIdx, displayIdx) => {
@@ -777,7 +785,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                     <th
                       key={logicalIdx}
                       className="h-12 px-4 text-left align-middle font-medium sticky top-0 z-10 relative cursor-grab active:cursor-grabbing"
-                      style={{ width: colWidths[displayIdx], minWidth: 60, background: 'hsl(var(--color-bg-page))' }}
+                      style={{ width: colWidths[displayIdx] + '%', minWidth: 50, background: 'hsl(var(--color-bg-page))' }}
                       draggable
                       onDragStart={() => handleDragStart(displayIdx)}
                       onDragOver={handleDragOver}
@@ -795,7 +803,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                       ) : (
                         <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
                       )}
-                      <ResizeHandle colIndex={displayIdx} colWidths={colWidths} setColWidths={setColWidths} />
+                      <ResizeHandle colIndex={displayIdx} colWidths={colWidths} setColWidths={setColWidths} tableRef={tableContainerRef} />
                     </th>
                   );
                 })}
