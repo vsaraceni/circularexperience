@@ -544,7 +544,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     try { return format(new Date(d), "dd/MM HH:mm"); } catch { return "—"; }
   };
 
-  const totalMinWidth = colWidths.reduce((a, b) => a + b, 0);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   // Column definitions (logical index based)
   const columnDefs = useMemo(() => [
@@ -770,8 +770,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto min-h-0 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
-          <table style={{ minWidth: totalMinWidth, tableLayout: "fixed" }} className="caption-bottom text-sm">
+        <div ref={tableContainerRef} className="flex-1 overflow-auto min-h-0 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))' }}>
+          <table style={{ width: '100%', tableLayout: "fixed" }} className="caption-bottom text-sm">
             <thead className="[&_tr]:border-b">
               <tr className="border-b transition-colors hover:bg-transparent" style={{ background: 'hsl(var(--color-bg-page))' }}>
                 {colOrder.map((logicalIdx, displayIdx) => {
@@ -781,7 +781,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                     <th
                       key={logicalIdx}
                       className="h-12 px-4 text-left align-middle font-medium sticky top-0 z-10 relative cursor-grab active:cursor-grabbing"
-                      style={{ width: colWidths[displayIdx], minWidth: 60, background: 'hsl(var(--color-bg-page))' }}
+                      style={{ width: colWidths[displayIdx] + '%', minWidth: 50, background: 'hsl(var(--color-bg-page))' }}
                       draggable
                       onDragStart={() => handleDragStart(displayIdx)}
                       onDragOver={handleDragOver}
@@ -799,7 +799,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
                       ) : (
                         <span className="text-[11px] font-semibold" style={{ color: 'hsl(var(--color-text-muted))' }}>{col.label}</span>
                       )}
-                      <ResizeHandle colIndex={displayIdx} colWidths={colWidths} setColWidths={setColWidths} />
+                      <ResizeHandle colIndex={displayIdx} colWidths={colWidths} setColWidths={setColWidths} tableRef={tableContainerRef} />
                     </th>
                   );
                 })}
