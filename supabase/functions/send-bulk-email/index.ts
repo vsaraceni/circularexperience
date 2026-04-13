@@ -168,8 +168,9 @@ Deno.serve(async (req) => {
             Authorization: `Bearer ${resendApiKey}`,
           },
           body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
+            from: `${sender.full_name || fromName} <${fromEmail}>`,
             to: [lead.email],
+            reply_to: sender.email,
             subject: personalizedSubject,
             html: personalizedBody,
           }),
