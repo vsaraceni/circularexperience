@@ -1,47 +1,36 @@
 
 
-## Melhorias na To-Do List: Remover Follow-up, Reformatar Próx. Ação, Reordenar Colunas
+## Auto-fit Colunas + Badge "Welcome"
 
-### 1. Deletar coluna "Follow-up"
+### Problema
+A tabela usa `minWidth` fixo (soma dos `DEFAULT_COL_WIDTHS` = ~1270px) com `tableLayout: "fixed"`, o que ultrapassa a tela em notebooks. A badge "Boas-Vindas" quebra linha em telas menores.
 
-- Remover do array `columns` (índice 11)
-- Remover `DEFAULT_COL_WIDTHS[11]`
-- Remover `filterFollowUp` state, `followUpFilterOptions`, referências no `filteredRows` e barra de filtros
-- Remover `latestFollowUpMap`, `allFollowUps` state e fetch de `lead_follow_ups`
-- Remover sort case `"follow_up"` e do tipo `SortCol`
-- Remover célula `<td>` do Follow-up no render
-- Ajustar `colSpan` do empty state
+### Solução
 
-### 2. Coluna "Próx. Ação" — layout em duas linhas
+**1. Colunas auto-reguláveis**
 
-Reformatar a célula (linhas 673-697) para:
+- Trocar a abordagem de larguras fixas em pixels para **percentuais** ou `fr`-like
+- Manter `tableLayout: "fixed"` mas usar `width: 100%` na tabela (em vez de `minWidth: totalMinWidth`)
+- Converter `DEFAULT_COL_WIDTHS` de pixels absolutos para proporções relativas (ex: 180 de 1270 total ≈ 14%)
+- Quando o usuário redimensiona uma coluna manualmente, guardar a proporção (não pixels), garantindo que a soma é sempre 100%
+- Remover o `minWidth: totalMinWidth` da `<table>` — a tabela passa a se ajustar ao container
+- Definir `minWidth: 50px` em cada `<th>` para evitar colapso total
 
-```text
-Ligar para confirmar     ← nota (linha 1, texto principal)
-14/04                    ← data (linha 2, menor, com cor por status)
-```
+**2. Badge "Boas-Vindas" → "Welcome"**
 
-- Linha 1: nota do follow-up (truncada, cor normal)
-- Linha 2: data formatada, colorida (vermelho=vencido, laranja=hoje, cinza=futuro)
-- Sem follow-up: manter ⚠️ como está
+- Em `STAGE_LABELS`, trocar `boas_vindas: "Boas-Vindas"` para `boas_vindas: "Welcome"`
 
-### 3. Drag-and-drop para reordenar colunas (persistente)
+### Detalhes técnicos
 
-Implementar reordenação de colunas via HTML5 drag & drop nos `<th>`:
+- `DEFAULT_COL_WIDTHS` passa a ser frações (ex: `[14, 9.5, 9.5, 8.7, 6.3, 5.5, 6.3, 8.7, 12.6, 7.9, 11]` somando ~100)
+- `colWidths` armazenado como percentuais
+- No `<th>` e `<td>`: `style={{ width: colWidths[i] + '%' }}`
+- O resize handle calcula delta como % da largura do container
+- `localStorage` persiste as proporções (invalida cache antigo de pixels)
 
-- State `colOrder: number[]` — array de índices que define a ordem de exibição (ex: `[0,1,2,3,4,5,6,7,8,9,10]`)
-- Inicializar do `localStorage` (key: `todolist_col_order`)
-- No `<th>`: `draggable`, `onDragStart` (guarda índice), `onDragOver` (previne default), `onDrop` (reordena array)
-- Renderizar headers e cells na ordem definida por `colOrder`
-- Persistir no `localStorage` a cada mudança
-- Cursor `grab` no header para indicar arrasto
-- `colWidths` acompanha a reordenação
-
-### Arquivos impactados
+### Arquivo impactado
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/admin/PriorityListView.tsx` | Todas as mudanças acima |
-
-Nenhuma migração necessária.
+| `src/components/admin/PriorityListView.tsx` | Converter larguras para %, remover minWidth da table, badge "Welcome" |
 
