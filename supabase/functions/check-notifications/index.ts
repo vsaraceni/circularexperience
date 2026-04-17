@@ -269,19 +269,30 @@ Deno.serve(async (req) => {
 
       const { data: activities } = await supabase
         .from("lead_activities")
-        .select("user_id, activity_type")
+        .select("user_id, activity_type, metadata")
         .gte("created_at", startOfDay)
         .lte("created_at", endOfDay);
+
+      // Funnel order — only forward moves count as "Avanços"
+      const STAGE_ORDER = ['novo', 'boas_vindas', 'em_contato', 'call_agendada', 'proposta', 'fechado'];
 
       // Aggregate by user
       const userStats: Record<string, { stageChanges: number; appointments: number; proposals: number; deals: number }> = {};
       for (const a of (activities || [])) {
         if (!a.user_id) continue;
         if (!userStats[a.user_id]) userStats[a.user_id] = { stageChanges: 0, appointments: 0, proposals: 0, deals: 0 };
-        if (a.activity_type === "stage_mudou") userStats[a.user_id].stageChanges++;
-        if (a.activity_type === "call_agendada") userStats[a.user_id].appointments++;
-        if (a.activity_type === "proposta_enviada") userStats[a.user_id].proposals++;
-        if (a.activity_type === "fechado") userStats[a.user_id].deals++;
+
+        if (a.activity_type === "stage_mudou") {
+          const to = (a.metadata as any)?.to;
+          const from = (a.metadata as any)?.from;
+          const toIdx = STAGE_ORDER.indexOf(to);
+          const fromIdx = STAGE_ORDER.indexOf(from);
+          const isForward = toIdx > -1 && fromIdx > -1 && toIdx > fromIdx;
+          if (isForward) userStats[a.user_id].stageChanges++;
+          if (to === "call_agendada") userStats[a.user_id].appointments++;
+          if (to === "fechado") userStats[a.user_id].deals++;
+        }
+        if (a.activity_type === "proposta_gerada") userStats[a.user_id].proposals++;
       }
 
       // Get profile names
