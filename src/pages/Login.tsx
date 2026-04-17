@@ -16,7 +16,9 @@ const Login = () => {
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
+  const [mode, setMode] = useState<"magic" | "password" | "signup">("magic");
+  const isSignUp = mode === "signup";
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
