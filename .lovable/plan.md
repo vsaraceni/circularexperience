@@ -1,34 +1,15 @@
 
+User wants magic link login for CRM + persistent sessions to avoid repeated password prompts.
 
-## Fix: Remetente e Reply-To no Email em Massa
+Current state:
+- `useAuth.tsx` uses email/password + Google OAuth
+- Supabase client already has `persistSession: true, autoRefreshToken: true` — sessions already persist
+- "Toda hora pede senha" likely means: session expires, or they log out, or different devices
 
-### Problema
-O campo `from` usa `fromName` vindo da tabela `email_templates` (slug `lead-welcome`), que contém o texto literal `{{sender}}` ou um nome genérico. O email chega com remetente "{{sender}}" em vez do nome do usuário logado. Além disso, não há `reply_to`, então o destinatário não consegue responder diretamente ao remetente.
+Plan:
+1. Add magic link option on Login page (new button/tab)
+2. Use `supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: '/admin/pipeline' }})`
+3. Magic link emails go via Supabase auth — need auth-email-hook scaffolded for branded emails (optional, can use default Supabase email)
+4. Session persistence is already configured; magic link sessions persist same way
 
-### Solução
-
-No `supabase/functions/send-bulk-email/index.ts`:
-
-1. **Remetente = nome do usuário logado**: Substituir `fromName` pelo `sender.full_name` (já carregado do profile na linha 121-131). Manter o `fromEmail` do template (domínio verificado).
-
-2. **Adicionar `reply_to`**: Incluir `reply_to: sender.email` (email do profile do usuário logado) no payload do Resend, para que respostas vão direto para o remetente.
-
-**Mudança concreta** (linhas 170-175):
-```typescript
-body: JSON.stringify({
-  from: `${sender.full_name || fromName} <${fromEmail}>`,
-  to: [lead.email],
-  reply_to: sender.email,
-  subject: personalizedSubject,
-  html: personalizedBody,
-}),
-```
-
-### Arquivo impactado
-
-| Arquivo | Mudança |
-|---|---|
-| `supabase/functions/send-bulk-email/index.ts` | `from` usa `sender.full_name`, adiciona `reply_to: sender.email` |
-
-Requer redeploy da Edge Function.
-
+Keep it simple — just add magic link UI to existing Login page.
