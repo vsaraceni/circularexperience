@@ -8,7 +8,10 @@ import { toast } from "sonner";
 import logo from "@/assets/movimento-circular-logo.png";
 import { LogoImage } from "@/components/LogoImage";
 import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
+
+type Mode = "magic" | "password" | "signup";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,7 +19,9 @@ const Login = () => {
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [mode, setMode] = useState<Mode>("magic");
+  const isSignUp = mode === "signup";
+  const isMagic = mode === "magic";
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -25,7 +30,19 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
+      if (isMagic) {
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin/propostas`,
+          },
+        });
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success("Link mágico enviado! Verifique seu email para entrar.");
+        }
+      } else if (isSignUp) {
         const { error } = await signUp(email, password, fullName);
         if (error) {
           toast.error(error.message);
@@ -67,17 +84,31 @@ const Login = () => {
     }
   };
 
+  const title = isSignUp ? "Criar Conta" : isMagic ? "Entrar com Link Mágico" : "Acesso Administrativo";
+  const subtitle = isSignUp
+    ? "Preencha os dados para se cadastrar"
+    : isMagic
+    ? "Receba um link no email — sem senha"
+    : "Entre com suas credenciais";
+  const submitLabel = isLoading
+    ? isMagic
+      ? "Enviando..."
+      : isSignUp
+      ? "Criando..."
+      : "Entrando..."
+    : isMagic
+    ? "Enviar link mágico"
+    : isSignUp
+    ? "Criar conta"
+    : "Entrar";
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <LogoImage src={logo} alt="Movimento Circular" className="h-12 mx-auto mb-6" />
-          <h1 className="text-2xl font-bold text-foreground">
-            {isSignUp ? "Criar Conta" : "Acesso Administrativo"}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {isSignUp ? "Preencha os dados para se cadastrar" : "Entre com suas credenciais"}
-          </p>
+          <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          <p className="text-muted-foreground mt-2">{subtitle}</p>
         </div>
 
         <Button
@@ -132,26 +163,38 @@ const Login = () => {
               placeholder="admin@exemplo.com"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-            />
-          </div>
+          {!isMagic && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+              />
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (isSignUp ? "Criando..." : "Entrando...") : (isSignUp ? "Criar conta" : "Entrar")}
+            {submitLabel}
           </Button>
         </form>
 
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-1">
+          {isMagic ? (
+            <Button variant="link" onClick={() => setMode("password")} className="text-muted-foreground">
+              Prefiro entrar com senha
+            </Button>
+          ) : (
+            <Button variant="link" onClick={() => setMode("magic")} className="text-muted-foreground">
+              ✨ Entrar com link mágico
+            </Button>
+          )}
+          <br />
           <Button
             variant="link"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => setMode(isSignUp ? "password" : "signup")}
             className="text-muted-foreground"
           >
             {isSignUp ? "Já tenho conta → Entrar" : "Não tem conta? Criar uma"}
