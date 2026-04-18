@@ -348,7 +348,7 @@ Deno.serve(async (req) => {
             body: {
               templateName: "daily-performance",
               recipientEmail: email,
-              idempotencyKey: `daily-perf-${adminId}-${todayStr}-v2`,
+              idempotencyKey: `daily-perf-${adminId}-${todayStr}-${Date.now()}`,
               templateData: {
                 operators,
                 dateStr,
