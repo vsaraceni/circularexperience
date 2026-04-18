@@ -264,14 +264,22 @@ Deno.serve(async (req) => {
 
     // Daily performance mode: aggregate activities by operator
     if (mode === "daily-performance") {
-      const startOfDay = todayStr + "T00:00:00Z";
-      const endOfDay = todayStr + "T23:59:59Z";
+      // São Paulo "today" window in UTC. SP = UTC-3, so 00:00 SP = 03:00 UTC.
+      const spNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const spDateStr = `${spNow.getFullYear()}-${String(spNow.getMonth() + 1).padStart(2, "0")}-${String(spNow.getDate()).padStart(2, "0")}`;
+      const startOfDay = `${spDateStr}T03:00:00Z`;
+      const nextSp = new Date(spNow);
+      nextSp.setDate(nextSp.getDate() + 1);
+      const nextSpStr = `${nextSp.getFullYear()}-${String(nextSp.getMonth() + 1).padStart(2, "0")}-${String(nextSp.getDate()).padStart(2, "0")}`;
+      const endOfDay = `${nextSpStr}T03:00:00Z`;
+
+      console.log("[daily-performance] window (SP)", { startOfDay, endOfDay, spDateStr });
 
       const { data: activities } = await supabase
         .from("lead_activities")
         .select("user_id, activity_type, metadata")
         .gte("created_at", startOfDay)
-        .lte("created_at", endOfDay);
+        .lt("created_at", endOfDay);
 
       // Funnel order — only forward moves count as "Avanços"
       const STAGE_ORDER = ['novo', 'boas_vindas', 'em_contato', 'call_agendada', 'proposta', 'fechado'];
@@ -340,7 +348,7 @@ Deno.serve(async (req) => {
             body: {
               templateName: "daily-performance",
               recipientEmail: email,
-              idempotencyKey: `daily-perf-${adminId}-${todayStr}`,
+              idempotencyKey: `daily-perf-${adminId}-${todayStr}-v2`,
               templateData: {
                 operators,
                 dateStr,
