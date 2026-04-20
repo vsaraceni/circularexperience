@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Plus, Upload, Star, Download, Trash2, FileText } from "lucide-react";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import { useNavigate } from "react-router-dom";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 interface Product {
   id: string;
@@ -19,6 +20,9 @@ interface Product {
   brand_color: string | null;
   is_active: boolean;
   sort_order: number;
+  default_title_template: string | null;
+  default_scope: string | null;
+  default_considerations: string | null;
 }
 
 interface MasterAsset {
@@ -42,7 +46,16 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [productDialog, setProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [productForm, setProductForm] = useState({ slug: "", name: "", description: "", brand_color: "#5F2558", is_active: true });
+  const [productForm, setProductForm] = useState({
+    slug: "",
+    name: "",
+    description: "",
+    brand_color: "#5F2558",
+    is_active: true,
+    default_title_template: "",
+    default_scope: "",
+    default_considerations: "",
+  });
   const [uploading, setUploading] = useState(false);
   const [uploadVersion, setUploadVersion] = useState("");
   const [uploadLabel, setUploadLabel] = useState("");
@@ -88,22 +101,46 @@ const Products = () => {
   const openProductDialog = (p?: Product) => {
     if (p) {
       setEditingProduct(p);
-      setProductForm({ slug: p.slug, name: p.name, description: p.description || "", brand_color: p.brand_color || "#5F2558", is_active: p.is_active });
+      setProductForm({
+        slug: p.slug,
+        name: p.name,
+        description: p.description || "",
+        brand_color: p.brand_color || "#5F2558",
+        is_active: p.is_active,
+        default_title_template: p.default_title_template || "",
+        default_scope: p.default_scope || "",
+        default_considerations: p.default_considerations || "",
+      });
     } else {
       setEditingProduct(null);
-      setProductForm({ slug: "", name: "", description: "", brand_color: "#5F2558", is_active: true });
+      setProductForm({
+        slug: "",
+        name: "",
+        description: "",
+        brand_color: "#5F2558",
+        is_active: true,
+        default_title_template: "",
+        default_scope: "",
+        default_considerations: "",
+      });
     }
     setProductDialog(true);
   };
 
   const saveProduct = async () => {
     if (!productForm.slug || !productForm.name) { toast.error("Slug e nome são obrigatórios"); return; }
+    const payload = {
+      ...productForm,
+      default_title_template: productForm.default_title_template.trim() || null,
+      default_scope: productForm.default_scope.trim() || null,
+      default_considerations: productForm.default_considerations.trim() || null,
+    };
     if (editingProduct) {
-      const { error } = await supabase.from("products").update(productForm).eq("id", editingProduct.id);
+      const { error } = await supabase.from("products").update(payload).eq("id", editingProduct.id);
       if (error) { toast.error("Erro ao atualizar produto"); return; }
       toast.success("Produto atualizado");
     } else {
-      const { error } = await supabase.from("products").insert(productForm);
+      const { error } = await supabase.from("products").insert(payload);
       if (error) { toast.error(`Erro: ${error.message}`); return; }
       toast.success("Produto criado");
     }
