@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutGrid, FileText, BarChart3, Activity, LogOut, ExternalLink, Menu, Gauge } from "lucide-react";
+import { LayoutGrid, FileText, BarChart3, Activity, LogOut, ExternalLink, Menu, Gauge, Package } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -142,6 +142,11 @@ export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
                 <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
                   <DigestReportDialog />
                 </div>
+              )}
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => navigate("/admin/produtos")} className="gap-2 cursor-pointer rounded-lg">
+                  <Package className="h-4 w-4" aria-hidden="true" /> Produtos & PDFs Mestres
+                </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">
                 <ExternalLink className="h-4 w-4" aria-hidden="true" /> Ir para o Site
