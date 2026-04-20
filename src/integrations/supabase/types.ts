@@ -300,6 +300,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "vw_proposals_leads"
+            referencedColumns: ["lead_id"]
+          },
+          {
             foreignKeyName: "lead_activities_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -346,6 +353,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_follow_ups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "vw_proposals_leads"
+            referencedColumns: ["lead_id"]
           },
         ]
       }
@@ -558,7 +572,50 @@ export type Database = {
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "vw_proposals_leads"
+            referencedColumns: ["lead_id"]
+          },
         ]
+      }
+      products: {
+        Row: {
+          brand_color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          brand_color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          brand_color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -595,6 +652,53 @@ export type Database = {
           role_label?: string | null
         }
         Relationships: []
+      }
+      proposal_master_assets: {
+        Row: {
+          id: string
+          is_active: boolean
+          label: string | null
+          notes: string | null
+          page_count: number | null
+          product_id: string
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string | null
+          version: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          notes?: string | null
+          page_count?: number | null
+          product_id: string
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          notes?: string | null
+          page_count?: number | null
+          product_id?: string
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_master_assets_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposal_submissions: {
         Row: {
@@ -644,6 +748,8 @@ export type Database = {
           id: string
           investment: string | null
           lead_id: string | null
+          master_asset_id: string | null
+          product_id: string | null
           scope: string | null
           slug: string
           status: string
@@ -664,6 +770,8 @@ export type Database = {
           id?: string
           investment?: string | null
           lead_id?: string | null
+          master_asset_id?: string | null
+          product_id?: string | null
           scope?: string | null
           slug: string
           status?: string
@@ -684,6 +792,8 @@ export type Database = {
           id?: string
           investment?: string | null
           lead_id?: string | null
+          master_asset_id?: string | null
+          product_id?: string | null
           scope?: string | null
           slug?: string
           status?: string
@@ -696,6 +806,27 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "vw_proposals_leads"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "proposals_master_asset_id_fkey"
+            columns: ["master_asset_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_master_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -836,7 +967,11 @@ export type Database = {
           lost_at_stage: string | null
           lost_notes: string | null
           lost_reason: string | null
+          master_asset_id: string | null
           origem: string | null
+          product_id: string | null
+          product_name: string | null
+          product_slug: string | null
           proposal_created_at: string | null
           proposal_status: string | null
           proxima_acao: string | null
@@ -856,10 +991,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "proposals_lead_id_fkey"
-            columns: ["lead_id"]
+            foreignKeyName: "proposals_master_asset_id_fkey"
+            columns: ["master_asset_id"]
             isOneToOne: false
-            referencedRelation: "leads"
+            referencedRelation: "proposal_master_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -894,6 +1036,8 @@ export type Database = {
           id: string
           investment: string | null
           lead_id: string | null
+          master_asset_id: string | null
+          product_id: string | null
           scope: string | null
           slug: string
           status: string
