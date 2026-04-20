@@ -6,11 +6,27 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Copy, Search, FileText, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Copy, Search, FileText, ChevronDown, Package } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Proposal } from "@/pages/admin/Proposals";
+
+interface ProductOption {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface MasterOption {
+  id: string;
+  product_id: string;
+  version: string;
+  label: string | null;
+  is_active: boolean;
+  uploaded_at: string;
+}
 
 interface RecentProposal {
   id: string;
