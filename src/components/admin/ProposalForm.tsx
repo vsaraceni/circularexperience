@@ -316,6 +316,39 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         {proposal ? "Editar Proposta" : "Nova Proposta"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {products.length > 0 && (
+          <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--color-bg-subtle))' }}>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Produto *</Label>
+              <Select value={form.product_id} onValueChange={(v) => set("product_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione um produto" /></SelectTrigger>
+                <SelectContent>
+                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>PDF Mestre</Label>
+              <Select
+                value={form.master_asset_id || "__none__"}
+                onValueChange={(v) => set("master_asset_id", v === "__none__" ? "" : v)}
+                disabled={!form.product_id || productMasters.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={productMasters.length === 0 ? "Nenhum mestre cadastrado" : "Versão"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem mestre (modo legado)</SelectItem>
+                  {productMasters.map(m => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.version}{m.label ? ` — ${m.label}` : ""}{m.is_active ? " (ativo)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nome da Empresa *</Label>
