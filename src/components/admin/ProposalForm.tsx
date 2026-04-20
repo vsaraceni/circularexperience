@@ -6,11 +6,27 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { Copy, Search, FileText, ChevronDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Copy, Search, FileText, ChevronDown, Package } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
 import type { Proposal } from "@/pages/admin/Proposals";
+
+interface ProductOption {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+interface MasterOption {
+  id: string;
+  product_id: string;
+  version: string;
+  label: string | null;
+  is_active: boolean;
+  uploaded_at: string;
+}
 
 interface RecentProposal {
   id: string;
@@ -178,6 +194,8 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   const [recentProposals, setRecentProposals] = useState<RecentProposal[]>([]);
   const [briefingNotes, setBriefingNotes] = useState<string>("");
   const [briefingOpen, setBriefingOpen] = useState(true);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [masters, setMasters] = useState<MasterOption[]>([]);
 
   const [form, setForm] = useState({
     company_name: proposal?.company_name || prefill?.company_name || "",
@@ -192,7 +210,49 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
     author_name: proposal?.author_name || authorDefaults?.author_name || "",
     author_phone: proposal?.author_phone || authorDefaults?.author_phone || "",
     author_email: proposal?.author_email || authorDefaults?.author_email || "",
+    product_id: (proposal as any)?.product_id || "",
+    master_asset_id: (proposal as any)?.master_asset_id || "",
   });
+
+  // Fetch products + masters once
+  useEffect(() => {
+    (async () => {
+      const [{ data: prodData }, { data: masterData }] = await Promise.all([
+        supabase.from("products").select("id, slug, name").eq("is_active", true).order("sort_order"),
+        supabase.from("proposal_master_assets").select("id, product_id, version, label, is_active, uploaded_at").order("uploaded_at", { ascending: false }),
+      ]);
+      const prods = (prodData || []) as ProductOption[];
+      const mstrs = (masterData || []) as MasterOption[];
+      setProducts(prods);
+      setMasters(mstrs);
+
+      // Smart defaults for new proposals only
+      if (!proposal && !form.product_id) {
+        // Default to single active product, or to circular-experience if multiple
+        const defaultProd = prods.length === 1 ? prods[0] : prods.find(p => p.slug === "circular-experience") || prods[0];
+        if (defaultProd) {
+          const activeMaster = mstrs.find(m => m.product_id === defaultProd.id && m.is_active);
+          setForm(f => ({ ...f, product_id: defaultProd.id, master_asset_id: activeMaster?.id || "" }));
+        }
+      }
+    })();
+  }, [proposal]);
+
+  // When product changes, set master to its active version
+  useEffect(() => {
+    if (!form.product_id) return;
+    const productMasters = masters.filter(m => m.product_id === form.product_id);
+    const currentValid = productMasters.some(m => m.id === form.master_asset_id);
+    if (!currentValid) {
+      const active = productMasters.find(m => m.is_active);
+      setForm(f => ({ ...f, master_asset_id: active?.id || "" }));
+    }
+  }, [form.product_id, masters]);
+
+  const productMasters = useMemo(
+    () => masters.filter(m => m.product_id === form.product_id),
+    [masters, form.product_id]
+  );
 
   useEffect(() => {
     supabase
@@ -256,6 +316,39 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         {proposal ? "Editar Proposta" : "Nova Proposta"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {products.length > 0 && (
+          <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--color-bg-subtle))' }}>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> Produto *</Label>
+              <Select value={form.product_id} onValueChange={(v) => set("product_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione um produto" /></SelectTrigger>
+                <SelectContent>
+                  {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>PDF Mestre</Label>
+              <Select
+                value={form.master_asset_id || "__none__"}
+                onValueChange={(v) => set("master_asset_id", v === "__none__" ? "" : v)}
+                disabled={!form.product_id || productMasters.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={productMasters.length === 0 ? "Nenhum mestre cadastrado" : "Versão"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem mestre (modo legado)</SelectItem>
+                  {productMasters.map(m => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.version}{m.label ? ` — ${m.label}` : ""}{m.is_active ? " (ativo)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nome da Empresa *</Label>

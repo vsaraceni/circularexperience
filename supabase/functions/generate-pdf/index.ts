@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,75 +8,120 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+const SITE_URL = "https://circularexperience.lovable.app";
+
+async function renderViaBrowserless(printUrl: string, apiKey: string, fast: boolean) {
+  const res = await fetch(`https://production-sfo.browserless.io/pdf?token=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+    body: JSON.stringify({
+      url: printUrl,
+      gotoOptions: { waitUntil: "networkidle2", timeout: 30000 },
+      viewport: { width: 1920, height: 1080 },
+      options: {
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: { top: "0", right: "0", bottom: "0", left: "0" },
+      },
+      waitForFunction: { fn: "() => window.__SLIDES_READY === true", timeout: fast ? 8000 : 15000 },
+    }),
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Browserless ${res.status}: ${txt}`);
   }
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { slug } = await req.json();
     if (!slug) {
       return new Response(JSON.stringify({ error: "slug is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
     const browserlessApiKey = Deno.env.get("BROWSERLESS_API_KEY");
-    if (!browserlessApiKey) {
-      throw new Error("BROWSERLESS_API_KEY not configured");
+    if (!browserlessApiKey) throw new Error("BROWSERLESS_API_KEY not configured");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    // 1. Resolve proposal + master
+    const { data: proposal, error: pErr } = await admin
+      .from("proposals")
+      .select("id, slug, product_id, master_asset_id")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (pErr || !proposal) throw new Error("Proposal not found");
+
+    let masterId: string | null = proposal.master_asset_id ?? null;
+
+    // Fallback cascade: explicit -> product's active -> none (legacy)
+    if (!masterId && proposal.product_id) {
+      const { data: activeMaster } = await admin
+        .from("proposal_master_assets")
+        .select("id")
+        .eq("product_id", proposal.product_id)
+        .eq("is_active", true)
+        .maybeSingle();
+      masterId = activeMaster?.id ?? null;
     }
 
-    const siteUrl = "https://circularexperience.lovable.app";
-    const printUrl = `${siteUrl}/apresentacao-print/${slug}`;
-
-    console.log(`Generating PDF for: ${printUrl}`);
-
-    const browserlessResponse = await fetch(
-      `https://production-sfo.browserless.io/pdf?token=${browserlessApiKey}`,
-      {
-        method: "POST",
+    // LEGACY MODE: no master available — render full landing as before
+    if (!masterId) {
+      console.log(`[generate-pdf] LEGACY mode for slug=${slug}`);
+      const printUrl = `${SITE_URL}/apresentacao-print/${slug}`;
+      const pdfBuffer = await renderViaBrowserless(printUrl, browserlessApiKey, false);
+      return new Response(pdfBuffer, {
+        status: 200,
         headers: {
-          "Cache-Control": "no-cache",
-          "Content-Type": "application/json",
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="proposta-${slug}.pdf"`,
+          ...corsHeaders,
         },
-        body: JSON.stringify({
-          url: printUrl,
-          gotoOptions: {
-            waitUntil: "networkidle2",
-            timeout: 30000,
-          },
-          viewport: {
-            width: 1920,
-            height: 1080,
-          },
-          options: {
-            printBackground: true,
-            preferCSSPageSize: true,
-            margin: {
-              top: "0",
-              right: "0",
-              bottom: "0",
-              left: "0",
-            },
-          },
-          waitForFunction: {
-            fn: "() => window.__SLIDES_READY === true",
-            timeout: 15000,
-          },
-        }),
-      }
-    );
-
-    if (!browserlessResponse.ok) {
-      const errorText = await browserlessResponse.text();
-      console.error("Browserless error:", errorText);
-      throw new Error(`Browserless returned ${browserlessResponse.status}: ${errorText}`);
+      });
     }
 
-    const pdfBuffer = await browserlessResponse.arrayBuffer();
+    // NEW MODE: master + dynamic slide
+    console.log(`[generate-pdf] MASTER+SLIDE mode for slug=${slug}, masterId=${masterId}`);
 
-    return new Response(pdfBuffer, {
+    const { data: master, error: mErr } = await admin
+      .from("proposal_master_assets")
+      .select("storage_path")
+      .eq("id", masterId)
+      .single();
+    if (mErr || !master) throw new Error("Master asset not found");
+
+    // Download master from storage
+    const { data: masterFile, error: dlErr } = await admin.storage
+      .from("proposal-masters")
+      .download(master.storage_path);
+    if (dlErr || !masterFile) throw new Error(`Failed to download master: ${dlErr?.message}`);
+    const masterBuffer = new Uint8Array(await masterFile.arrayBuffer());
+
+    // Render slide-only via Browserless
+    const slidePrintUrl = `${SITE_URL}/apresentacao-print/${slug}?mode=slide-only`;
+    const slideBuffer = await renderViaBrowserless(slidePrintUrl, browserlessApiKey, true);
+
+    // Merge with pdf-lib
+    const out = await PDFDocument.create();
+    const [masterDoc, slideDoc] = await Promise.all([
+      PDFDocument.load(masterBuffer),
+      PDFDocument.load(slideBuffer),
+    ]);
+    const masterPages = await out.copyPages(masterDoc, masterDoc.getPageIndices());
+    masterPages.forEach((p) => out.addPage(p));
+    const slidePages = await out.copyPages(slideDoc, slideDoc.getPageIndices());
+    slidePages.forEach((p) => out.addPage(p));
+
+    const finalPdf = await out.save();
+
+    return new Response(finalPdf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -83,11 +130,10 @@ serve(async (req: Request) => {
       },
     });
   } catch (error: unknown) {
-    console.error("PDF generation error:", error);
+    console.error("[generate-pdf] error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+      status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
 });

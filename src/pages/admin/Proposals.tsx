@@ -28,6 +28,8 @@ export interface Proposal {
   author_email: string;
   status?: string;
   lead_id?: string;
+  product_id?: string | null;
+  master_asset_id?: string | null;
 }
 
 interface AuthorDefaults {
