@@ -142,6 +142,14 @@ const SiteRoutes = () => (
         </ProtectedRoute>
       }
     />
+    <Route
+      path="/admin/produtos"
+      element={
+        <ProtectedRoute requireAdmin>
+          <Products />
+        </ProtectedRoute>
+      }
+    />
     <Route path="/unsubscribe" element={<Unsubscribe />} />
     <Route path="*" element={<NotFound />} />
   </Routes>
