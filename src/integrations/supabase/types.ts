@@ -585,6 +585,9 @@ export type Database = {
         Row: {
           brand_color: string | null
           created_at: string
+          default_considerations: string | null
+          default_scope: string | null
+          default_title_template: string | null
           description: string | null
           id: string
           is_active: boolean
@@ -596,6 +599,9 @@ export type Database = {
         Insert: {
           brand_color?: string | null
           created_at?: string
+          default_considerations?: string | null
+          default_scope?: string | null
+          default_title_template?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -607,6 +613,9 @@ export type Database = {
         Update: {
           brand_color?: string | null
           created_at?: string
+          default_considerations?: string | null
+          default_scope?: string | null
+          default_title_template?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
