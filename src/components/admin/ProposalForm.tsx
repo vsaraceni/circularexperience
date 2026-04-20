@@ -17,6 +17,9 @@ interface ProductOption {
   id: string;
   slug: string;
   name: string;
+  default_title_template?: string | null;
+  default_scope?: string | null;
+  default_considerations?: string | null;
 }
 
 interface MasterOption {
@@ -218,7 +221,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   useEffect(() => {
     (async () => {
       const [{ data: prodData }, { data: masterData }] = await Promise.all([
-        supabase.from("products").select("id, slug, name").eq("is_active", true).order("sort_order"),
+        supabase.from("products").select("id, slug, name, default_title_template, default_scope, default_considerations").eq("is_active", true).order("sort_order"),
         supabase.from("proposal_master_assets").select("id, product_id, version, label, is_active, uploaded_at").order("uploaded_at", { ascending: false }),
       ]);
       const prods = (prodData || []) as ProductOption[];
@@ -232,11 +235,69 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         const defaultProd = prods.length === 1 ? prods[0] : prods.find(p => p.slug === "circular-experience") || prods[0];
         if (defaultProd) {
           const activeMaster = mstrs.find(m => m.product_id === defaultProd.id && m.is_active);
-          setForm(f => ({ ...f, product_id: defaultProd.id, master_asset_id: activeMaster?.id || "" }));
+          setForm(f => {
+            const next: typeof f = { ...f, product_id: defaultProd.id, master_asset_id: activeMaster?.id || "" };
+            // Apply template defaults only to empty fields
+            if (!f.title.trim() && defaultProd.default_title_template) {
+              next.title = defaultProd.default_title_template.replace(/\{\{empresa\}\}/g, f.company_name || "");
+            }
+            if (!stripHtml(f.scope) && defaultProd.default_scope) next.scope = defaultProd.default_scope;
+            if (!stripHtml(f.considerations) && defaultProd.default_considerations) next.considerations = defaultProd.default_considerations;
+            return next;
+          });
         }
       }
     })();
   }, [proposal]);
+
+  // When SDR changes product manually, refresh template defaults for empty/template-matching fields
+  useEffect(() => {
+    if (proposal) return; // never auto-fill on edit
+    if (!form.product_id || products.length === 0) return;
+    const prod = products.find(p => p.id === form.product_id);
+    if (!prod) return;
+
+    setForm(f => {
+      const next = { ...f };
+      // Title: fill if empty OR if it still matches some product's previous template
+      const titleEmpty = !f.title.trim();
+      const titleMatchesAnyTemplate = products.some(p => {
+        if (!p.default_title_template) return false;
+        const rendered = p.default_title_template.replace(/\{\{empresa\}\}/g, f.company_name || "");
+        return rendered === f.title;
+      });
+      if ((titleEmpty || titleMatchesAnyTemplate) && prod.default_title_template) {
+        next.title = prod.default_title_template.replace(/\{\{empresa\}\}/g, f.company_name || "");
+      }
+      // Scope/considerations: fill only if empty OR matches any product default
+      const scopeMatches = products.some(p => p.default_scope && p.default_scope === f.scope);
+      if ((!stripHtml(f.scope) || scopeMatches) && prod.default_scope) next.scope = prod.default_scope;
+      const consMatches = products.some(p => p.default_considerations && p.default_considerations === f.considerations);
+      if ((!stripHtml(f.considerations) || consMatches) && prod.default_considerations) next.considerations = prod.default_considerations;
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.product_id]);
+
+  // When company_name changes, recompute title if it still matches the current product's template
+  useEffect(() => {
+    if (proposal) return;
+    if (!form.product_id) return;
+    const prod = products.find(p => p.id === form.product_id);
+    if (!prod?.default_title_template) return;
+
+    setForm(f => {
+      // Detect if current title was generated from this template (with any company name)
+      const tmpl = prod.default_title_template!;
+      const escaped = tmpl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\{\\\{empresa\\\}\\\}/g, "(.*)");
+      const re = new RegExp(`^${escaped}$`);
+      if (re.test(f.title) || !f.title.trim()) {
+        return { ...f, title: tmpl.replace(/\{\{empresa\}\}/g, f.company_name || "") };
+      }
+      return f;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.company_name]);
 
   // When product changes, set master to its active version
   useEffect(() => {
