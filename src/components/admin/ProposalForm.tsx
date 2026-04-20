@@ -194,6 +194,8 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   const [recentProposals, setRecentProposals] = useState<RecentProposal[]>([]);
   const [briefingNotes, setBriefingNotes] = useState<string>("");
   const [briefingOpen, setBriefingOpen] = useState(true);
+  const [products, setProducts] = useState<ProductOption[]>([]);
+  const [masters, setMasters] = useState<MasterOption[]>([]);
 
   const [form, setForm] = useState({
     company_name: proposal?.company_name || prefill?.company_name || "",
@@ -208,7 +210,49 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
     author_name: proposal?.author_name || authorDefaults?.author_name || "",
     author_phone: proposal?.author_phone || authorDefaults?.author_phone || "",
     author_email: proposal?.author_email || authorDefaults?.author_email || "",
+    product_id: (proposal as any)?.product_id || "",
+    master_asset_id: (proposal as any)?.master_asset_id || "",
   });
+
+  // Fetch products + masters once
+  useEffect(() => {
+    (async () => {
+      const [{ data: prodData }, { data: masterData }] = await Promise.all([
+        supabase.from("products").select("id, slug, name").eq("is_active", true).order("sort_order"),
+        supabase.from("proposal_master_assets").select("id, product_id, version, label, is_active, uploaded_at").order("uploaded_at", { ascending: false }),
+      ]);
+      const prods = (prodData || []) as ProductOption[];
+      const mstrs = (masterData || []) as MasterOption[];
+      setProducts(prods);
+      setMasters(mstrs);
+
+      // Smart defaults for new proposals only
+      if (!proposal && !form.product_id) {
+        // Default to single active product, or to circular-experience if multiple
+        const defaultProd = prods.length === 1 ? prods[0] : prods.find(p => p.slug === "circular-experience") || prods[0];
+        if (defaultProd) {
+          const activeMaster = mstrs.find(m => m.product_id === defaultProd.id && m.is_active);
+          setForm(f => ({ ...f, product_id: defaultProd.id, master_asset_id: activeMaster?.id || "" }));
+        }
+      }
+    })();
+  }, [proposal]);
+
+  // When product changes, set master to its active version
+  useEffect(() => {
+    if (!form.product_id) return;
+    const productMasters = masters.filter(m => m.product_id === form.product_id);
+    const currentValid = productMasters.some(m => m.id === form.master_asset_id);
+    if (!currentValid) {
+      const active = productMasters.find(m => m.is_active);
+      setForm(f => ({ ...f, master_asset_id: active?.id || "" }));
+    }
+  }, [form.product_id, masters]);
+
+  const productMasters = useMemo(
+    () => masters.filter(m => m.product_id === form.product_id),
+    [masters, form.product_id]
+  );
 
   useEffect(() => {
     supabase
