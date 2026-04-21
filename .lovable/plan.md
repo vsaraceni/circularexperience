@@ -1,220 +1,65 @@
 
 
-## Revisão objetiva: por que o PDF ainda puxa a landing page
+## Por que o PDF está falhando agora (Browserless timeout 8s)
 
-Hoje o comportamento errado continua por 3 motivos que ainda coexistem no código:
-
-1. `supabase/functions/generate-pdf/index.ts` ainda tem um ramo **LEGACY MODE**:
-   - se `proposal.master_asset_id` não existir
-   - e se não houver `proposal_master_assets.is_active` para o `product_id`
-   - então ele renderiza `/apresentacao-print/:slug` inteiro
-
-2. `src/pages/PrintablePresentation.tsx` ainda mantém **dois modos**:
-   - `slide-only` = só `ProposalSlide`
-   - modo padrão = **landing inteira + slide**
-   Ou seja: qualquer chamada sem `?mode=slide-only` continua renderizando a LP.
-
-3. A visualização online da proposta ainda está viva no projeto:
-   - rota `/proposta/:slug` em `src/App.tsx`
-   - página `src/pages/ProposalView.tsx`
-   - QR code em `src/components/presentation/slides/ProposalSlide.tsx`
-   - ações de “Copiar link” e “Ver proposta” em `src/components/admin/ProposalList.tsx`
-
-Seu objetivo está correto e precisa ser implementado de forma mais dura: **parar de existir qualquer caminho que renderize landing page no PDF ou exponha proposta online**.
-
----
-
-## Implementação correta
-
-### 1) Tornar `PrintablePresentation` exclusivamente “slide da proposta”
-Arquivo: `src/pages/PrintablePresentation.tsx`
-
-Trocar a página para um único comportamento:
-- buscar a proposta por `slug`
-- renderizar apenas:
-  - container 1920x1080
-  - `ProposalSlide`
-- remover completamente:
-  - `useSearchParams`
-  - `slideOnly`
-  - `fixedSlides`
-  - imports da landing (`Hero`, `SocialProof`, `Stats`, `AboutPrint`, `MethodologyFullPrint`, `AgendaPrint`, `VideoPrint`, `ExpertsPrint`, `SDGs`)
-  - `mcLogoHorizontal`
-  - todo o JSX do “Legacy mode”
-
-Resultado:
-- `/apresentacao-print/:slug` passa a significar sempre: **somente o slide comercial**
-- não existe mais modo alternativo que imprima a LP
-
----
-
-### 2) Remover de vez o fallback legado do `generate-pdf`
-Arquivo: `supabase/functions/generate-pdf/index.ts`
-
-Ajustar a lógica para:
-
-```text
-resolver proposal
-→ tentar master_asset_id explícito
-→ senão tentar master ativo do produto
-→ se não encontrar master: retornar 422
-→ se encontrar: baixar master + renderizar /apresentacao-print/:slug + merge
+Logs reais:
+```
+slidePrintUrl=https://27bf0090-...lovableproject.com/apresentacao-print/prop-a3f6e5bd
+Browserless 500: TimeoutError: Waiting failed: 8000ms exceeded
 ```
 
-Mudanças específicas:
-- remover o bloco `LEGACY MODE`
-- não usar mais `fast=false` / `mode=slide-only`
-- renderizar sempre:
-  - master PDF canônico
-  - + uma página dinâmica gerada a partir de `/apresentacao-print/:slug`
+A URL agora está correta (preview, não LP). O problema mudou: o Browserless abre a página mas **`window.__SLIDES_READY` nunca vira `true` em 8 segundos**. Causas combinadas:
 
-Mensagem de erro sugerida para 422:
-- `"Proposta sem PDF mestre. Associe um produto com PDF mestre ativo antes de gerar o PDF."`
+1. **Domínio de preview do Lovable** (`*.lovableproject.com`) costuma servir uma tela intermediária / exigir cookie em headless. Browserless vê branco e desiste.
+2. **Timeout fast=8s** é apertado para: cold start do preview + bundle Vite + fetch RPC + fonts + render.
+3. **Sem fallback de readiness**: se algo falhar na RPC, o sinal nunca dispara.
 
-Resultado:
-- PDF nunca mais poderá nascer da landing page
-- se faltar master, o sistema falha com mensagem clara em vez de gerar PDF errado
+Solução: **renderizar sempre a partir do domínio publicado estável** (`circularexperience.lovable.app`), aumentar o timeout, e tornar o readiness mais robusto.
 
 ---
 
-### 3) Ajustar o front para exibir o erro real
-Arquivo: `src/components/pdf/PdfExporter.tsx`
+## Mudanças
 
-Hoje o front engole a causa e mostra toast genérico.
+### 1) `supabase/functions/generate-pdf/index.ts`
 
-Ajustar para:
-- ler `response.status`
-- se vier `422`, mostrar o `error` retornado pela function
-- manter toast genérico apenas para falhas inesperadas
+- **Remover dependência de `renderOrigin` enviado pelo cliente** para a renderização do slide. O slide é dado público (proposta por slug com RPC SECURITY DEFINER) — a versão publicada serve perfeitamente e é estável para o Browserless.
+- Definir `RENDER_ORIGIN = "https://circularexperience.lovable.app"` como fonte oficial do slide imprimível.
+- Aumentar timeout do `waitForFunction` de 8s → **30s**.
+- Aumentar `gotoOptions.timeout` para **45s** e usar `waitUntil: "networkidle0"`.
+- Adicionar log do tamanho do buffer retornado para diagnóstico.
+- Manter validação 422 quando não há master.
 
-Resultado:
-- o SDR entende por que o PDF não saiu
-- evita a falsa impressão de que “o sistema gerou outra versão”
+### 2) `src/pages/PrintablePresentation.tsx`
 
----
+- Tornar o readiness **resiliente a falhas**: mesmo se a RPC retornar erro/null, marcar `__SLIDES_READY = true` após render (Browserless captura "Proposta não encontrada" em vez de travar — falha visível no PDF é melhor que timeout 500).
+- Aguardar `requestIdleCallback` quando disponível, com fallback de `setTimeout(500)` para garantir layout assentado.
+- Adicionar `data-ready="true"` no container raiz (sinal redundante caso `window.*` seja bloqueado).
 
-### 4) Remover a visualização online da proposta
-Arquivos:
-- `src/App.tsx`
-- `src/pages/ProposalView.tsx`
+### 3) `src/components/pdf/PdfExporter.tsx`
 
-Mudanças:
-- remover rota `/proposta/:slug` do `CrmRoutes`
-- remover rota `/proposta/:slug` do `SiteRoutes`
-- excluir `ProposalView.tsx` ou deixá-lo fora de uso imediato para limpeza posterior
+- Remover o envio de `renderOrigin` (não é mais usado pelo backend).
+- Manter tratamento de erro 422.
 
-Importante:
-- manter `/apresentacao-print/:slug` porque ela é interna ao fluxo de geração do PDF
-- manter `slug` na tabela `proposals`, pois ele continua sendo chave interna da renderização
+### 4) Pré-requisito operacional
 
-Resultado:
-- deixa de existir proposta pública online
-- reduz confusão no cenário multi-produto
-
----
-
-### 5) Remover QR code do slide comercial
-Arquivo: `src/components/presentation/slides/ProposalSlide.tsx`
-
-Remover:
-- import de `QRCodeSVG`
-- cálculo de `proposalUrl`
-- bloco visual do QR code
-- texto “Acesse esta proposta online”
-
-Reorganizar a sidebar:
-- topo: logo + “Proposta Comercial”
-- meio: investimento
-- base: apenas divisor/ornamento ou respiro visual
-
-Resultado:
-- o slide final do PDF não aponta mais para rota pública inexistente
-- layout fica coerente com a nova regra
-
----
-
-### 6) Remover ações de link público no CRM
-Arquivo: `src/components/admin/ProposalList.tsx`
-
-Remover:
-- função `copyLink`
-- botão “Copiar link”
-- botão “Ver proposta”
-- imports `ExternalLink`, `Copy`, `toast` se ficarem sem uso
-
-Resultado:
-- o CRM deixa de sugerir que existe uma visualização web
-- o fluxo de proposta passa a ser exclusivamente por PDF
-
----
-
-## Impacto em dados e histórico
-
-### O que não muda
-- tabela `proposals`
-- colunas `slug`, `product_id`, `master_asset_id`
-- tabela `products`
-- tabela `proposal_master_assets`
-- view `vw_proposals_leads`
-- função `get_proposal_by_slug`
-- RLS
-
-### O que muda funcionalmente
-- proposta antiga sem master não gera mais PDF errado
-- proposta sem master passa a retornar erro explícito
-- links públicos deixam de existir
-- QR code sai do documento
-
-### Risco principal
-Se houver propostas antigas com `product_id` nulo ou produto sem master ativo, elas passarão a falhar com 422.
-
-### Mitigação recomendada
-Adicionar uma migração de backfill simples:
-- localizar o produto seed `circular-experience`
-- preencher `proposals.product_id` onde estiver `NULL`
-
-Depois disso, basta garantir 1 master ativo nesse produto.
-
-Se essa migração não for feita:
-- nenhuma proposta antiga sem `product_id` conseguirá gerar PDF
-
----
-
-## Ordem segura de implementação
-
-1. Ajustar `PrintablePresentation` para slide-only permanente
-2. Remover fallback legado em `generate-pdf`
-3. Melhorar tratamento de erro em `PdfExporter`
-4. Remover rota `/proposta/:slug`
-5. Remover QR code de `ProposalSlide`
-6. Remover botões de link em `ProposalList`
-7. Opcional, mas recomendado: backfill de `product_id` nas propostas antigas
+A proposta precisa estar acessível em `https://circularexperience.lovable.app/apresentacao-print/:slug`. Como essa rota só existe no código atual, é necessário que **o frontend esteja publicado** com as últimas mudanças (rota `/apresentacao-print/:slug` apontando para `PrintablePresentation` slide-only). Após este merge, basta publicar uma vez e o PDF passa a funcionar de forma estável.
 
 ---
 
 ## Critério de aceite
 
-A mudança só estará correta quando todos os itens abaixo forem verdade:
-
-- gerar PDF nunca renderiza Hero, Stats, About, Agenda, Experts ou qualquer slide da LP
-- o PDF final contém apenas:
-  - PDF mestre canônico
-  - última página com a proposta comercial dinâmica
-- proposta sem master retorna erro claro, não fallback
-- `/proposta/:slug` não existe mais
-- não há QR code no slide
-- não há botão de copiar/ver link da proposta no CRM
-
----
+- Logs mostram `slidePrintUrl=https://circularexperience.lovable.app/apresentacao-print/...`
+- Browserless retorna 200 (não 500/timeout)
+- PDF final = master + 1 página com `ProposalSlide` (sem LP)
+- Em caso de proposta sem master, retorna 422 com mensagem clara
 
 ## Arquivos impactados
 
-- `src/pages/PrintablePresentation.tsx`
 - `supabase/functions/generate-pdf/index.ts`
+- `src/pages/PrintablePresentation.tsx`
 - `src/components/pdf/PdfExporter.tsx`
-- `src/App.tsx`
-- `src/components/presentation/slides/ProposalSlide.tsx`
-- `src/components/admin/ProposalList.tsx`
-- `supabase/migrations/*` (opcional, para backfill de `product_id`)
-- `src/pages/ProposalView.tsx` (remoção ou desuso)
+
+## Observação importante
+
+Após implementação, **publicar o frontend** (botão Publish) é obrigatório uma única vez para que `circularexperience.lovable.app/apresentacao-print/:slug` exista no domínio publicado. A partir daí, mudanças futuras no slide podem exigir republicação para refletir no PDF — esse é o trade-off de usar URL estável em vez de preview volátil.
 
