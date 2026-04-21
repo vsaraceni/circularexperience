@@ -142,6 +142,16 @@ const Templates = () => {
           <LogoImage src={logo} alt="MC" className="h-8" />
           <h1 className="text-lg font-bold text-foreground">Gerenciar Templates de Mensagem</h1>
           <div className="flex-1" />
+          <Select value={productFilter} onValueChange={setProductFilter}>
+            <SelectTrigger className="h-8 w-[200px] text-xs"><SelectValue placeholder="Filtrar por produto" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os templates</SelectItem>
+              <SelectItem value="global">Apenas globais</SelectItem>
+              {products.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button size="sm" className="gap-1" onClick={() => setAddDialog(true)}>
             <Plus className="h-4 w-4" /> Novo Template
           </Button>
