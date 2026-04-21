@@ -25,7 +25,10 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ proposal }) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ slug: proposal.slug }),
+          body: JSON.stringify({
+            slug: proposal.slug,
+            renderOrigin: window.location.origin,
+          }),
         }
       );
 
