@@ -61,7 +61,7 @@ serve(async (req: Request) => {
 
     let masterId: string | null = proposal.master_asset_id ?? null;
 
-    // Fallback cascade: explicit -> product's active -> none (legacy)
+    // Cascade: explicit master -> product's active master
     if (!masterId && proposal.product_id) {
       const { data: activeMaster } = await admin
         .from("proposal_master_assets")
@@ -72,19 +72,18 @@ serve(async (req: Request) => {
       masterId = activeMaster?.id ?? null;
     }
 
-    // LEGACY MODE: no master available — render full landing as before
+    // No master resolved — fail loudly, never fall back to landing render
     if (!masterId) {
-      console.log(`[generate-pdf] LEGACY mode for slug=${slug}`);
-      const printUrl = `${SITE_URL}/apresentacao-print/${slug}`;
-      const pdfBuffer = await renderViaBrowserless(printUrl, browserlessApiKey, false);
-      return new Response(pdfBuffer, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/pdf",
-          "Content-Disposition": `attachment; filename="proposta-${slug}.pdf"`,
-          ...corsHeaders,
+      return new Response(
+        JSON.stringify({
+          error:
+            "Proposta sem PDF mestre. Associe um produto com PDF mestre ativo antes de gerar o PDF.",
+        }),
+        {
+          status: 422,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
         },
-      });
+      );
     }
 
     // NEW MODE: master + dynamic slide
@@ -104,8 +103,8 @@ serve(async (req: Request) => {
     if (dlErr || !masterFile) throw new Error(`Failed to download master: ${dlErr?.message}`);
     const masterBuffer = new Uint8Array(await masterFile.arrayBuffer());
 
-    // Render slide-only via Browserless
-    const slidePrintUrl = `${SITE_URL}/apresentacao-print/${slug}?mode=slide-only`;
+    // Render dynamic proposal slide via Browserless
+    const slidePrintUrl = `${SITE_URL}/apresentacao-print/${slug}`;
     const slideBuffer = await renderViaBrowserless(slidePrintUrl, browserlessApiKey, true);
 
     // Merge with pdf-lib

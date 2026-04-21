@@ -1,4 +1,3 @@
-import { QRCodeSVG } from "qrcode.react";
 import logoWhite from "@/assets/movimento-circular-logo-white.png";
 import type { Proposal } from "@/pages/admin/Proposals";
 
@@ -19,8 +18,6 @@ const COLORS = {
 };
 
 const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
-  const proposalUrl = `${window.location.origin}/apresentacao-print/${proposal.slug}`;
-
   return (
     <div
       className="w-full h-full flex items-center justify-center"
@@ -78,15 +75,8 @@ const ProposalSlide: React.FC<ProposalSlideProps> = ({ proposal }) => {
 
           <div style={{ width: 50, height: 1, background: "rgba(255,255,255,0.15)" }} />
 
-          {/* QR Code */}
-          <div className="flex flex-col items-center gap-3 relative z-10">
-            <div style={{ background: "#fff", borderRadius: 14, padding: 10 }}>
-              <QRCodeSVG value={proposalUrl} size={110} />
-            </div>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.3 }}>
-              Acesse esta<br />proposta online
-            </p>
-          </div>
+          {/* Footer ornament */}
+          <div className="relative z-10" style={{ width: 60, height: 3, borderRadius: 2, background: COLORS.ambar, opacity: 0.7 }} />
         </div>
 
         {/* Main content */}
