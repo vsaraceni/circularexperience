@@ -16,6 +16,7 @@ const PrintablePresentation = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.__SLIDES_READY = false;
     const fetchProposal = async () => {
       if (!slug) return;
       const { data } = await supabase
@@ -29,10 +30,14 @@ const PrintablePresentation = () => {
 
   useEffect(() => {
     if (!loading && proposal) {
-      const timer = setTimeout(() => {
+      // Wait for fonts + next paint before signaling readiness
+      const ready = async () => {
+        try { await (document as any).fonts?.ready; } catch { /* noop */ }
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        await new Promise((r) => setTimeout(r, 300));
         window.__SLIDES_READY = true;
-      }, 500);
-      return () => clearTimeout(timer);
+      };
+      ready();
     }
   }, [loading, proposal]);
 
