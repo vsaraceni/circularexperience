@@ -105,7 +105,7 @@ const SendProposalButton: React.FC<Props> = ({ proposal, onStatusChange }) => {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" title="Enviar por e-mail (Gmail)">
-          <Send className="h-4 w-4" style={{ color: 'hsl(var(--color-brand))' }} />
+          <Send className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-2">

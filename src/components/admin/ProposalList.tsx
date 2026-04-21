@@ -1,9 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CheckCircle, XCircle, RotateCcw, Send } from "lucide-react";
+import { Edit, Trash2, CheckCircle, XCircle, RotateCcw, Send, MoreVertical } from "lucide-react";
 import type { Proposal } from "@/pages/admin/Proposals";
 import PdfExporter from "@/components/pdf/PdfExporter";
 import { Badge } from "@/components/ui/badge";
 import SendProposalButton from "@/components/admin/SendProposalButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProposalListProps {
   proposals: Proposal[];
@@ -65,13 +72,12 @@ const ProposalList: React.FC<ProposalListProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
-              {/* Rascunho → Enviada */}
+              {/* 1. Status transitions (jornada) */}
               {showStatusActions && onStatusChange && status === "rascunho" && (
                 <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "enviada")} title="Marcar como Enviada">
                   <Send className="h-4 w-4 text-blue-600" />
                 </Button>
               )}
-              {/* Enviada → Fechada / Perdida */}
               {showStatusActions && onStatusChange && status === "enviada" && (
                 <>
                   <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "fechada")} title="Marcar como Fechada">
@@ -82,20 +88,42 @@ const ProposalList: React.FC<ProposalListProps> = ({
                   </Button>
                 </>
               )}
-              {/* Fechada/Perdida → Enviada */}
               {showStatusActions && onStatusChange && (status === "fechada" || status === "perdida") && (
                 <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "enviada")} title="Reverter para Enviada">
                   <RotateCcw className="h-4 w-4" />
                 </Button>
               )}
+
+              <div className="w-px h-5 bg-border mx-1" aria-hidden />
+
+              {/* 2. Artefato + envio */}
               <PdfExporter proposal={p} />
               <SendProposalButton proposal={p} onStatusChange={onStatusChange} />
-              <Button variant="ghost" size="icon" onClick={() => onEdit(p)} title="Editar">
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => onDelete(p.id)} title="Excluir">
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+
+              <div className="w-px h-5 bg-border mx-1" aria-hidden />
+
+              {/* 3. Menu kebab: editar / excluir */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" title="Mais ações">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(p)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar proposta
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => onDelete(p.id)}
+                    className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir proposta
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         );
