@@ -72,10 +72,20 @@ const ProposalList: React.FC<ProposalListProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
-              {/* 1. Status transitions (jornada) */}
+              {/* 1. Editar */}
+              <Button variant="ghost" size="icon" onClick={() => onEdit(p)} title="Editar proposta">
+                <Edit className="h-4 w-4" />
+              </Button>
+
+              <div className="w-px h-5 bg-border mx-1" aria-hidden />
+
+              {/* 2. Baixar + Enviar + Marcar status */}
+              <PdfExporter proposal={p} />
+              <SendProposalButton proposal={p} onStatusChange={onStatusChange} />
+
               {showStatusActions && onStatusChange && status === "rascunho" && (
                 <Button variant="ghost" size="icon" onClick={() => onStatusChange(p.id, "enviada")} title="Marcar como Enviada">
-                  <Send className="h-4 w-4 text-blue-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 </Button>
               )}
               {showStatusActions && onStatusChange && status === "enviada" && (
@@ -96,13 +106,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
 
               <div className="w-px h-5 bg-border mx-1" aria-hidden />
 
-              {/* 2. Artefato + envio */}
-              <PdfExporter proposal={p} />
-              <SendProposalButton proposal={p} onStatusChange={onStatusChange} />
-
-              <div className="w-px h-5 bg-border mx-1" aria-hidden />
-
-              {/* 3. Menu kebab: editar / excluir */}
+              {/* 3. Menu kebab: excluir */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" title="Mais ações">
@@ -110,11 +114,6 @@ const ProposalList: React.FC<ProposalListProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(p)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar proposta
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDelete(p.id)}
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
