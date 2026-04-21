@@ -1,99 +1,57 @@
 
 
-## Vincular Templates de Mensagem a Produtos
+## Avaliação da implementação atual + o que falta
 
-### Objetivo
-Permitir que cada template em `message_templates` seja **opcionalmente vinculado a um produto** (`products`). Quando o SDR estiver atuando em um lead/proposta de um produto X, o sistema mostra:
-- templates específicos daquele produto +
-- templates "globais" (sem produto vinculado, válidos para qualquer um).
+### O que JÁ está implementado e funcionando
+1. **Schema** — `message_templates.product_id` (uuid, nullable) com FK para `products` e index `(stage, product_id)`. ✅
+2. **Central de Templates (`/admin/templates`)** — admin pode criar/editar marcando como **Global** ou vinculado a um produto, filtrar por produto, e cada card mostra um chip `Global` ou nome do produto. ✅
+3. **Hook `useTemplatesWithOverrides(stage, userId, productId?)`** — filtra `product_id IS NULL OR product_id = ?` e ordena produto-específico antes do global. ✅
+4. **LeadDrawer (Pipeline)** — resolve o `product_id` da proposta mais recente do lead via query `lead_product_id` e passa para o hook. O popover de mensagens já recebe templates filtrados pelo produto do lead. ✅
 
-Sem quebrar nada do que já existe hoje.
+### Onde está o "buraco" (por que você não vê o vínculo)
+Na tela **`/admin/propostas`** (rascunhos/enviadas/etc.) **não há nenhum botão que use os templates**. O plano anterior previa um componente `SendProposalButton` (botão "Enviar Proposta" no card que abre Gmail pré-preenchido com template do produto). Esse arquivo **nunca foi criado** — busca global por `SendProposalButton` retorna zero matches.
 
----
+Por isso a "vinculação template↔produto" parece invisível: ela está pronta no backend e na UI de gestão, mas o **consumidor principal** (botão de envio dentro de uma proposta com produto conhecido) não existe.
 
-### Estratégia escolhida
+### Plano para fechar o ciclo
 
-**Vínculo opcional (nullable) em `message_templates.product_id`** + filtragem contextual no front.
+#### 1) Criar `src/components/admin/SendProposalButton.tsx`
+- Recebe `proposal: Proposal` por props (a `Proposal` já tem `product_id` e `lead_id`).
+- Carrega lead vinculado (email, name, company, cargo, assigned_to) e profile do specialist.
+- Chama `useTemplatesWithOverrides("proposta", userId, proposal.product_id)` — **aqui o filtro por produto finalmente é exercido na tela de Propostas**.
+- Se houver mais de um template ativo, abre Popover agrupado em duas seções:
+  - **"Para este produto"** (templates com `product_id === proposal.product_id`)
+  - **"Geral"** (templates `product_id NULL`)
+- Aplica `replaceVariables(...)` com `data_envio_proposta = hoje (dd/MM/yyyy)`.
+- Abre Gmail Web: `https://mail.google.com/mail/?view=cm&to={email}&su={subject}&body={body}` em nova aba.
+- Registra activity `proposta_enviada_email` em `lead_activities` com título do template usado.
+- Toast: "Gmail aberto. Anexe o PDF antes de enviar." + ação rápida "Marcar como Enviada" → `onStatusChange(p.id, "enviada")`.
 
-Por que assim:
-- `product_id NULL` = template global (comportamento atual preservado).
-- `product_id = X` = template exclusivo do produto X.
-- Zero migração de dados: todos os templates atuais continuam visíveis em todos os contextos.
-- Zero nova tabela.
-- Reaproveita a tabela `products` que já existe e já é usada em propostas.
+Tratamento de erros:
+- Sem `lead_id`/`email` → toast "Esta proposta não tem lead/email associado."
+- Sem template ativo de proposta para o produto + sem global → toast "Nenhum template de e-mail configurado para o estágio Proposta."
 
-Alternativas descartadas:
-- Tabela N:N (`message_template_products`): excesso para o caso de uso (1 template tende a pertencer a 1 produto).
-- Duplicar templates por produto: bagunça a Central de Templates e quebra overrides.
+#### 2) Integrar em `src/components/admin/ProposalList.tsx`
+- Adicionar `<SendProposalButton proposal={p} onStatusChange={onStatusChange} />` ao lado do `<PdfExporter />`.
+- Ícone `Send` (já importado no arquivo). Tooltip: "Enviar por e-mail (Gmail) usando template do produto".
 
----
-
-### Mudanças
-
-#### 1) Schema — adicionar coluna opcional
-Tabela: `message_templates`
-
-- Adicionar `product_id uuid NULL` referenciando `products(id) ON DELETE SET NULL`.
-- Index em `(stage, product_id)` para acelerar filtros do Kanban/Proposta.
-- **Sem backfill**: todos os templates existentes ficam com `product_id = NULL` (= globais).
-
-#### 2) Central de Templates (admin) — `src/pages/admin/Templates.tsx` + editor
-- No editor de template, adicionar campo **"Produto"** (Select) com:
-  - opção `Todos os produtos (global)` → grava `NULL`
-  - lista de produtos ativos vinda de `products`
-- Na listagem, mostrar um chip `Global` ou `<nome do produto>` ao lado do título.
-- Filtro no topo: "Filtrar por produto" para o admin gerenciar com clareza.
-
-#### 3) Hook de templates — `src/hooks/useMessageTemplates.ts`
-Atualizar `useTemplatesWithOverrides(stage, userId, productId?)`:
-- query passa a buscar templates `WHERE stage = ? AND (product_id IS NULL OR product_id = ?)`.
-- ordenação: produto-específico primeiro, depois globais (`ORDER BY product_id NULLS LAST, sort_order`).
-- se `productId` não for passado → mantém comportamento atual (todos do estágio).
-
-#### 4) Pontos de consumo no Kanban / Lead
-Arquivos: componentes que abrem o popover de templates a partir do `LeadDrawer` / cards.
-
-- Onde o lead tiver `product_id` (via proposta vinculada ou via novo campo de "produto de interesse" no lead — usar o que já existir; hoje o vínculo confiável é `proposals.product_id`), passar esse `productId` ao hook.
-- Se não houver produto identificado, hook continua trazendo só globais + todos (comportamento atual).
-
-#### 5) Botão "Enviar Proposta" (do plano anterior)
-- Já que esse botão age sobre uma `Proposal`, ele tem `proposal.product_id`.
-- Passar esse `product_id` para `useTemplatesWithOverrides("proposta", userId, proposal.product_id)`.
-- Resultado: o SDR vê só os textos do produto certo + os textos globais. Sem ruído.
-
-#### 6) UI do seletor quando há múltiplos templates
-- Agrupar visualmente no popover:
-  - **Seção "Para este produto"** (templates com `product_id` igual)
-  - **Seção "Geral"** (templates `NULL`)
-- Cada item mostra título + preview curto.
-
----
+#### 3) Validação visual rápida da feature já implementada
+Após o item 1+2, ao abrir uma proposta vinculada ao produto X:
+- O popover de envio mostra primeiro os templates de X, depois os globais.
+- Templates de outros produtos ficam ocultos.
+- Isso confirma na prática que toda a cadeia (schema → hook → UI) funciona ponta a ponta.
 
 ### O que NÃO muda
-- Tabela `user_template_overrides` (overrides continuam por `template_id`, independente de produto).
-- Variáveis (`{{nome}}`, `{{empresa}}`, etc.) e função `replaceVariables`.
-- RLS de `message_templates`.
-- Estrutura de `products` e `proposals`.
-- Comportamento atual para usuários que não usam produtos: tudo continua funcionando.
-
----
+- Geração de PDF, fluxo de status de proposta, schema, RLS, edge functions, overrides por usuário — tudo intacto.
 
 ### Arquivos impactados
-- **Migration**: adicionar `product_id` em `message_templates` + index.
-- `src/hooks/useMessageTemplates.ts` — aceitar e aplicar `productId` opcional.
-- `src/pages/admin/Templates.tsx` — UI de filtro + chip de produto.
-- Editor de template (provavelmente dentro de `Templates.tsx` ou componente filho) — Select de produto.
-- `src/components/admin/SendProposalButton.tsx` (do plano anterior) — passar `proposal.product_id` ao hook.
-- Outros consumidores de `useTemplatesWithOverrides` no Kanban / LeadDrawer — passar `productId` quando disponível.
-
----
+- **Novo**: `src/components/admin/SendProposalButton.tsx`
+- **Edit**: `src/components/admin/ProposalList.tsx` (adicionar botão)
 
 ### Critério de aceite
-- Admin consegue criar/editar template marcando-o como **Global** ou vinculado a um produto.
-- Templates atuais continuam aparecendo em todos os contextos (porque ficam `NULL`).
-- Ao abrir o seletor de templates dentro de uma proposta de produto X:
-  - aparecem **só** os templates de X + os globais.
-  - templates de outros produtos ficam ocultos.
-- Overrides do usuário continuam funcionando exatamente como hoje.
-- Nenhum impacto em geração de PDF, fluxo de status de proposta ou envio de e-mail via Gmail.
+- Em `/admin/propostas`, cada card tem um botão "Enviar Proposta".
+- Clique abre Gmail com destinatário + assunto + corpo já renderizados.
+- Lista de templates respeita o `product_id` da proposta (produto-específico em destaque, globais embaixo).
+- Activity registrada no histórico do lead.
+- Templates de outros produtos não aparecem.
 
