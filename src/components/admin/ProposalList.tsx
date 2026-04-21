@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, ExternalLink, Copy, CheckCircle, XCircle, RotateCcw, Send } from "lucide-react";
-import { toast } from "sonner";
+import { Edit, Trash2, CheckCircle, XCircle, RotateCcw, Send } from "lucide-react";
 import type { Proposal } from "@/pages/admin/Proposals";
 import PdfExporter from "@/components/pdf/PdfExporter";
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +28,6 @@ const ProposalList: React.FC<ProposalListProps> = ({
   showStatusActions = true,
   statusFilter,
 }) => {
-  const copyLink = (slug: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/proposta/${slug}`);
-    toast.success("Link copiado!");
-  };
-
   if (proposals.length === 0) {
     const emptyMessages: Record<string, string> = {
       rascunho: "Nenhum rascunho de proposta.",
@@ -94,12 +88,6 @@ const ProposalList: React.FC<ProposalListProps> = ({
                 </Button>
               )}
               <PdfExporter proposal={p} />
-              <Button variant="ghost" size="icon" onClick={() => copyLink(p.slug)} title="Copiar link">
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => window.open(`/proposta/${p.slug}`, "_blank")} title="Ver proposta">
-                <ExternalLink className="h-4 w-4" />
-              </Button>
               <Button variant="ghost" size="icon" onClick={() => onEdit(p)} title="Editar">
                 <Edit className="h-4 w-4" />
               </Button>

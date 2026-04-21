@@ -7,7 +7,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Proposals from "./pages/admin/Proposals";
-import ProposalView from "./pages/ProposalView";
 import PrintablePresentation from "./pages/PrintablePresentation";
 import Dashboard from "./pages/admin/Dashboard";
 import Templates from "./pages/admin/Templates";
@@ -82,7 +81,6 @@ const CrmRoutes = () => (
         </ProtectedRoute>
       }
     />
-    <Route path="/proposta/:slug" element={<ProposalView />} />
     <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
     <Route path="*" element={<Navigate to="/admin/pipeline" replace />} />
   </Routes>
@@ -100,7 +98,6 @@ const SiteRoutes = () => (
         </ProtectedRoute>
       }
     />
-    <Route path="/proposta/:slug" element={<ProposalView />} />
     <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
     <Route
       path="/admin/propostas"

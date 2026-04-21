@@ -30,8 +30,15 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ proposal }) => {
       );
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({ error: "Erro desconhecido" }));
-        throw new Error(errData.error || "Erro ao gerar PDF");
+        const errData = await response
+          .json()
+          .catch(() => ({ error: "Erro desconhecido" }));
+        const message = errData.error || "Erro ao gerar PDF";
+        if (response.status === 422) {
+          toast.error(message);
+          return;
+        }
+        throw new Error(message);
       }
 
       const blob = await response.blob();
