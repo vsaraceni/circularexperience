@@ -1,57 +1,79 @@
 
 
-## Avaliação da implementação atual + o que falta
+## Reorganizar ações do card de Proposta + visão de evolução
 
-### O que JÁ está implementado e funcionando
-1. **Schema** — `message_templates.product_id` (uuid, nullable) com FK para `products` e index `(stage, product_id)`. ✅
-2. **Central de Templates (`/admin/templates`)** — admin pode criar/editar marcando como **Global** ou vinculado a um produto, filtrar por produto, e cada card mostra um chip `Global` ou nome do produto. ✅
-3. **Hook `useTemplatesWithOverrides(stage, userId, productId?)`** — filtra `product_id IS NULL OR product_id = ?` e ordena produto-específico antes do global. ✅
-4. **LeadDrawer (Pipeline)** — resolve o `product_id` da proposta mais recente do lead via query `lead_product_id` e passa para o hook. O popover de mensagens já recebe templates filtrados pelo produto do lead. ✅
+### Parte 1 — Reordenar ícones (jornada natural)
 
-### Onde está o "buraco" (por que você não vê o vínculo)
-Na tela **`/admin/propostas`** (rascunhos/enviadas/etc.) **não há nenhum botão que use os templates**. O plano anterior previa um componente `SendProposalButton` (botão "Enviar Proposta" no card que abre Gmail pré-preenchido com template do produto). Esse arquivo **nunca foi criado** — busca global por `SendProposalButton` retorna zero matches.
+No card de proposta em `/admin/propostas`, os botões de ação seguem hoje uma ordem técnica. Vou reorganizar para refletir a **jornada da proposta**:
 
-Por isso a "vinculação template↔produto" parece invisível: ela está pronta no backend e na UI de gestão, mas o **consumidor principal** (botão de envio dentro de uma proposta com produto conhecido) não existe.
+**Nova ordem (esquerda → direita):**
+1. **Aviso de status** (status transitions: marcar como Enviada / Fechada / Perdida / Reverter) — *o "próximo passo"*
+2. **Baixar proposta** (PDF) — *artefato pronto*
+3. **Enviar proposta** (Gmail com template) — *ação de envio*
+4. **Editar proposta** — *ajuste*
+5. **Deletar proposta** — *destrutivo, sempre por último*
 
-### Plano para fechar o ciclo
+Além da reordenação, para clareza visual:
+- Adicionar um **separador vertical sutil** (`<div className="w-px h-5 bg-border mx-1" />`) entre os grupos: `[status] | [baixar + enviar] | [editar] | [deletar]`. Isso agrupa visualmente sem poluir.
+- Padronizar a cor do ícone "Enviar proposta" (hoje usa `--color-brand` inline, fora do padrão dos demais) para `text-foreground` / `text-muted-foreground` como os outros — só o destrutivo (deletar) e os de status (verde/azul/vermelho) ficam coloridos.
+- Tooltips já existentes via `title=` mantidos.
 
-#### 1) Criar `src/components/admin/SendProposalButton.tsx`
-- Recebe `proposal: Proposal` por props (a `Proposal` já tem `product_id` e `lead_id`).
-- Carrega lead vinculado (email, name, company, cargo, assigned_to) e profile do specialist.
-- Chama `useTemplatesWithOverrides("proposta", userId, proposal.product_id)` — **aqui o filtro por produto finalmente é exercido na tela de Propostas**.
-- Se houver mais de um template ativo, abre Popover agrupado em duas seções:
-  - **"Para este produto"** (templates com `product_id === proposal.product_id`)
-  - **"Geral"** (templates `product_id NULL`)
-- Aplica `replaceVariables(...)` com `data_envio_proposta = hoje (dd/MM/yyyy)`.
-- Abre Gmail Web: `https://mail.google.com/mail/?view=cm&to={email}&su={subject}&body={body}` em nova aba.
-- Registra activity `proposta_enviada_email` em `lead_activities` com título do template usado.
-- Toast: "Gmail aberto. Anexe o PDF antes de enviar." + ação rápida "Marcar como Enviada" → `onStatusChange(p.id, "enviada")`.
+**Arquivo impactado:** `src/components/admin/ProposalList.tsx` (somente reordenação JSX + separadores + cor do ícone).
 
-Tratamento de erros:
-- Sem `lead_id`/`email` → toast "Esta proposta não tem lead/email associado."
-- Sem template ativo de proposta para o produto + sem global → toast "Nenhum template de e-mail configurado para o estágio Proposta."
+---
 
-#### 2) Integrar em `src/components/admin/ProposalList.tsx`
-- Adicionar `<SendProposalButton proposal={p} onStatusChange={onStatusChange} />` ao lado do `<PdfExporter />`.
-- Ícone `Send` (já importado no arquivo). Tooltip: "Enviar por e-mail (Gmail) usando template do produto".
+### Parte 2 — Proposta de evolução para algo mais robusto
 
-#### 3) Validação visual rápida da feature já implementada
-Após o item 1+2, ao abrir uma proposta vinculada ao produto X:
-- O popover de envio mostra primeiro os templates de X, depois os globais.
-- Templates de outros produtos ficam ocultos.
-- Isso confirma na prática que toda a cadeia (schema → hook → UI) funciona ponta a ponta.
+Para não inflar o card (já tem 5–6 ícones), e dar uma experiência de "centro de controle da proposta", proponho evoluir em **três camadas opcionais**, cada uma plugável sem reescrever o que existe:
 
-### O que NÃO muda
-- Geração de PDF, fluxo de status de proposta, schema, RLS, edge functions, overrides por usuário — tudo intacto.
+#### A. Menu de ações secundárias (curto prazo, baixo impacto)
+- Manter **3 ações primárias visíveis**: `Avançar status`, `Baixar PDF`, `Enviar`.
+- Mover `Editar` e `Excluir` para um menu **"⋯" (More)** usando `DropdownMenu` do shadcn.
+- Ganho: card mais limpo, foco nas ações da jornada, ações destrutivas/menos frequentes ficam um clique mais "protegidas".
 
-### Arquivos impactados
-- **Novo**: `src/components/admin/SendProposalButton.tsx`
-- **Edit**: `src/components/admin/ProposalList.tsx` (adicionar botão)
+#### B. Linha do tempo da proposta (médio prazo)
+Adicionar um indicador discreto abaixo do título mostrando o estágio atual da jornada:
+
+```text
+● Criada ──── ● Enviada ──── ○ Fechada
+```
+
+- 3 bolinhas (Rascunho → Enviada → Fechada/Perdida), preenchidas conforme o status.
+- Ao clicar numa bolinha não-preenchida, dispara o mesmo `onStatusChange`. Substitui ícones de status por uma metáfora visual mais intuitiva.
+- Reusa o componente `Badge` + uns `<Circle />` do lucide. Sem nova tabela.
+
+#### C. Painel lateral de detalhes (longo prazo, opcional)
+Hoje, clicar no card só leva para edição. Proposta:
+- Click no título abre um **Sheet** lateral (mesma metáfora do `LeadDrawer`) com:
+  - Histórico de envios (já temos `lead_activities` com `proposta_enviada_email`).
+  - Templates usados, datas, quem enviou.
+  - Atalho para o lead vinculado.
+  - Botão grande "Enviar nova versão" (reabre seletor de template).
+- Vira o "centro de controle" da proposta sem inflar a listagem.
+
+#### D. (Bônus) Indicador de "envio pendente"
+Hoje, um rascunho que ainda não virou "Enviada" não tem sinal visual de urgência. Proposta:
+- Badge sutil `Aguardando envio há 3 dias` em rascunhos antigos (>2 dias), usando `created_at`. 
+- Mesmo padrão das missões diárias do Pipeline, sem nova tabela.
+
+---
+
+### Recomendação de execução
+
+**Fazer agora (este turn quando aprovado):**
+- Parte 1 completa (reordenação + separadores + cor padronizada).
+- Item **A** da Parte 2 (mover Editar/Excluir para menu "⋯") — é barato e já entrega a "robustez" pedida sem nova arquitetura.
+
+**Deixar pra ondas seguintes (mediante interesse):**
+- B (timeline visual), C (Sheet lateral de proposta), D (badge de envio pendente).
+
+### Arquivos impactados (execução imediata)
+- `src/components/admin/ProposalList.tsx` — reordenação, separadores, DropdownMenu para Editar/Excluir, cor do botão Enviar.
 
 ### Critério de aceite
-- Em `/admin/propostas`, cada card tem um botão "Enviar Proposta".
-- Clique abre Gmail com destinatário + assunto + corpo já renderizados.
-- Lista de templates respeita o `product_id` da proposta (produto-específico em destaque, globais embaixo).
-- Activity registrada no histórico do lead.
-- Templates de outros produtos não aparecem.
+- Ordem visível no card: **status → baixar → enviar → ⋯ (editar/excluir)**.
+- Separadores verticais sutis entre os grupos.
+- Ícone "Enviar" com cor padronizada (sem mais o roxo inline).
+- "Editar" e "Excluir" agrupados num menu kebab, "Excluir" em vermelho com confirmação visual já no label.
+- Nenhum impacto em PDF, templates, status flow, RLS ou edge functions.
 
