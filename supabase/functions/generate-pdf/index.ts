@@ -8,54 +8,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ALLOWED_HOST_SUFFIXES = [
-  ".lovable.app",
-  ".lovableproject.com",
-  ".lovable.dev",
-];
-const ALLOWED_HOSTS = [
-  "crm.movimentocircular.io",
-  "experience.movimentocircular.io",
-  "circularexperience.lovable.app",
-];
-const FALLBACK_ORIGIN = "https://circularexperience.lovable.app";
+// Stable published origin for slide rendering. Always use this so Browserless
+// hits a public, cached, bot-friendly build instead of preview/cold domains.
+const RENDER_ORIGIN = "https://circularexperience.lovable.app";
 
-function isAllowedOrigin(origin: string): boolean {
-  try {
-    const u = new URL(origin);
-    if (u.protocol !== "https:") return false;
-    if (ALLOWED_HOSTS.includes(u.hostname)) return true;
-    return ALLOWED_HOST_SUFFIXES.some((s) => u.hostname.endsWith(s));
-  } catch {
-    return false;
-  }
-}
-
-function resolveRenderOrigin(bodyOrigin: unknown, headerOrigin: string | null): string {
-  const candidates = [
-    typeof bodyOrigin === "string" ? bodyOrigin : null,
-    headerOrigin,
-  ].filter(Boolean) as string[];
-  for (const c of candidates) {
-    if (isAllowedOrigin(c)) return c.replace(/\/$/, "");
-  }
-  return FALLBACK_ORIGIN;
-}
-
-async function renderViaBrowserless(printUrl: string, apiKey: string, fast: boolean) {
+async function renderViaBrowserless(printUrl: string, apiKey: string) {
   const res = await fetch(`https://production-sfo.browserless.io/pdf?token=${apiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
     body: JSON.stringify({
       url: printUrl,
-      gotoOptions: { waitUntil: "networkidle2", timeout: 30000 },
+      gotoOptions: { waitUntil: "networkidle0", timeout: 45000 },
       viewport: { width: 1920, height: 1080 },
       options: {
         printBackground: true,
         preferCSSPageSize: true,
         margin: { top: "0", right: "0", bottom: "0", left: "0" },
       },
-      waitForFunction: { fn: "() => window.__SLIDES_READY === true", timeout: fast ? 8000 : 15000 },
+      waitForFunction: {
+        fn: "() => window.__SLIDES_READY === true || !!document.querySelector('[data-ready=\"true\"]')",
+        timeout: 30000,
+      },
     }),
   });
   if (!res.ok) {
@@ -70,15 +43,15 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { slug, renderOrigin } = body ?? {};
+    const { slug } = body ?? {};
     if (!slug) {
       return new Response(JSON.stringify({ error: "slug is required" }), {
         status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const origin = resolveRenderOrigin(renderOrigin, req.headers.get("origin"));
-    console.log(`[generate-pdf] resolved renderOrigin=${origin} (body=${renderOrigin ?? "null"}, header=${req.headers.get("origin") ?? "null"})`);
+    const origin = RENDER_ORIGIN;
+    console.log(`[generate-pdf] using stable RENDER_ORIGIN=${origin}`);
 
     const browserlessApiKey = Deno.env.get("BROWSERLESS_API_KEY");
     if (!browserlessApiKey) throw new Error("BROWSERLESS_API_KEY not configured");
@@ -142,7 +115,8 @@ serve(async (req: Request) => {
     // Render dynamic proposal slide via Browserless
     const slidePrintUrl = `${origin}/apresentacao-print/${slug}`;
     console.log(`[generate-pdf] slidePrintUrl=${slidePrintUrl}`);
-    const slideBuffer = await renderViaBrowserless(slidePrintUrl, browserlessApiKey, true);
+    const slideBuffer = await renderViaBrowserless(slidePrintUrl, browserlessApiKey);
+    console.log(`[generate-pdf] slideBuffer bytes=${slideBuffer.byteLength}`);
 
     // Merge with pdf-lib
     const out = await PDFDocument.create();

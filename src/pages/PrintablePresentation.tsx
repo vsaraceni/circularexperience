@@ -14,43 +14,55 @@ const PrintablePresentation = () => {
   const { slug } = useParams<{ slug: string }>();
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     window.__SLIDES_READY = false;
     const fetchProposal = async () => {
       if (!slug) return;
-      const { data } = await supabase
-        .rpc("get_proposal_by_slug", { p_slug: slug })
-        .single();
-      setProposal(data as Proposal | null);
-      setLoading(false);
+      try {
+        const { data } = await supabase
+          .rpc("get_proposal_by_slug", { p_slug: slug })
+          .single();
+        setProposal(data as Proposal | null);
+      } catch {
+        setProposal(null);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchProposal();
   }, [slug]);
 
   useEffect(() => {
-    if (!loading && proposal) {
-      // Wait for fonts + next paint before signaling readiness
-      const ready = async () => {
-        try { await (document as any).fonts?.ready; } catch { /* noop */ }
-        await new Promise((r) => requestAnimationFrame(() => r(null)));
-        await new Promise((r) => setTimeout(r, 300));
-        window.__SLIDES_READY = true;
-      };
-      ready();
-    }
-  }, [loading, proposal]);
+    if (loading) return;
+    // Always signal readiness after loading finishes — even on error/missing data.
+    // Browserless will capture whatever is rendered, instead of timing out.
+    let cancelled = false;
+    const signalReady = async () => {
+      try { await (document as any).fonts?.ready; } catch { /* noop */ }
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const idle = (window as any).requestIdleCallback as
+        | ((cb: () => void, opts?: { timeout: number }) => number)
+        | undefined;
+      await new Promise<void>((resolve) => {
+        if (idle) idle(() => resolve(), { timeout: 800 });
+        else setTimeout(resolve, 500);
+      });
+      if (cancelled) return;
+      window.__SLIDES_READY = true;
+      setReady(true);
+    };
+    signalReady();
+    return () => { cancelled = true; };
+  }, [loading]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen text-xl">Carregando...</div>;
   }
 
-  if (!proposal) {
-    return <div className="flex items-center justify-center h-screen text-xl">Proposta não encontrada.</div>;
-  }
-
   return (
-    <div className="printable-presentation">
+    <div className="printable-presentation" data-ready={ready ? "true" : "false"}>
       <style>{`
         @media print {
           @page { size: 1920px 1080px; margin: 0; }
@@ -60,7 +72,11 @@ const PrintablePresentation = () => {
         .slide-container { width: 1920px; height: 1080px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
       `}</style>
       <div className="slide-container" style={{ background: "#ffffff" }}>
-        <ProposalSlide proposal={proposal} />
+        {proposal ? (
+          <ProposalSlide proposal={proposal} />
+        ) : (
+          <div className="text-2xl">Proposta não encontrada.</div>
+        )}
       </div>
     </div>
   );
