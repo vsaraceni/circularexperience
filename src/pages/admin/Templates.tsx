@@ -23,20 +23,46 @@ const Templates = () => {
   const queryClient = useQueryClient();
   const { data: templates = [], isLoading } = useAllTemplatesAdmin();
 
+  // Active products for the product selector and chips
+  const { data: products = [] } = useQuery({
+    queryKey: ["products_active_for_templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+  });
+  const productMap = useMemo(
+    () => Object.fromEntries(products.map((p) => [p.id, p.name])),
+    [products],
+  );
+
+  const [productFilter, setProductFilter] = useState<string>("all"); // "all" | "global" | productId
+
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<{ title?: string; subject?: string | null; body?: string; channel?: string }>({});
+  const [editForm, setEditForm] = useState<{ title?: string; subject?: string | null; body?: string; channel?: string; product_id?: string | null }>({});
   const [addDialog, setAddDialog] = useState(false);
-  const [addForm, setAddForm] = useState({ stage: "novo", channel: "whatsapp" as string, title: "", subject: "", body: "" });
+  const [addForm, setAddForm] = useState({ stage: "novo", channel: "whatsapp" as string, title: "", subject: "", body: "", product_id: null as string | null });
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  const filteredTemplates = useMemo(() => {
+    if (productFilter === "all") return templates;
+    if (productFilter === "global") return templates.filter((t) => !t.product_id);
+    return templates.filter((t) => t.product_id === productFilter);
+  }, [templates, productFilter]);
+
   const grouped = STAGE_ORDER.reduce((acc, stage) => {
-    acc[stage] = templates.filter((t) => t.stage === stage).sort((a, b) => a.sort_order - b.sort_order);
+    acc[stage] = filteredTemplates.filter((t) => t.stage === stage).sort((a, b) => a.sort_order - b.sort_order);
     return acc;
   }, {} as Record<string, MessageTemplate[]>);
 
   const startEdit = (t: MessageTemplate) => {
     setEditingId(t.id);
-    setEditForm({ title: t.title, subject: t.subject, body: t.body, channel: t.channel });
+    setEditForm({ title: t.title, subject: t.subject, body: t.body, channel: t.channel, product_id: t.product_id ?? null });
   };
 
   const cancelEdit = () => {
@@ -48,7 +74,7 @@ const Templates = () => {
     if (!editingId) return;
     const { error } = await supabase
       .from("message_templates")
-      .update({ title: editForm.title, subject: editForm.subject || null, body: editForm.body, channel: editForm.channel, updated_at: new Date().toISOString() })
+      .update({ title: editForm.title, subject: editForm.subject || null, body: editForm.body, channel: editForm.channel, product_id: editForm.product_id ?? null, updated_at: new Date().toISOString() })
       .eq("id", editingId);
     if (error) { toast.error("Erro ao salvar"); return; }
     toast.success("Template atualizado!");
@@ -66,11 +92,12 @@ const Templates = () => {
       subject: addForm.subject || null,
       body: addForm.body,
       sort_order: maxOrder + 1,
+      product_id: addForm.product_id ?? null,
     });
     if (error) { toast.error("Erro ao criar template"); return; }
     toast.success("Template criado!");
     setAddDialog(false);
-    setAddForm({ stage: "novo", channel: "whatsapp", title: "", subject: "", body: "" });
+    setAddForm({ stage: "novo", channel: "whatsapp", title: "", subject: "", body: "", product_id: null });
     queryClient.invalidateQueries({ queryKey: ["message_templates_admin"] });
   };
 
