@@ -330,6 +330,18 @@ const Templates = () => {
               </Select>
             </div>
             <Input value={addForm.title} onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))} placeholder="Título do template" />
+            <Select
+              value={addForm.product_id ?? "__global__"}
+              onValueChange={(v) => setAddForm((f) => ({ ...f, product_id: v === "__global__" ? null : v }))}
+            >
+              <SelectTrigger><SelectValue placeholder="Produto vinculado" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__global__">Todos os produtos (global)</SelectItem>
+                {products.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {addForm.channel === "email" && (
               <Input value={addForm.subject} onChange={(e) => setAddForm((f) => ({ ...f, subject: e.target.value }))} placeholder="Assunto do e-mail" />
             )}
