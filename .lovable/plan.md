@@ -1,55 +1,53 @@
 
 
-## Produtos como catálogo + template de proposta
+## Remover visualização online da proposta + QR code do slide
 
-Confirmando o entendimento: **Produtos & PDFs Mestres** (`/admin/produtos`) é o catálogo dos produtos do Movimento Circular. Esta evolução transforma cada produto também em **template de proposta**.
+### Mudanças
 
-### Schema — 3 colunas novas em `products`
+**1. Rota pública `/proposta/:slug` — remover**
 
-```sql
-ALTER TABLE products ADD COLUMN default_title_template text;
-ALTER TABLE products ADD COLUMN default_scope text;
-ALTER TABLE products ADD COLUMN default_considerations text;
-```
+- `src/App.tsx`: remover rota `/proposta/:slug` de `CrmRoutes` e `SiteRoutes`.
+- `src/pages/ProposalView.tsx`: arquivo deixa de ser usado (pode ser deletado para limpeza).
+- Acessos diretos à URL caem em `NotFound` (site) ou redirecionam para `/admin/pipeline` (CRM).
 
-Todas opcionais, sem backfill. Admin preenche quando quiser.
+**2. Slide da proposta comercial — remover QR code**
 
-### Tela `/admin/produtos` — dialog de criar/editar produto
+`src/components/presentation/slides/ProposalSlide.tsx`:
+- Remover bloco do QR code na sidebar (import `qrcode.react`, `proposalUrl`, `<QRCodeSVG>` e legenda "Acesse esta proposta online").
+- Reorganizar sidebar: Logo no topo, Investimento no centro, divisor decorativo no rodapé (substituindo o espaço do QR).
+- Remover import `QRCodeSVG`.
 
-Adicionar 3 campos abaixo dos existentes:
+**3. Limpeza de referências**
 
-| Campo | UI | Observação |
-|---|---|---|
-| Título padrão da proposta | `Input` texto | Dica: use `{{empresa}}` para inserir o nome da empresa |
-| Escopo padrão | `RichTextEditor` | Mesmo editor já usado em `ProposalForm` |
-| Considerações padrão | `RichTextEditor` | Idem |
+Buscar e ajustar qualquer link/menção a `/proposta/${slug}`:
+- `ProposalList`, `LeadDrawer`, `BulkEmailDialog`, templates de email, etc.
+- Onde houver botão "Ver online" → remover.
+- Onde houver link em emails → trocar por anexo PDF (já é o fluxo atual) ou remover menção.
 
-### Formulário de proposta — pré-preenchimento
+**4. Slug da proposta**
 
-Em `ProposalForm.tsx`, ao criar proposta nova:
-
-- Quando o produto é selecionado, busca defaults do produto:
-  - `title` ← `default_title_template` com `{{empresa}}` → `company_name`
-  - `scope` ← `default_scope` (se vazio)
-  - `considerations` ← `default_considerations` (se vazio)
-- **Não sobrescreve** campos já editados pelo SDR.
-- Em **edição** de proposta existente: nada muda automaticamente.
-- Se o SDR trocar o produto, atualiza apenas campos que ainda batem com o template anterior (ou estão vazios).
-- Se `company_name` mudar, recalcula o título se ainda casar com o template.
+A coluna `slug` em `proposals` continua existindo (usada internamente por `/apresentacao-print/:slug` para o Browserless renderizar o slide ao gerar o PDF). **Não remover do schema.**
 
 ### Arquivos impactados
 
 | Arquivo | Mudança |
 |---|---|
-| `supabase/migrations/*` (novo) | 3 colunas em `products` |
-| `src/pages/admin/Products.tsx` | 3 campos novos no dialog (título + 2 rich text) |
-| `src/components/admin/ProposalForm.tsx` | Buscar defaults do produto + lógica de pré-preenchimento |
+| `src/App.tsx` | Remover rotas `/proposta/:slug` (CRM e Site) |
+| `src/pages/ProposalView.tsx` | Deletar arquivo |
+| `src/components/presentation/slides/ProposalSlide.tsx` | Remover QR code, reorganizar sidebar |
+| `src/components/admin/ProposalList.tsx` | Remover botão/link "Ver online" se houver |
+| `src/components/admin/LeadDrawer.tsx` | Idem |
+| `src/components/admin/BulkEmailDialog.tsx` / templates | Remover link público de emails se houver |
+| `package.json` | `qrcode.react` pode ser removido das deps (opcional) |
 
-Sem mudanças em: `generate-pdf`, `PrintablePresentation`, `ProposalSlide`, `PdfExporter`, `vw_proposals_leads`, RLS.
+### O que NÃO muda
+
+- Geração de PDF (`generate-pdf` + `PrintablePresentation` com slide-only) — intacta.
+- Schema de `proposals` (slug permanece, é interno).
+- `ProposalSlide` continua sendo o último slide do PDF, só sem QR.
 
 ### Princípios
 
-- **Aditivo**: colunas opcionais, propostas existentes inalteradas.
-- **Não invasivo**: nunca sobrescreve trabalho do SDR.
-- **Reaproveitável**: cada novo produto futuro (workshop diferente, formato diferente) só precisa ser cadastrado uma vez para ter proposta padronizada.
+- **Aditivo na remoção**: arquivos legados podem ficar até a próxima limpeza; rotas removidas garantem que nada é exposto.
+- **PDF intocado**: única saída de proposta passa a ser o PDF anexo enviado por email.
 
