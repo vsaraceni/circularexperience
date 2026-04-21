@@ -3,6 +3,7 @@ import { Edit, Trash2, CheckCircle, XCircle, RotateCcw, Send } from "lucide-reac
 import type { Proposal } from "@/pages/admin/Proposals";
 import PdfExporter from "@/components/pdf/PdfExporter";
 import { Badge } from "@/components/ui/badge";
+import SendProposalButton from "@/components/admin/SendProposalButton";
 
 interface ProposalListProps {
   proposals: Proposal[];
@@ -88,6 +89,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
                 </Button>
               )}
               <PdfExporter proposal={p} />
+              <SendProposalButton proposal={p} onStatusChange={onStatusChange} />
               <Button variant="ghost" size="icon" onClick={() => onEdit(p)} title="Editar">
                 <Edit className="h-4 w-4" />
               </Button>
