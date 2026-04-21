@@ -1,9 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, CheckCircle, XCircle, RotateCcw, Send } from "lucide-react";
+import { Edit, Trash2, CheckCircle, XCircle, RotateCcw, Send, MoreVertical } from "lucide-react";
 import type { Proposal } from "@/pages/admin/Proposals";
 import PdfExporter from "@/components/pdf/PdfExporter";
 import { Badge } from "@/components/ui/badge";
 import SendProposalButton from "@/components/admin/SendProposalButton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProposalListProps {
   proposals: Proposal[];
