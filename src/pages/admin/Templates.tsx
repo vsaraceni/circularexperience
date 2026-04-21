@@ -271,6 +271,12 @@ const Templates = () => {
                                     {channelCfg.label}
                                   </span>
                                   <span className="text-sm font-medium text-foreground flex-1">{t.title}</span>
+                                  <Badge
+                                    variant={t.product_id ? "default" : "outline"}
+                                    className="text-[10px]"
+                                  >
+                                    {t.product_id ? (productMap[t.product_id] ?? "Produto") : "Global"}
+                                  </Badge>
                                   {!(t.is_active ?? true) && <Badge variant="outline" className="text-[10px]">inativo</Badge>}
                                   <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => handleToggleActive(t)}>
                                     {(t.is_active ?? true) ? "Desativar" : "Ativar"}
