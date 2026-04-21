@@ -38,19 +38,36 @@ export function useAllTemplatesAdmin() {
   });
 }
 
-export function useTemplatesWithOverrides(stage: string, userId?: string) {
+export function useTemplatesWithOverrides(stage: string, userId?: string, productId?: string | null) {
   return useQuery({
-    queryKey: ["message_templates_with_overrides", stage, userId],
+    queryKey: ["message_templates_with_overrides", stage, userId, productId ?? null],
     queryFn: async () => {
-      const { data: templates, error } = await supabase
+      let query = supabase
         .from("message_templates")
         .select("*")
         .eq("is_active", true)
-        .eq("stage", stage)
-        .order("sort_order", { ascending: true });
+        .eq("stage", stage);
+
+      // If a productId is provided, restrict to global (NULL) + that product's templates.
+      // If not, keep current behavior (all templates of the stage).
+      if (productId) {
+        query = query.or(`product_id.is.null,product_id.eq.${productId}`);
+      }
+
+      const { data: templates, error } = await query.order("sort_order", { ascending: true });
 
       if (error) throw error;
       if (!templates?.length) return [];
+
+      // Sort: product-specific first, then global, preserving sort_order within each group.
+      const sorted = productId
+        ? [...templates].sort((a, b) => {
+            const aIsProduct = a.product_id === productId ? 0 : 1;
+            const bIsProduct = b.product_id === productId ? 0 : 1;
+            if (aIsProduct !== bIsProduct) return aIsProduct - bIsProduct;
+            return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+          })
+        : templates;
 
       // Fetch user overrides if userId provided
       let overrides: Record<string, { id: string; body: string }> = {};
@@ -59,7 +76,7 @@ export function useTemplatesWithOverrides(stage: string, userId?: string) {
           .from("user_template_overrides")
           .select("id, template_id, body")
           .eq("user_id", userId)
-          .in("template_id", templates.map((t) => t.id));
+          .in("template_id", sorted.map((t) => t.id));
 
         if (ovData) {
           for (const ov of ovData) {
@@ -68,7 +85,7 @@ export function useTemplatesWithOverrides(stage: string, userId?: string) {
         }
       }
 
-      return templates.map((t) => ({
+      return sorted.map((t) => ({
         ...t,
         override_body: overrides[t.id]?.body ?? null,
         override_id: overrides[t.id]?.id ?? null,

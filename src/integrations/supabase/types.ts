@@ -501,6 +501,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean
+          product_id: string | null
           sort_order: number
           stage: string
           subject: string | null
@@ -513,6 +514,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean
+          product_id?: string | null
           sort_order?: number
           stage: string
           subject?: string | null
@@ -525,13 +527,22 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean
+          product_id?: string | null
           sort_order?: number
           stage?: string
           subject?: string | null
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {

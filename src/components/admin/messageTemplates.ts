@@ -9,6 +9,7 @@ export interface MessageTemplate {
   body: string;
   sort_order: number;
   is_active?: boolean;
+  product_id?: string | null;
 }
 
 export interface TemplateWithOverride extends MessageTemplate {
