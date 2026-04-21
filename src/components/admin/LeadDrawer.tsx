@@ -89,9 +89,26 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
     if (open) setActiveTab(defaultTab);
   }, [open, defaultTab]);
 
+  // Resolve the lead's product context via its most recent proposal (if any).
+  const { data: leadProductId } = useQuery({
+    queryKey: ["lead_product_id", lead?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("proposals")
+        .select("product_id, created_at")
+        .eq("lead_id", lead!.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data?.product_id ?? null;
+    },
+    enabled: !!lead?.id,
+  });
+
   const { data: templates = [], isLoading: loadingTemplates } = useTemplatesWithOverrides(
     lead?.kanban_stage || "",
-    userId
+    userId,
+    leadProductId,
   );
   const saveOverride = useSaveTemplateOverride();
   const deleteOverride = useDeleteTemplateOverride();
