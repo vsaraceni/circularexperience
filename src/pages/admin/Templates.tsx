@@ -235,6 +235,18 @@ const Templates = () => {
                                     </SelectContent>
                                   </Select>
                                 </div>
+                                <Select
+                                  value={editForm.product_id ?? "__global__"}
+                                  onValueChange={(v) => setEditForm((f) => ({ ...f, product_id: v === "__global__" ? null : v }))}
+                                >
+                                  <SelectTrigger><SelectValue placeholder="Produto vinculado" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="__global__">Todos os produtos (global)</SelectItem>
+                                    {products.map((p) => (
+                                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                                 {editForm.channel === "email" && (
                                   <Input value={editForm.subject || ""} onChange={(e) => setEditForm((f) => ({ ...f, subject: e.target.value }))} placeholder="Assunto" />
                                 )}
