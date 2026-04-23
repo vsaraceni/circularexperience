@@ -375,21 +375,21 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return m;
   }, [proposals]);
 
-  // Build enriched rows
+  // Build enriched rows. Urgency uses the lead's nearest follow-up (the one
+  // that drives the user's perception of "needs attention").
   const rows: LeadRow[] = useMemo(() => {
     return leads
       .filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado")
       .map(lead => {
-        const fu = followUpsByLead[lead.id];
-        const hasPending = fu ? (fu.hasToday || fu.hasFuture) && !fu.hasOverdue : false;
-        const urgency = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPending);
+        const nfu = nextFollowUpMap[lead.id] || null;
+        const urgency = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, nfu);
         const tier = lead.colaboradores ? (COLABORADORES_TIER[lead.colaboradores] || "—") : "—";
         const responsavel = lead.assigned_to ? (profileMap[lead.assigned_to] || "—") : "—";
         const refDate = lead.last_activity_at || lead.stage_updated_at;
         const slaMs = refDate ? Date.now() - new Date(refDate).getTime() : 0;
         return { lead, urgency, tier, responsavel, slaMs };
       });
-  }, [leads, followUpsByLead, profileMap]);
+  }, [leads, nextFollowUpMap, profileMap]);
 
   // Helper: get display value for a lead (proposal investment > lead valor_proposta)
   const getLeadValue = useCallback((lead: Lead): { value: number | null; fromProposal: boolean } => {
