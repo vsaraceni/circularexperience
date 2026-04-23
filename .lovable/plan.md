@@ -1,48 +1,77 @@
 
 
-## Reordenar ações do card de Proposta (jornada correta)
+## Diagnóstico confirmado — SLA inconsistente em "Call Agendada"
 
-### Ordem nova (esquerda → direita)
+Todos os leads da imagem estão em **Call Agendada**, cuja config atual é:
 
-1. **Editar proposta** (lápis) — ajustar antes de qualquer envio
-2. **Baixar proposta** (PDF) — gerar artefato
-3. **Enviar proposta** (Gmail com template) — disparar e-mail
-4. **Marcar como enviada** (check verde) — confirmar que saiu
-5. **⋯ Menu kebab** — apenas Excluir (destrutivo, fora do fluxo)
+| Etapa | Verde (normal) | Amarelo (atenção) | Vermelho (vencido) |
+|---|---|---|---|
+| call_agendada | 0–4d | **5–9d** | ≥ 10d |
 
-Separadores verticais sutis entre os grupos:
-`[editar] | [baixar + enviar + marcar enviada] | [⋯]`
+O que se vê na tela (ordenado desc por SLA):
 
-### Comportamento do check "Marcar como enviada"
+```text
+🔴 14d   ← correto (≥10d)
+🔴 14d   ← correto
+🟢 7d    ← ERRADO: deveria ser 🟡 (5–9d)
+🟢 6d    ← ERRADO: deveria ser 🟡
+🟡 5d    ← correto
+🟢 5d    ← ERRADO: mesmo dia, cor diferente
+🟢 5d    ← ERRADO
+🟢 5d    ← ERRADO
+🟢 5d    ← ERRADO
+🟢 1d    ← correto
+🟢 23h   ← correto
+🟢 22h   ← correto
+```
 
-- **Status `rascunho`** → mostra ✓ verde com tooltip "Marcar como Enviada" → chama `onStatusChange(id, "enviada")`.
-- **Status `enviada`** → o check vira dois botões pequenos: ✓ verde "Marcar como Fechada" e ✗ vermelho "Marcar como Perdida" (mantém a transição que já existe hoje).
-- **Status `fechada`/`perdida`** → ícone de reverter (↻) com tooltip "Reverter para Enviada".
+**Causa raiz:** quando o lead tem **follow-up agendado pendente**, `getUrgencyLevel` em `UrgencyBadge.tsx` (linha 21) força o nível para `"normal"` independente dos dias — e a UI pinta de **verde** com o ícone ✅. Resultado: 7d com FU agendado vira 🟢, ao lado de 5d sem FU que vira 🟡. Confunde porque mistura dois conceitos diferentes ("dentro do prazo" vs. "tem ação futura agendada") na **mesma cor**.
 
-Assim o "check" sempre representa o **próximo passo positivo da jornada**, sem inflar o card.
+A regra "verde → amarelo → vermelho" só vale se compararmos coisas comparáveis: tempo decorrido. Hoje a coluna mistura tempo + estado de follow-up.
 
-### Ajustes em `src/components/admin/ProposalList.tsx`
+---
 
-- Reordenar o JSX dos botões na sequência acima.
-- Mover **Editar** do `DropdownMenu` de volta para botão visível (primeiro da fila).
-- Manter **Excluir** como única ação dentro do `DropdownMenu` (kebab `⋯`), em vermelho.
-- Ajustar separadores verticais para refletir os 3 grupos novos.
-- Tooltips atualizadas para refletir cada estado.
+## Solução — separar visualmente "tem FU" de "no prazo"
 
-### O que NÃO muda
+### 1. Nova cor neutra para "tem follow-up agendado"
 
-- `SendProposalButton`, `PdfExporter`, `onStatusChange`, `onEdit`, `onDelete` — todas as props e handlers permanecem iguais.
-- Schema, RLS, edge functions, fluxo de templates — intactos.
+Em `UrgencyBadge.tsx`, introduzir um quarto estado visual `scheduled` (azul/cinza, ícone 📅) usado **apenas** quando `hasPendingFollowUp = true`. O verde (`normal`) passa a significar exclusivamente "dentro do SLA por tempo, sem FU agendado".
 
-### Arquivo impactado
+```text
+Estados visuais finais (nesta ordem de severidade):
+🔴 Vermelho  — Vencido (acima do limite crítico)
+🟡 Amarelo   — Atenção (entre warning e critical)
+🟢 Verde     — No prazo (abaixo do warning, sem FU)
+🔵 Azul/📅   — Tem follow-up agendado (qualquer tempo)
+```
 
-- `src/components/admin/ProposalList.tsx` (somente reordenação JSX + ajuste do DropdownMenu)
+### 2. Ordenação coerente na coluna SLA
 
-### Critério de aceite
+No `PriorityListView.tsx`, o sort por SLA passa a ordenar **primeiro pelo nível de severidade**, depois por dias decorridos dentro do mesmo nível. Assim, descendo a coluna ordenada desc, a sequência sempre será: 🔴 → 🟡 → 🟢 → 🔵, sem saltos de cor.
 
-- Card exibe na ordem: **editar → baixar → enviar → ✓ marcar enviada → ⋯ (excluir)**.
-- Em rascunho, o check verde aparece como próxima ação clara.
-- Em enviada, aparecem os dois botões de desfecho (fechada/perdida).
-- Em fechada/perdida, aparece o botão de reverter.
-- Excluir continua isolado no kebab, em vermelho.
+### 3. Tooltip "ⓘ" no header da coluna SLA
+
+Pequeno ícone de info no cabeçalho explicando os limites por etapa, para o usuário entender por que `5d` em "Em Contato" é vermelho mas `5d` em "Call Agendada" é amarelo:
+
+| Faixa | Etapas | 🟢 | 🟡 | 🔴 |
+|---|---|---|---|---|
+| Resposta rápida | Novo, Boas-Vindas | <2h | 2–4h | ≥4h |
+| Curta | Em Contato, Proposta | 0–1d | 2–3d | ≥4d |
+| Longa | Call Agendada, Nutrição | 0–4d | 5–9d | ≥10d |
+
+---
+
+## Arquivos impactados
+
+- `src/components/admin/UrgencyBadge.tsx` — adicionar estado `scheduled` (azul + 📅), usado quando `hasPendingFollowUp`. Verde fica reservado para "no prazo por tempo".
+- `src/components/admin/PriorityListView.tsx` — comparator do sort por SLA usa nível primeiro; tooltip ⓘ no header da coluna SLA com a tabela de limites; novo filtro "📅 Com FU agendado" no popover de SLA.
+
+Sem mudanças em: Kanban, banco, RLS, edge functions, notificações.
+
+## Critérios de aceite
+
+- Na imagem do exemplo, os 7d/6d/5d que hoje aparecem 🟢 passam a aparecer 🔵 📅 (ou 🟡 se não tiverem FU pendente).
+- Descendo a coluna SLA ordenada desc, cores nunca regridem em severidade.
+- Verde nunca mais aparece misturado entre amarelos com mesmo número de dias.
+- Tooltip ⓘ no header explica os limites por etapa.
 
