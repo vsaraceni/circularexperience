@@ -20,6 +20,7 @@ interface LeadCardProps {
   profiles?: Profile[];
   hasProposal?: boolean;
   followUpStatus?: { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean };
+  nextFollowUp?: { due_date: string } | null;
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
@@ -108,7 +109,7 @@ function getNextActionLabel(lead: Lead, hasProposal: boolean): string | null {
   }
 }
 
-const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, followUpStatus, onOpenDrawer, onQuickAction }) => {
+const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = false, followUpStatus, nextFollowUp, onOpenDrawer, onQuickAction }) => {
   const ownerProfile = profiles.find((p) => p.id === lead.assigned_to);
   const ownerInitials = ownerProfile?.full_name
     ? ownerProfile.full_name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -118,8 +119,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
     data: { lead },
   });
 
-  const hasPendingFollowUp = followUpStatus ? (followUpStatus.hasToday || !!followUpStatus.hasFuture) && !followUpStatus.hasOverdue : false;
-  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPendingFollowUp);
+  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, nextFollowUp ?? null);
   const isCritical = urgencyLevel === "critical";
   const tierInfo = getTierInfo(lead.colaboradores);
   const showLostIcon = LOST_STAGES.has(lead.kanban_stage);
@@ -195,7 +195,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
             stage={lead.kanban_stage}
             stageUpdatedAt={lead.stage_updated_at || null}
             lastActivityAt={lead.last_activity_at || null}
-            hasPendingFollowUp={hasPendingFollowUp}
+            nextFollowUp={nextFollowUp ?? null}
           />
           {followUpStatus?.hasOverdue && (
             <Tooltip>

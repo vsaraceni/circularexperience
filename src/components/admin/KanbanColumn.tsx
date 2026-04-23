@@ -17,6 +17,7 @@ interface KanbanColumnProps {
   profiles?: { id: string; full_name: string | null }[];
   proposals: { id: string; lead_id?: string; investment: string }[];
   followUpsByLead?: Record<string, { hasToday: boolean; hasOverdue: boolean; hasFuture?: boolean }>;
+  nextFollowUpByLead?: Record<string, { due_date: string }>;
   onOpenDrawer: (lead: Lead) => void;
   onQuickAction: (lead: Lead, action: string) => void;
 }
@@ -39,16 +40,15 @@ function formatBRL(val: number): string {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, followUpsByLead = {}, onOpenDrawer, onQuickAction }) => {
+const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, proposals, followUpsByLead = {}, nextFollowUpByLead = {}, onOpenDrawer, onQuickAction }) => {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   const totalInvestment = proposals.reduce((sum, p) => sum + parseInvestment(p.investment), 0);
   const leadsWithProposals = new Set(proposals.filter((p) => p.lead_id).map((p) => p.lead_id));
 
   const criticalCount = leads.filter((l) => {
-    const fu = followUpsByLead[l.id];
-    const hasPending = fu ? (fu.hasToday || !!fu.hasFuture) && !fu.hasOverdue : false;
-    return getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null, hasPending) === "critical";
+    const nfu = nextFollowUpByLead[l.id] || null;
+    return getUrgencyLevel(l.kanban_stage, l.stage_updated_at || null, l.last_activity_at || null, nfu) === "critical";
   }).length;
 
   return (
@@ -125,6 +125,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ stage, leads, profiles, pro
             profiles={profiles}
             hasProposal={leadsWithProposals.has(lead.id)}
             followUpStatus={followUpsByLead[lead.id]}
+            nextFollowUp={nextFollowUpByLead[lead.id] || null}
             onOpenDrawer={onOpenDrawer}
             onQuickAction={onQuickAction}
           />

@@ -5,7 +5,7 @@ import {
   Mail, Send, ArrowRight, Phone, FileText, Linkedin,
   MessageSquare, XCircle, CheckCircle, Activity, Info,
 } from "lucide-react";
-import { getUrgencyLevel, LEVEL_STYLES, type UrgencyLevel } from "./UrgencyBadge";
+import { getUrgencyLevel, LEVEL_STYLES, formatBadgeText, type UrgencyLevel } from "./UrgencyBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -72,16 +72,20 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 const URGENCY_COLORS: Record<UrgencyLevel, string> = {
-  critical: "#D32F2F", warning: "#F4A736", scheduled: "#1565C0", normal: "#66BB6A",
+  critical: "#D32F2F", today: "#E65100", warning: "#F4A736", scheduled: "#5E35B1", normal: "#2E7D32",
 };
 
 const URGENCY_LABELS: Record<UrgencyLevel, string> = {
-  critical: "🔴 Vencido", warning: "⚠️ Atenção", scheduled: "📅 Follow-up agendado", normal: "✅ No prazo",
+  critical: "🔴 Vencido / Atrasado",
+  today: "⏰ Follow-up hoje",
+  warning: "⚠️ Sem ação · atenção",
+  scheduled: "📅 Follow-up agendado",
+  normal: "✅ No prazo",
 };
 
-// Lower number = higher severity for sort order
+// Lower number = higher severity for sort order.
 const URGENCY_RANK: Record<UrgencyLevel, number> = {
-  critical: 0, warning: 1, scheduled: 2, normal: 3,
+  critical: 0, today: 1, warning: 2, scheduled: 3, normal: 4,
 };
 
 const TIER_MAP: Record<string, string[]> = {
@@ -371,21 +375,21 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     return m;
   }, [proposals]);
 
-  // Build enriched rows
+  // Build enriched rows. Urgency uses the lead's nearest follow-up (the one
+  // that drives the user's perception of "needs attention").
   const rows: LeadRow[] = useMemo(() => {
     return leads
       .filter(l => l.kanban_stage !== "perdido" && l.kanban_stage !== "fechado")
       .map(lead => {
-        const fu = followUpsByLead[lead.id];
-        const hasPending = fu ? (fu.hasToday || fu.hasFuture) && !fu.hasOverdue : false;
-        const urgency = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, hasPending);
+        const nfu = nextFollowUpMap[lead.id] || null;
+        const urgency = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, nfu);
         const tier = lead.colaboradores ? (COLABORADORES_TIER[lead.colaboradores] || "—") : "—";
         const responsavel = lead.assigned_to ? (profileMap[lead.assigned_to] || "—") : "—";
         const refDate = lead.last_activity_at || lead.stage_updated_at;
         const slaMs = refDate ? Date.now() - new Date(refDate).getTime() : 0;
         return { lead, urgency, tier, responsavel, slaMs };
       });
-  }, [leads, followUpsByLead, profileMap]);
+  }, [leads, nextFollowUpMap, profileMap]);
 
   // Helper: get display value for a lead (proposal investment > lead valor_proposta)
   const getLeadValue = useCallback((lead: Lead): { value: number | null; fromProposal: boolean } => {
@@ -407,7 +411,13 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   // Derive filter options from data
   const stageOptions = useMemo(() => [...new Set(rows.map(r => STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage))].sort(), [rows]);
-  const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "📅 Follow-up agendado", "✅ No prazo"];
+  const slaOptions = [
+    URGENCY_LABELS.critical,
+    URGENCY_LABELS.today,
+    URGENCY_LABELS.warning,
+    URGENCY_LABELS.scheduled,
+    URGENCY_LABELS.normal,
+  ];
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
@@ -580,15 +590,34 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
               <Info className="h-3 w-3" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            <div className="text-[11px] space-y-1">
-              <p className="font-semibold">Limites de SLA por etapa</p>
-              <p>🟢 dentro do prazo · 🟡 atenção · 🔴 vencido · 📅 follow-up agendado</p>
-              <ul className="space-y-0.5 mt-1">
-                <li><b>Resposta rápida</b> (Novo, Welcome): &lt;2h · 2–4h · ≥4h</li>
-                <li><b>Curta</b> (Em Contato, Proposta): 0–1d · 2–3d · ≥4d</li>
-                <li><b>Longa</b> (Call Agendada, Nutrição): 0–4d · 5–9d · ≥10d</li>
+          <TooltipContent side="bottom" className="max-w-sm">
+            <div className="text-[11px] space-y-2">
+              <div>
+                <p className="font-semibold mb-1">Como o SLA é calculado</p>
+                <p className="text-[10px] opacity-80">Prioriza o follow-up agendado. Sem follow-up, usa o tempo na etapa.</p>
+              </div>
+              <ul className="space-y-1">
+                {(["critical","today","warning","scheduled","normal"] as UrgencyLevel[]).map(lv => (
+                  <li key={lv} className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: LEVEL_STYLES[lv].bg, border: `1px solid ${LEVEL_STYLES[lv].color}` }} />
+                    <span><b style={{ color: LEVEL_STYLES[lv].color }}>{LEVEL_STYLES[lv].label}</b> — {(
+                      lv === "critical" ? "follow-up vencido ou tempo crítico sem ação" :
+                      lv === "today" ? "follow-up agendado para hoje" :
+                      lv === "warning" ? "passou do limite e não tem ação agendada" :
+                      lv === "scheduled" ? "tem follow-up agendado no futuro (sob controle)" :
+                      "dentro do prazo da etapa"
+                    )}</span>
+                  </li>
+                ))}
               </ul>
+              <div className="border-t pt-1.5">
+                <p className="font-semibold">Limites por etapa (quando não há follow-up)</p>
+                <ul className="space-y-0.5 mt-1 opacity-90">
+                  <li><b>Resposta rápida</b> (Novo, Welcome): &lt;2h · 2–4h · ≥4h</li>
+                  <li><b>Curta</b> (Em Contato, Proposta): 0–1d · 2–3d · ≥4d</li>
+                  <li><b>Longa</b> (Call Agendada, Nutrição): 0–4d · 5–9d · ≥10d</li>
+                </ul>
+              </div>
             </div>
           </TooltipContent>
         </Tooltip>
@@ -650,15 +679,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             </Badge>
           </td>
         );
-      case 4: // SLA
+      case 4: { // SLA
+        const nfu = nextFollowUpMap[row.lead.id] || null;
+        const styles = LEVEL_STYLES[row.urgency];
+        const text = formatBadgeText(row.urgency, row.lead.kanban_stage, row.lead.stage_updated_at || null, row.lead.last_activity_at || null, nfu);
+        let tip = `${styles.label}`;
+        if (row.urgency === "scheduled" && nfu?.due_date) tip += ` · próx. ação ${format(new Date(nfu.due_date + "T00:00:00"), "dd/MM")}`;
+        else if (row.urgency === "today") tip += ` · follow-up hoje`;
+        else if (row.urgency === "critical" && nfu?.due_date) tip += ` · follow-up vencido (${format(new Date(nfu.due_date + "T00:00:00"), "dd/MM")})`;
+        else if (row.urgency === "warning" || row.urgency === "critical") tip += ` · sem ação agendada · ${formatSla(row)} sem atividade`;
+        else tip += ` · ${formatSla(row)} sem atividade`;
         return (
           <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
-              style={{ background: LEVEL_STYLES[row.urgency].bg, color: LEVEL_STYLES[row.urgency].color }}>
-              {LEVEL_STYLES[row.urgency].icon} {formatSla(row)}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-lg cursor-help"
+                  style={{ background: styles.bg, color: styles.color }}>
+                  {styles.icon} {text || formatSla(row)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-[11px]">{tip}</TooltipContent>
+            </Tooltip>
           </td>
         );
+      }
       case 5: // Porte
         return (
           <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>

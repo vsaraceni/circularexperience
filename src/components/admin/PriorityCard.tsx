@@ -37,11 +37,11 @@ const COLABORADORES_LABELS: Record<string, string> = {
 
 interface PriorityCardProps {
   lead: Lead;
-  hasPendingFollowUp?: boolean;
+  nextFollowUp?: { due_date: string } | null;
   onClick: (lead: Lead) => void;
 }
 
-const PriorityCard: React.FC<PriorityCardProps> = ({ lead, hasPendingFollowUp, onClick }) => {
+const PriorityCard: React.FC<PriorityCardProps> = ({ lead, nextFollowUp, onClick }) => {
   const stageColor = STAGE_COLORS[lead.kanban_stage] || "#9E9E9E";
   const porteLabel = lead.colaboradores ? COLABORADORES_LABELS[lead.colaboradores] || lead.colaboradores.replace(/_/g, " ") : null;
 
@@ -72,7 +72,7 @@ const PriorityCard: React.FC<PriorityCardProps> = ({ lead, hasPendingFollowUp, o
             stage={lead.kanban_stage}
             stageUpdatedAt={lead.stage_updated_at || null}
             lastActivityAt={lead.last_activity_at || null}
-            hasPendingFollowUp={hasPendingFollowUp}
+            nextFollowUp={nextFollowUp ?? null}
           />
         </div>
 
