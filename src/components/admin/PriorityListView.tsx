@@ -407,7 +407,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   // Derive filter options from data
   const stageOptions = useMemo(() => [...new Set(rows.map(r => STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage))].sort(), [rows]);
-  const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "✅ No prazo"];
+  const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "📅 Follow-up agendado", "✅ No prazo"];
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
