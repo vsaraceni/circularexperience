@@ -5,7 +5,7 @@ import {
   Mail, Send, ArrowRight, Phone, FileText, Linkedin,
   MessageSquare, XCircle, CheckCircle, Activity, Info,
 } from "lucide-react";
-import { getUrgencyLevel, LEVEL_STYLES, type UrgencyLevel } from "./UrgencyBadge";
+import { getUrgencyLevel, LEVEL_STYLES, formatBadgeText, type UrgencyLevel } from "./UrgencyBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
