@@ -111,31 +111,67 @@ interface UrgencyBadgeProps {
   stage: string;
   stageUpdatedAt: string | null;
   lastActivityAt: string | null;
+  /** Pending non-overdue follow-up if any. Pass `null` when none. */
+  nextFollowUp?: NextFollowUpInfo | null;
+  /** @deprecated use `nextFollowUp` — kept so legacy call sites still compile. */
   hasPendingFollowUp?: boolean;
 }
 
-export const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: string }> = {
-  normal: { bg: "#E8F5E9", color: "#388E3C", icon: "✅" },
-  scheduled: { bg: "#E3F2FD", color: "#1565C0", icon: "📅" },
-  warning: { bg: "#FFFDE7", color: "#F9A825", icon: "⚠️" },
-  critical: { bg: "#FDEDED", color: "#D32F2F", icon: "🔴" },
+export const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: React.ReactNode; label: string }> = {
+  normal:    { bg: "#E8F5E9", color: "#2E7D32", icon: <CheckCircle2 className="h-3 w-3" />,   label: "No prazo" },
+  scheduled: { bg: "#EDE7F6", color: "#5E35B1", icon: <CalendarClock className="h-3 w-3" />, label: "Agendado" },
+  today:     { bg: "#FFF3E0", color: "#E65100", icon: <AlarmClock className="h-3 w-3" />,    label: "Hoje" },
+  warning:   { bg: "#FFFDE7", color: "#F9A825", icon: <AlertTriangle className="h-3 w-3" />, label: "Atenção" },
+  critical:  { bg: "#FDEDED", color: "#D32F2F", icon: <AlertCircle className="h-3 w-3" />,   label: "Vencido" },
 };
 
-const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, lastActivityAt, hasPendingFollowUp }) => {
+/** Format the badge text given the urgency level + context. */
+export function formatBadgeText(
+  level: UrgencyLevel,
+  stage: string,
+  stageUpdatedAt: string | null,
+  lastActivityAt: string | null,
+  nextFollowUp?: NextFollowUpInfo | null,
+): string {
+  if (level === "today") return "hoje";
+  if (level === "scheduled" && nextFollowUp?.due_date) {
+    try {
+      return format(new Date(nextFollowUp.due_date + "T00:00:00"), "dd/MM", { locale: ptBR });
+    } catch { /* fall through */ }
+  }
+  if (level === "critical" && nextFollowUp?.due_date) {
+    // Overdue follow-up: show how many days late.
+    try {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const due = new Date(nextFollowUp.due_date + "T00:00:00");
+      const lateDays = differenceInDays(today, due);
+      return lateDays > 0 ? `+${lateDays}d` : "hoje";
+    } catch { /* fall through */ }
+  }
+  return formatElapsed(stage, stageUpdatedAt, lastActivityAt);
+}
+
+const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, lastActivityAt, nextFollowUp, hasPendingFollowUp }) => {
   if (stage === "fechado" || stage === "perdido") return null;
 
-  const elapsed = formatElapsed(stage, stageUpdatedAt, lastActivityAt, hasPendingFollowUp);
-  if (!elapsed) return null;
+  // Backwards-compat: legacy callers passing `hasPendingFollowUp={true}` had no
+  // due_date — treat them as "future follow-up, date unknown".
+  const fu: NextFollowUpInfo | null | undefined =
+    nextFollowUp !== undefined ? nextFollowUp : hasPendingFollowUp ? ({ due_date: "" } as any) : null;
 
-  const level = getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt, hasPendingFollowUp);
+  const level = getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt, fu);
+  const text = formatBadgeText(level, stage, stageUpdatedAt, lastActivityAt, fu);
+  if (!text) return null;
   const styles = LEVEL_STYLES[level];
 
   return (
     <span
-      className="inline-flex items-center gap-0.5 text-[11px] font-medium px-2 py-0.5 rounded-xl"
+      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-xl whitespace-nowrap"
       style={{ background: styles.bg, color: styles.color }}
+      title={`${styles.label} · ${text}`}
     >
-      {styles.icon} {elapsed}
+      {styles.icon}
+      {text}
     </span>
   );
 };
