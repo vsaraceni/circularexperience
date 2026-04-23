@@ -660,15 +660,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
             </Badge>
           </td>
         );
-      case 4: // SLA
+      case 4: { // SLA
+        const nfu = nextFollowUpMap[row.lead.id] || null;
+        const styles = LEVEL_STYLES[row.urgency];
+        const text = formatBadgeText(row.urgency, row.lead.kanban_stage, row.lead.stage_updated_at || null, row.lead.last_activity_at || null, nfu);
+        let tip = `${styles.label}`;
+        if (row.urgency === "scheduled" && nfu?.due_date) tip += ` · próx. ação ${format(new Date(nfu.due_date + "T00:00:00"), "dd/MM")}`;
+        else if (row.urgency === "today") tip += ` · follow-up hoje`;
+        else if (row.urgency === "critical" && nfu?.due_date) tip += ` · follow-up vencido (${format(new Date(nfu.due_date + "T00:00:00"), "dd/MM")})`;
+        else if (row.urgency === "warning" || row.urgency === "critical") tip += ` · sem ação agendada · ${formatSla(row)} sem atividade`;
+        else tip += ` · ${formatSla(row)} sem atividade`;
         return (
           <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
-              style={{ background: LEVEL_STYLES[row.urgency].bg, color: LEVEL_STYLES[row.urgency].color }}>
-              {LEVEL_STYLES[row.urgency].icon} {formatSla(row)}
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-lg cursor-help"
+                  style={{ background: styles.bg, color: styles.color }}>
+                  {styles.icon} {text || formatSla(row)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-[11px]">{tip}</TooltipContent>
+            </Tooltip>
           </td>
         );
+      }
       case 5: // Porte
         return (
           <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
