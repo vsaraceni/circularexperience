@@ -3,11 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import {
   ChevronUp, ChevronDown, Filter, X, AlertTriangle,
   Mail, Send, ArrowRight, Phone, FileText, Linkedin,
-  MessageSquare, XCircle, CheckCircle, Activity,
+  MessageSquare, XCircle, CheckCircle, Activity, Info,
 } from "lucide-react";
-import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
+import { getUrgencyLevel, LEVEL_STYLES, type UrgencyLevel } from "./UrgencyBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
 import SubmissionDialog from "./SubmissionDialog";
@@ -71,11 +72,16 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 const URGENCY_COLORS: Record<UrgencyLevel, string> = {
-  critical: "#D32F2F", warning: "#F4A736", normal: "#66BB6A",
+  critical: "#D32F2F", warning: "#F4A736", scheduled: "#1565C0", normal: "#66BB6A",
 };
 
 const URGENCY_LABELS: Record<UrgencyLevel, string> = {
-  critical: "🔴 Vencido", warning: "⚠️ Atenção", normal: "✅ No prazo",
+  critical: "🔴 Vencido", warning: "⚠️ Atenção", scheduled: "📅 Follow-up agendado", normal: "✅ No prazo",
+};
+
+// Lower number = higher severity for sort order
+const URGENCY_RANK: Record<UrgencyLevel, number> = {
+  critical: 0, warning: 1, scheduled: 2, normal: 3,
 };
 
 const TIER_MAP: Record<string, string[]> = {
@@ -401,7 +407,7 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
 
   // Derive filter options from data
   const stageOptions = useMemo(() => [...new Set(rows.map(r => STAGE_LABELS[r.lead.kanban_stage] || r.lead.kanban_stage))].sort(), [rows]);
-  const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "✅ No prazo"];
+  const slaOptions = ["🔴 Vencido", "⚠️ Atenção", "📅 Follow-up agendado", "✅ No prazo"];
   const porteOptions = ["Tier 1", "Tier 2", "Tier 3"];
   const respOptions = useMemo(() => [...new Set(rows.map(r => r.responsavel))].sort(), [rows]);
   const calorOptions = ["❄️ Frio", "🟡 Baixo", "🟡🟠 Médio", "🟡🟠🔴 Alto"];
@@ -454,7 +460,15 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       switch (sortCol) {
         case "empresa": cmp = (a.lead.company || "").localeCompare(b.lead.company || ""); break;
         case "etapa": cmp = (a.lead.kanban_stage).localeCompare(b.lead.kanban_stage); break;
-        case "sla": cmp = a.slaMs - b.slaMs; break;
+        case "sla": {
+          // Sort by severity rank first (critical → warning → scheduled → normal),
+          // then by elapsed time inside the same level. Inverting via mult keeps
+          // "desc" meaning "most severe / oldest first".
+          const rankDiff = URGENCY_RANK[b.urgency] - URGENCY_RANK[a.urgency];
+          if (rankDiff !== 0) { cmp = rankDiff; break; }
+          cmp = a.slaMs - b.slaMs;
+          break;
+        }
         case "porte": cmp = (COLABORADORES_WEIGHT[a.lead.colaboradores || ""] || 0) - (COLABORADORES_WEIGHT[b.lead.colaboradores || ""] || 0); break;
         case "calor": cmp = (a.lead.lead_heat || 0) - (b.lead.lead_heat || 0); break;
         case "responsavel": cmp = a.responsavel.localeCompare(b.responsavel); break;
@@ -556,7 +570,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Contato", sortKey: undefined, filter: undefined },
     { label: "Telefone", sortKey: undefined, filter: undefined },
     { label: "Etapa", sortKey: "etapa" as SortCol, filter: <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" /> },
-    { label: "SLA", sortKey: "sla" as SortCol, filter: <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" /> },
+    { label: "SLA", sortKey: "sla" as SortCol, filter: (
+      <>
+        <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" className="inline-flex items-center justify-center h-4 w-4 rounded ml-0.5 transition-colors"
+              style={{ color: 'hsl(var(--color-text-muted))' }} onClick={(e) => e.stopPropagation()}>
+              <Info className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <div className="text-[11px] space-y-1">
+              <p className="font-semibold">Limites de SLA por etapa</p>
+              <p>🟢 dentro do prazo · 🟡 atenção · 🔴 vencido · 📅 follow-up agendado</p>
+              <ul className="space-y-0.5 mt-1">
+                <li><b>Resposta rápida</b> (Novo, Welcome): &lt;2h · 2–4h · ≥4h</li>
+                <li><b>Curta</b> (Em Contato, Proposta): 0–1d · 2–3d · ≥4d</li>
+                <li><b>Longa</b> (Call Agendada, Nutrição): 0–4d · 5–9d · ≥10d</li>
+              </ul>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </>
+    ) },
     { label: "Porte", sortKey: "porte" as SortCol, filter: <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" /> },
     { label: "Calor", sortKey: "calor" as SortCol, filter: <ColumnFilter options={calorOptions} selected={filterCalor} onChange={setFilterCalor} label="Calor" /> },
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
@@ -617,8 +654,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         return (
           <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
-              style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
-              {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
+              style={{ background: LEVEL_STYLES[row.urgency].bg, color: LEVEL_STYLES[row.urgency].color }}>
+              {LEVEL_STYLES[row.urgency].icon} {formatSla(row)}
             </span>
           </td>
         );

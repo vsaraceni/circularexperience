@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
 
-export type UrgencyLevel = "normal" | "warning" | "critical";
+export type UrgencyLevel = "normal" | "scheduled" | "warning" | "critical";
 
 export const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number; warningD?: number; criticalD?: number; useHours?: boolean }> = {
   novo: { warningH: 2, criticalH: 4, useHours: true },
@@ -18,7 +18,7 @@ export function getUrgencyLevel(
   lastActivityAt: string | null,
   hasPendingFollowUp?: boolean
 ): UrgencyLevel {
-  if (hasPendingFollowUp) return "normal";
+  if (hasPendingFollowUp) return "scheduled";
   if (stage === "fechado" || stage === "perdido") return "normal";
 
   const config = SLA_CONFIG[stage];
@@ -44,7 +44,6 @@ export function getUrgencyLevel(
 }
 
 function formatElapsed(stage: string, stageUpdatedAt: string | null, lastActivityAt: string | null, hasPendingFollowUp?: boolean): string {
-  if (hasPendingFollowUp) return "✅ FU";
   const config = SLA_CONFIG[stage];
   if (!config) return "";
 
@@ -73,8 +72,9 @@ interface UrgencyBadgeProps {
   hasPendingFollowUp?: boolean;
 }
 
-const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: string }> = {
+export const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: string }> = {
   normal: { bg: "#E8F5E9", color: "#388E3C", icon: "✅" },
+  scheduled: { bg: "#E3F2FD", color: "#1565C0", icon: "📅" },
   warning: { bg: "#FFFDE7", color: "#F9A825", icon: "⚠️" },
   critical: { bg: "#FDEDED", color: "#D32F2F", icon: "🔴" },
 };
