@@ -631,8 +631,8 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
         return (
           <td key={logicalIdx} className="py-2 px-3 align-middle" style={{ width: colWidths[displayIdx] + '%' }}>
             <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-lg"
-              style={{ background: row.urgency === "critical" ? "#FDEDED" : row.urgency === "warning" ? "#FFFDE7" : "#E8F5E9", color: URGENCY_COLORS[row.urgency] }}>
-              {row.urgency === "critical" ? "🔴" : row.urgency === "warning" ? "⚠️" : "✅"} {formatSla(row)}
+              style={{ background: LEVEL_STYLES[row.urgency].bg, color: LEVEL_STYLES[row.urgency].color }}>
+              {LEVEL_STYLES[row.urgency].icon} {formatSla(row)}
             </span>
           </td>
         );
