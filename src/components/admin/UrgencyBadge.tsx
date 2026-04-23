@@ -1,7 +1,24 @@
-import { Badge } from "@/components/ui/badge";
-import { differenceInHours, differenceInMinutes, differenceInDays } from "date-fns";
+import { differenceInHours, differenceInMinutes, differenceInDays, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CalendarClock, AlarmClock, AlertTriangle, CheckCircle2, AlertCircle } from "lucide-react";
+import React from "react";
 
-export type UrgencyLevel = "normal" | "scheduled" | "warning" | "critical";
+/**
+ * Urgency model — single source of truth used in Drawer, Kanban card,
+ * Priority list and Missions banner.
+ *
+ * Severity (most → least urgent):
+ *   critical   🔴  follow-up overdue OR no follow-up & past stage critical
+ *   today      🟡  follow-up due today
+ *   warning    🟡  no follow-up & past stage warning (suffix "sem ação")
+ *   scheduled  🟣  follow-up planned in the future (lead under control)
+ *   normal     🟢  no follow-up & still inside stage time budget
+ */
+export type UrgencyLevel = "normal" | "scheduled" | "warning" | "today" | "critical";
+
+export interface NextFollowUpInfo {
+  due_date: string; // YYYY-MM-DD
+}
 
 export const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number; warningD?: number; criticalD?: number; useHours?: boolean }> = {
   novo: { warningH: 2, criticalH: 4, useHours: true },
@@ -12,15 +29,40 @@ export const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number;
   nutricao: { warningD: 5, criticalD: 10 },
 };
 
+/**
+ * Compute urgency.
+ *
+ * `followUp` may be:
+ *   - `null` / `undefined` → no scheduled follow-up.
+ *   - `boolean` (legacy) → true means "has a pending non-overdue follow-up";
+ *     mapped to `scheduled` for backwards compat.
+ *   - `{ due_date }` → exact next follow-up; classified as overdue / today / future.
+ */
 export function getUrgencyLevel(
   stage: string,
   stageUpdatedAt: string | null,
   lastActivityAt: string | null,
-  hasPendingFollowUp?: boolean
+  followUp?: NextFollowUpInfo | boolean | null,
 ): UrgencyLevel {
-  if (hasPendingFollowUp) return "scheduled";
   if (stage === "fechado" || stage === "perdido") return "normal";
 
+  // Resolve follow-up bucket
+  let fuBucket: "overdue" | "today" | "future" | "none" = "none";
+  if (followUp && typeof followUp === "object" && followUp.due_date) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const due = new Date(followUp.due_date + "T00:00:00");
+    if (due < today) fuBucket = "overdue";
+    else if (due.getTime() === today.getTime()) fuBucket = "today";
+    else fuBucket = "future";
+  } else if (followUp === true) {
+    fuBucket = "future"; // legacy boolean
+  }
+
+  if (fuBucket === "overdue") return "critical";
+  if (fuBucket === "today") return "today";
+  if (fuBucket === "future") return "scheduled";
+
+  // No follow-up → fall back to time-based SLA per stage.
   const config = SLA_CONFIG[stage];
   if (!config) return "normal";
 
