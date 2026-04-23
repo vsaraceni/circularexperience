@@ -241,7 +241,15 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
           </SheetTitle>
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline">{STAGE_LABELS[lead.kanban_stage] || lead.kanban_stage}</Badge>
-            <UrgencyBadge stage={lead.kanban_stage} stageUpdatedAt={lead.stage_updated_at || null} lastActivityAt={lead.last_activity_at || null} />
+            <UrgencyBadge
+              stage={lead.kanban_stage}
+              stageUpdatedAt={lead.stage_updated_at || null}
+              lastActivityAt={lead.last_activity_at || null}
+              nextFollowUp={(() => {
+                const pending = followUps.filter(f => !f.completed).sort((a, b) => a.due_date.localeCompare(b.due_date))[0];
+                return pending ? { due_date: pending.due_date } : null;
+              })()}
+            />
             {lead.welcome_sent && (
               <Badge variant="outline" className="text-xs gap-1">
                 <CheckCircle className="h-3 w-3" /> Welcome enviado
