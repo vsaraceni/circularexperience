@@ -72,16 +72,20 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 const URGENCY_COLORS: Record<UrgencyLevel, string> = {
-  critical: "#D32F2F", warning: "#F4A736", scheduled: "#1565C0", normal: "#66BB6A",
+  critical: "#D32F2F", today: "#E65100", warning: "#F4A736", scheduled: "#5E35B1", normal: "#2E7D32",
 };
 
 const URGENCY_LABELS: Record<UrgencyLevel, string> = {
-  critical: "🔴 Vencido", warning: "⚠️ Atenção", scheduled: "📅 Follow-up agendado", normal: "✅ No prazo",
+  critical: "🔴 Vencido / Atrasado",
+  today: "⏰ Follow-up hoje",
+  warning: "⚠️ Sem ação · atenção",
+  scheduled: "📅 Follow-up agendado",
+  normal: "✅ No prazo",
 };
 
-// Lower number = higher severity for sort order
+// Lower number = higher severity for sort order.
 const URGENCY_RANK: Record<UrgencyLevel, number> = {
-  critical: 0, warning: 1, scheduled: 2, normal: 3,
+  critical: 0, today: 1, warning: 2, scheduled: 3, normal: 4,
 };
 
 const TIER_MAP: Record<string, string[]> = {
