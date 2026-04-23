@@ -173,7 +173,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       });
     });
     return map;
-  }, [activeLeads, sortMode, followUpsByLead]);
+  }, [activeLeads, sortMode, nextFollowUpByLead]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -560,6 +560,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   profiles={profiles}
                   proposals={stageProposals}
                   followUpsByLead={followUpsByLead}
+                  nextFollowUpByLead={nextFollowUpByLead}
                   onOpenDrawer={(lead) => { setDrawerLead(lead); setDrawerTab("resumo"); setDrawerOpen(true); }}
                   onQuickAction={handleQuickAction}
                 />
