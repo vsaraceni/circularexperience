@@ -120,6 +120,17 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return map;
   }, [allPendingFollowUps]);
 
+  // Map lead_id → nearest pending follow-up. Drives urgency severity.
+  const nextFollowUpByLead = useMemo(() => {
+    const map: Record<string, { due_date: string }> = {};
+    allPendingFollowUps.forEach(f => {
+      if (!map[f.lead_id] || f.due_date < map[f.lead_id].due_date) {
+        map[f.lead_id] = { due_date: f.due_date };
+      }
+    });
+    return map;
+  }, [allPendingFollowUps]);
+
   const handleDragStart = (event: DragStartEvent) => {
     const lead = leads.find((l) => l.id === event.active.id);
     setActiveLead(lead || null);
@@ -139,16 +150,12 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
       if (map[stage]) map[stage].push(l);
       else map["novo"].push(l);
     });
-    const URGENCY_ORDER = { critical: 0, warning: 1, normal: 2 };
+    const URGENCY_ORDER: Record<string, number> = { critical: 0, today: 1, warning: 2, scheduled: 3, normal: 4 };
     Object.keys(map).forEach((key) => {
       map[key].sort((a, b) => {
         if (sortMode === "urgency") {
-          const fuA = followUpsByLead[a.id];
-          const fuB = followUpsByLead[b.id];
-          const hasPendingA = fuA ? (fuA.hasToday || fuA.hasFuture) && !fuA.hasOverdue : false;
-          const hasPendingB = fuB ? (fuB.hasToday || fuB.hasFuture) && !fuB.hasOverdue : false;
-          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null, hasPendingA);
-          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null, hasPendingB);
+          const la = getUrgencyLevel(a.kanban_stage, a.stage_updated_at || null, a.last_activity_at || null, nextFollowUpByLead[a.id] || null);
+          const lb = getUrgencyLevel(b.kanban_stage, b.stage_updated_at || null, b.last_activity_at || null, nextFollowUpByLead[b.id] || null);
           const diff = URGENCY_ORDER[la] - URGENCY_ORDER[lb];
           if (diff !== 0) return diff;
           const da = new Date(a.stage_updated_at || a.created_at || 0).getTime();
