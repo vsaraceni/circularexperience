@@ -3,11 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import {
   ChevronUp, ChevronDown, Filter, X, AlertTriangle,
   Mail, Send, ArrowRight, Phone, FileText, Linkedin,
-  MessageSquare, XCircle, CheckCircle, Activity,
+  MessageSquare, XCircle, CheckCircle, Activity, Info,
 } from "lucide-react";
-import { getUrgencyLevel, type UrgencyLevel } from "./UrgencyBadge";
+import { getUrgencyLevel, LEVEL_STYLES, type UrgencyLevel } from "./UrgencyBadge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import LeadDrawer from "./LeadDrawer";
 import LostDialog from "./LostDialog";
 import SubmissionDialog from "./SubmissionDialog";
