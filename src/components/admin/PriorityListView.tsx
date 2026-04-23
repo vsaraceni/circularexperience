@@ -460,7 +460,15 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
       switch (sortCol) {
         case "empresa": cmp = (a.lead.company || "").localeCompare(b.lead.company || ""); break;
         case "etapa": cmp = (a.lead.kanban_stage).localeCompare(b.lead.kanban_stage); break;
-        case "sla": cmp = a.slaMs - b.slaMs; break;
+        case "sla": {
+          // Sort by severity rank first (critical → warning → scheduled → normal),
+          // then by elapsed time inside the same level. Inverting via mult keeps
+          // "desc" meaning "most severe / oldest first".
+          const rankDiff = URGENCY_RANK[b.urgency] - URGENCY_RANK[a.urgency];
+          if (rankDiff !== 0) { cmp = rankDiff; break; }
+          cmp = a.slaMs - b.slaMs;
+          break;
+        }
         case "porte": cmp = (COLABORADORES_WEIGHT[a.lead.colaboradores || ""] || 0) - (COLABORADORES_WEIGHT[b.lead.colaboradores || ""] || 0); break;
         case "calor": cmp = (a.lead.lead_heat || 0) - (b.lead.lead_heat || 0); break;
         case "responsavel": cmp = a.responsavel.localeCompare(b.responsavel); break;
