@@ -570,7 +570,30 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
     { label: "Contato", sortKey: undefined, filter: undefined },
     { label: "Telefone", sortKey: undefined, filter: undefined },
     { label: "Etapa", sortKey: "etapa" as SortCol, filter: <ColumnFilter options={stageOptions} selected={filterEtapa} onChange={setFilterEtapa} label="Etapa" /> },
-    { label: "SLA", sortKey: "sla" as SortCol, filter: <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" /> },
+    { label: "SLA", sortKey: "sla" as SortCol, filter: (
+      <>
+        <ColumnFilter options={slaOptions} selected={filterSla} onChange={setFilterSla} label="SLA" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" className="inline-flex items-center justify-center h-4 w-4 rounded ml-0.5 transition-colors"
+              style={{ color: 'hsl(var(--color-text-muted))' }} onClick={(e) => e.stopPropagation()}>
+              <Info className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs">
+            <div className="text-[11px] space-y-1">
+              <p className="font-semibold">Limites de SLA por etapa</p>
+              <p>🟢 dentro do prazo · 🟡 atenção · 🔴 vencido · 📅 follow-up agendado</p>
+              <ul className="space-y-0.5 mt-1">
+                <li><b>Resposta rápida</b> (Novo, Welcome): &lt;2h · 2–4h · ≥4h</li>
+                <li><b>Curta</b> (Em Contato, Proposta): 0–1d · 2–3d · ≥4d</li>
+                <li><b>Longa</b> (Call Agendada, Nutrição): 0–4d · 5–9d · ≥10d</li>
+              </ul>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </>
+    ) },
     { label: "Porte", sortKey: "porte" as SortCol, filter: <ColumnFilter options={porteOptions} selected={filterPorte} onChange={setFilterPorte} label="Porte" /> },
     { label: "Calor", sortKey: "calor" as SortCol, filter: <ColumnFilter options={calorOptions} selected={filterCalor} onChange={setFilterCalor} label="Calor" /> },
     { label: "Responsável", sortKey: "responsavel" as SortCol, filter: <ColumnFilter options={respOptions} selected={filterResp} onChange={setFilterResp} label="Responsável" /> },
