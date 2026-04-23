@@ -590,15 +590,34 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
               <Info className="h-3 w-3" />
             </button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-xs">
-            <div className="text-[11px] space-y-1">
-              <p className="font-semibold">Limites de SLA por etapa</p>
-              <p>🟢 dentro do prazo · 🟡 atenção · 🔴 vencido · 📅 follow-up agendado</p>
-              <ul className="space-y-0.5 mt-1">
-                <li><b>Resposta rápida</b> (Novo, Welcome): &lt;2h · 2–4h · ≥4h</li>
-                <li><b>Curta</b> (Em Contato, Proposta): 0–1d · 2–3d · ≥4d</li>
-                <li><b>Longa</b> (Call Agendada, Nutrição): 0–4d · 5–9d · ≥10d</li>
+          <TooltipContent side="bottom" className="max-w-sm">
+            <div className="text-[11px] space-y-2">
+              <div>
+                <p className="font-semibold mb-1">Como o SLA é calculado</p>
+                <p className="text-[10px] opacity-80">Prioriza o follow-up agendado. Sem follow-up, usa o tempo na etapa.</p>
+              </div>
+              <ul className="space-y-1">
+                {(["critical","today","warning","scheduled","normal"] as UrgencyLevel[]).map(lv => (
+                  <li key={lv} className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ background: LEVEL_STYLES[lv].bg, border: `1px solid ${LEVEL_STYLES[lv].color}` }} />
+                    <span><b style={{ color: LEVEL_STYLES[lv].color }}>{LEVEL_STYLES[lv].label}</b> — {(
+                      lv === "critical" ? "follow-up vencido ou tempo crítico sem ação" :
+                      lv === "today" ? "follow-up agendado para hoje" :
+                      lv === "warning" ? "passou do limite e não tem ação agendada" :
+                      lv === "scheduled" ? "tem follow-up agendado no futuro (sob controle)" :
+                      "dentro do prazo da etapa"
+                    )}</span>
+                  </li>
+                ))}
               </ul>
+              <div className="border-t pt-1.5">
+                <p className="font-semibold">Limites por etapa (quando não há follow-up)</p>
+                <ul className="space-y-0.5 mt-1 opacity-90">
+                  <li><b>Resposta rápida</b> (Novo, Welcome): &lt;2h · 2–4h · ≥4h</li>
+                  <li><b>Curta</b> (Em Contato, Proposta): 0–1d · 2–3d · ≥4d</li>
+                  <li><b>Longa</b> (Call Agendada, Nutrição): 0–4d · 5–9d · ≥10d</li>
+                </ul>
+              </div>
             </div>
           </TooltipContent>
         </Tooltip>
