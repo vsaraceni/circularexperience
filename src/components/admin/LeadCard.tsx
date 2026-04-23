@@ -195,7 +195,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
             stage={lead.kanban_stage}
             stageUpdatedAt={lead.stage_updated_at || null}
             lastActivityAt={lead.last_activity_at || null}
-            hasPendingFollowUp={hasPendingFollowUp}
+            nextFollowUp={nextFollowUp ?? null}
           />
           {followUpStatus?.hasOverdue && (
             <Tooltip>
