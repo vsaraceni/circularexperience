@@ -34,7 +34,7 @@ const Login = () => {
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
-            emailRedirectTo: `${window.location.origin}/admin/propostas`,
+            emailRedirectTo: `${window.location.origin}/admin/pipeline`,
           },
         });
         if (error) {
@@ -55,7 +55,7 @@ const Login = () => {
           toast.error(error.message);
         } else {
           toast.success("Login realizado com sucesso!");
-          navigate("/admin/propostas");
+          navigate("/admin/pipeline");
         }
       }
     } catch (error) {
@@ -70,7 +70,7 @@ const Login = () => {
     setIsGoogleLoading(true);
     try {
       const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/admin/propostas`,
+        redirect_uri: `${window.location.origin}/admin/pipeline`,
       });
       if (error) {
         toast.error("Erro ao entrar com Google. Tente novamente.");
