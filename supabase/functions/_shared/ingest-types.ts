@@ -1,5 +1,5 @@
 // Tipos e schemas Zod compartilhados pelo ingest-lead.
-// Usados também nos testes de unidade.
+// Usados também nos testes de unidade (Vitest no front).
 
 import { z } from "https://esm.sh/zod@3.23.8";
 
@@ -59,22 +59,4 @@ export interface IngestResult {
   status: IngestStatus;
   lead_id?: string;
   error?: string;
-}
-
-/** SHA-256 hex helper. Usado para hash da API key. */
-export async function sha256Hex(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/** Faz parse do header x-api-key no formato `prefix.secret`. */
-export function parseApiKey(header: string | null): { prefix: string; secret: string } | null {
-  if (!header) return null;
-  const trimmed = header.trim();
-  const dot = trimmed.indexOf(".");
-  if (dot <= 0 || dot === trimmed.length - 1) return null;
-  return { prefix: trimmed.slice(0, dot), secret: trimmed.slice(dot + 1) };
 }
