@@ -361,6 +361,19 @@ Deno.serve(async (req) => {
     }
   }
 
+  // 10b. WhatsApp via GPT Maker (não bloqueia resposta)
+  if (source.whatsapp_auto_send) {
+    EdgeRuntime.waitUntil(
+      supabase.functions
+        .invoke("send-whatsapp-gptmaker", {
+          body: { lead_id: leadId },
+        })
+        .catch((err) =>
+          console.error("send-whatsapp-gptmaker invoke failed:", err),
+        ),
+    );
+  }
+
   // 11. Log final
   await writeLog(supabase, {
     sourceSlug: source.slug,
