@@ -431,6 +431,9 @@ export type Database = {
           id: string
           nome: string
           notas: string | null
+          previous_api_key_expires_at: string | null
+          previous_api_key_hash: string | null
+          previous_api_key_prefix: string | null
           rate_limit_per_min: number
           slug: string
           updated_at: string
@@ -451,6 +454,9 @@ export type Database = {
           id?: string
           nome: string
           notas?: string | null
+          previous_api_key_expires_at?: string | null
+          previous_api_key_hash?: string | null
+          previous_api_key_prefix?: string | null
           rate_limit_per_min?: number
           slug: string
           updated_at?: string
@@ -471,6 +477,9 @@ export type Database = {
           id?: string
           nome?: string
           notas?: string | null
+          previous_api_key_expires_at?: string | null
+          previous_api_key_hash?: string | null
+          previous_api_key_prefix?: string | null
           rate_limit_per_min?: number
           slug?: string
           updated_at?: string
