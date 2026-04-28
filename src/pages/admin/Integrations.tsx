@@ -101,17 +101,18 @@ export default function Integrations() {
 
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando...</div>
-        ) : sources.length === 0 ? (
-          <div className="border rounded-lg p-12 text-center">
-            <Plug className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Nenhuma integração cadastrada ainda.</p>
-            <Button className="mt-4" onClick={() => { setEditing(null); setFormOpen(true); }}>
-              <Plus className="h-4 w-4 mr-1.5" /> Criar primeira
-            </Button>
-          </div>
         ) : (
           <div className="space-y-3">
             <WhatsAppPanel />
+            {sources.length === 0 && (
+              <div className="border rounded-lg p-12 text-center">
+                <Plug className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Nenhuma integração cadastrada ainda.</p>
+                <Button className="mt-4" onClick={() => { setEditing(null); setFormOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-1.5" /> Criar primeira
+                </Button>
+              </div>
+            )}
             {sources.map((s) => {
               const m = metrics[s.slug];
               const grace = s.previous_api_key_expires_at && new Date(s.previous_api_key_expires_at) > new Date();
