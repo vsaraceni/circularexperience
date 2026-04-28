@@ -22,6 +22,7 @@ export interface IntegrationFormValues {
   whatsapp_auto_send: boolean;
   whatsapp_channel_id: string | null;
   produto_label: string | null;
+  whatsapp_agent_id: string | null;
 }
 
 interface Props {
@@ -48,6 +49,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [capi, setCapi] = useState(false);
   const [whatsappAuto, setWhatsappAuto] = useState(false);
   const [whatsappChannelId, setWhatsappChannelId] = useState("");
+  const [whatsappAgentId, setWhatsappAgentId] = useState("");
   const [produtoLabel, setProdutoLabel] = useState("");
   const [schemaText, setSchemaText] = useState("{}");
   const [notas, setNotas] = useState("");
@@ -64,6 +66,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setCapi(source?.capi_habilitado ?? false);
     setWhatsappAuto(source?.whatsapp_auto_send ?? false);
     setWhatsappChannelId(source?.whatsapp_channel_id ?? "");
+    setWhatsappAgentId(source?.whatsapp_agent_id ?? "");
     setProdutoLabel(source?.produto_label ?? "");
     setSchemaText(JSON.stringify(source?.custom_field_schema ?? {}, null, 2));
     setNotas(source?.notas ?? "");
@@ -111,6 +114,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         notas,
         whatsapp_auto_send: whatsappAuto,
         whatsapp_channel_id: whatsappChannelId.trim() || null,
+        whatsapp_agent_id: whatsappAgentId.trim() || null,
         produto_label: produtoLabel.trim() || null,
       });
     } finally {
@@ -240,14 +244,28 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
               <Switch checked={whatsappAuto} onCheckedChange={setWhatsappAuto} />
             </div>
             {whatsappAuto && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Channel ID específico (opcional)</Label>
-                <Input
-                  value={whatsappChannelId}
-                  onChange={(e) => setWhatsappChannelId(e.target.value)}
-                  placeholder="Deixe vazio para usar o canal padrão"
-                  className="text-sm"
-                />
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Channel ID específico (opcional)</Label>
+                  <Input
+                    value={whatsappChannelId}
+                    onChange={(e) => setWhatsappChannelId(e.target.value)}
+                    placeholder="Deixe vazio para usar o canal padrão"
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Agent ID do GPT Maker (opcional)</Label>
+                  <Input
+                    value={whatsappAgentId}
+                    onChange={(e) => setWhatsappAgentId(e.target.value)}
+                    placeholder="Deixe vazio para usar o agente padrão"
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Se preenchido, o briefing do lead (produto, campanha, nome, empresa) é injetado no contexto deste agente antes do <code>start-conversation</code>.
+                  </p>
+                </div>
               </div>
             )}
           </div>
