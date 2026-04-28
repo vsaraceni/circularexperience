@@ -438,6 +438,7 @@ export type Database = {
           rate_limit_per_min: number
           slug: string
           updated_at: string
+          whatsapp_agent_id: string | null
           whatsapp_auto_send: boolean
           whatsapp_channel_id: string | null
         }
@@ -464,6 +465,7 @@ export type Database = {
           rate_limit_per_min?: number
           slug: string
           updated_at?: string
+          whatsapp_agent_id?: string | null
           whatsapp_auto_send?: boolean
           whatsapp_channel_id?: string | null
         }
@@ -490,6 +492,7 @@ export type Database = {
           rate_limit_per_min?: number
           slug?: string
           updated_at?: string
+          whatsapp_agent_id?: string | null
           whatsapp_auto_send?: boolean
           whatsapp_channel_id?: string | null
         }
