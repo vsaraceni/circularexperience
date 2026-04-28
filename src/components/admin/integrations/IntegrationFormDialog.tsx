@@ -19,6 +19,8 @@ export interface IntegrationFormValues {
   capi_habilitado: boolean;
   custom_field_schema: Record<string, unknown>;
   notas: string;
+  whatsapp_auto_send: boolean;
+  whatsapp_channel_id: string | null;
 }
 
 interface Props {
@@ -43,6 +45,8 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [emails, setEmails] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState("");
   const [capi, setCapi] = useState(false);
+  const [whatsappAuto, setWhatsappAuto] = useState(false);
+  const [whatsappChannelId, setWhatsappChannelId] = useState("");
   const [schemaText, setSchemaText] = useState("{}");
   const [notas, setNotas] = useState("");
   const [schemaError, setSchemaError] = useState("");
@@ -56,6 +60,8 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setDefaultStage(source?.default_stage ?? "novo");
     setEmails(source?.email_notificar ?? []);
     setCapi(source?.capi_habilitado ?? false);
+    setWhatsappAuto(source?.whatsapp_auto_send ?? false);
+    setWhatsappChannelId(source?.whatsapp_channel_id ?? "");
     setSchemaText(JSON.stringify(source?.custom_field_schema ?? {}, null, 2));
     setNotas(source?.notas ?? "");
     setCorsInput("");
@@ -100,6 +106,8 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         capi_habilitado: capi,
         custom_field_schema: schema,
         notas,
+        whatsapp_auto_send: whatsappAuto,
+        whatsapp_channel_id: whatsappChannelId.trim() || null,
       });
     } finally {
       setSubmitting(false);
@@ -203,6 +211,29 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
               <p className="text-xs text-muted-foreground">Dispara conversão no Meta Ads ao receber lead</p>
             </div>
             <Switch checked={capi} onCheckedChange={setCapi} />
+          </div>
+
+          <div className="rounded-lg border p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label>Disparar WhatsApp automático (GPT Maker)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Inicia conversa via GPT Maker quando o lead chega. Bloqueia reenvio nas próximas 24h.
+                </p>
+              </div>
+              <Switch checked={whatsappAuto} onCheckedChange={setWhatsappAuto} />
+            </div>
+            {whatsappAuto && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Channel ID específico (opcional)</Label>
+                <Input
+                  value={whatsappChannelId}
+                  onChange={(e) => setWhatsappChannelId(e.target.value)}
+                  placeholder="Deixe vazio para usar o canal padrão"
+                  className="text-sm"
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">
