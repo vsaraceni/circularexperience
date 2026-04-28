@@ -34,7 +34,7 @@ export async function authenticateApiKey(
   const prefix = rawKey.slice(0, 8);
 
   const SELECT_COLS =
-    "id, slug, nome, api_key_prefix, api_key_hash, previous_api_key_prefix, previous_api_key_hash, previous_api_key_expires_at, ativo, capi_habilitado, capi_action_source, email_notificar, default_stage, default_assignee, cors_origins, rate_limit_per_min, custom_field_schema";
+    "id, slug, nome, api_key_prefix, api_key_hash, previous_api_key_prefix, previous_api_key_hash, previous_api_key_expires_at, ativo, capi_habilitado, capi_action_source, email_notificar, default_stage, default_assignee, cors_origins, rate_limit_per_min, custom_field_schema, whatsapp_auto_send, whatsapp_channel_id";
 
   const { data: candidates, error } = await supabase
     .from("lead_sources")
