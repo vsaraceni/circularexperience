@@ -434,6 +434,7 @@ export type Database = {
           previous_api_key_expires_at: string | null
           previous_api_key_hash: string | null
           previous_api_key_prefix: string | null
+          produto_label: string | null
           rate_limit_per_min: number
           slug: string
           updated_at: string
@@ -459,6 +460,7 @@ export type Database = {
           previous_api_key_expires_at?: string | null
           previous_api_key_hash?: string | null
           previous_api_key_prefix?: string | null
+          produto_label?: string | null
           rate_limit_per_min?: number
           slug: string
           updated_at?: string
@@ -484,6 +486,7 @@ export type Database = {
           previous_api_key_expires_at?: string | null
           previous_api_key_hash?: string | null
           previous_api_key_prefix?: string | null
+          produto_label?: string | null
           rate_limit_per_min?: number
           slug?: string
           updated_at?: string
