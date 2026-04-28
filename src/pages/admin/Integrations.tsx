@@ -49,12 +49,12 @@ export default function Integrations() {
 
   const handleSubmit = async (values: IntegrationFormValues) => {
     if (editing) {
-      await callManage("update", { id: editing.id, ...values });
+      await callManage("update", { id: editing.id, ...(values as unknown as Record<string, unknown>) });
       toast.success("Integração atualizada");
       setFormOpen(false);
       refresh();
     } else {
-      const data = await callManage("create", values);
+      const data = await callManage("create", values as unknown as Record<string, unknown>);
       toast.success("Integração criada");
       setFormOpen(false);
       refresh();
