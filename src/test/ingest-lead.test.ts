@@ -90,7 +90,11 @@ describe("normalize", () => {
 });
 
 describe("findDuplicate (mock supabase)", () => {
-  function buildSupabaseMock(strongResult: unknown, softResult: unknown) {
+  function buildSupabaseMock(
+    strongResult: unknown,
+    softResult: unknown,
+    opts: { hasSourceId: boolean },
+  ) {
     const calls: string[] = [];
     const builder = (kind: "strong" | "soft"): any => ({
       select: () => builder(kind),
@@ -110,6 +114,9 @@ describe("findDuplicate (mock supabase)", () => {
     return {
       from: () => {
         invocation += 1;
+        // Quando não há sourceId, findDuplicate pula a strong query — então a
+        // primeira (e única) chamada é a soft.
+        if (!opts.hasSourceId) return builder("soft");
         return builder(invocation === 1 ? "strong" : "soft");
       },
       _calls: calls,
@@ -117,7 +124,7 @@ describe("findDuplicate (mock supabase)", () => {
   }
 
   it("retorna lead_id existente quando match por (origem, source_id)", async () => {
-    const supa = buildSupabaseMock({ id: "lead-strong" }, null);
+    const supa = buildSupabaseMock({ id: "lead-strong" }, null, { hasSourceId: true });
     const result = await findDuplicate(supa, {
       origem: "meta_ads",
       sourceId: "fb-123",
@@ -127,7 +134,7 @@ describe("findDuplicate (mock supabase)", () => {
   });
 
   it("retorna lead_id existente quando match brando por email", async () => {
-    const supa = buildSupabaseMock(null, { id: "lead-soft" });
+    const supa = buildSupabaseMock(null, { id: "lead-soft" }, { hasSourceId: false });
     const result = await findDuplicate(supa, {
       origem: "lp_ce",
       sourceId: null,
@@ -137,7 +144,7 @@ describe("findDuplicate (mock supabase)", () => {
   });
 
   it("retorna null quando nenhum match", async () => {
-    const supa = buildSupabaseMock(null, null);
+    const supa = buildSupabaseMock(null, null, { hasSourceId: false });
     const result = await findDuplicate(supa, {
       origem: "lp_ce",
       sourceId: null,
