@@ -148,7 +148,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
             <Input
               value={produtoLabel}
               onChange={(e) => setProdutoLabel(e.target.value)}
-              placeholder="Ex: Circular Experience — workshop de economia circular"
+              placeholder="Ex: Circular Experience — workshop/imersão de economia circular"
             />
             <p className="text-xs text-muted-foreground">
               Texto que vai pro agente do WhatsApp como contexto. Se vazio, usa o nome da fonte. A campanha específica vem do <code className="text-[10px]">utm_campaign</code> ou de <code className="text-[10px]">custom_fields.campanha_label</code> do anúncio.
