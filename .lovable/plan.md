@@ -1,82 +1,154 @@
-## Objetivo
+## Painel de Integrações de Leads
 
-Rotacionar API key da `lp_ce`, validar o `ingest-lead` end-to-end com 4 cenários e confirmar efeitos colaterais (email interno, CAPI skip, activity log).
+Criar uma UI dentro do CRM para gerenciar as fontes de leads (`lead_sources`) que hoje só existem no banco. Permite cadastrar novos canais (LPs, formulários externos, parceiros) sem precisar de migration manual.
 
-## Credenciais geradas (lp_ce)
+**Decisões aprovadas:**
+- Localização: **Admin → Integrações** (item novo na navbar admin)
+- Acesso: **Apenas admin**
+- Rotação de chave: **Período de graça de 24h** (chave antiga continua válida até expirar)
 
-- **Raw key (header `x-mc-api-key`):** `pk_lpce_OZ0-v2OErbMMDsyL8Afdi0X6AoricrWJ`
-- **Hash bcrypt (banco):** `$2b$12$YlvvlI4Js3IeGRWtZ5br8ePO76P9AtD1wZq7TYGyUorr8h1bSgvy2`
+---
 
-⚠️ Salve a raw key num gerenciador agora — depois ela não fica em lugar nenhum.
+### 1. Mudanças no banco
 
-## Etapas
+**Tabela `lead_sources`** — adicionar colunas para suportar rotação com graça:
+- `previous_api_key_hash text` — hash da chave anterior (nullable)
+- `previous_api_key_prefix text` — prefixo anterior (nullable)
+- `previous_api_key_expires_at timestamptz` — quando a chave antiga deixa de funcionar (nullable)
 
-### 1. Migration: atualizar hash da lp_ce
+RLS já está OK (`is_admin(auth.uid())` cobre tudo). Sem mudanças em policies.
 
-```sql
-UPDATE lead_sources
-SET api_key_hash = '$2b$12$YlvvlI4Js3IeGRWtZ5br8ePO76P9AtD1wZq7TYGyUorr8h1bSgvy2',
-    api_key_prefix = 'pk_lpce_',
-    updated_at = now()
-WHERE slug = 'lp_ce';
+**`authenticateApiKey` (edge `_shared/auth.ts`)** — ampliar lookup para também tentar `previous_api_key_prefix` quando o prefixo bater e `previous_api_key_expires_at > now()`. Se a chave antiga for usada, logar em `lead_ingest_log` com flag `using_grace_key: true` no payload do erro/contexto (apenas observabilidade).
+
+---
+
+### 2. Página `/admin/integracoes`
+
+**Rota protegida** com `<ProtectedRoute requireAdmin>` no `App.tsx`.
+
+**Item de menu** em `CrmNavbar.tsx`, visível apenas para admin (já existe lógica `isAdmin`). Ícone: `Plug` (lucide).
+
+**Layout da página:**
+
+```text
+┌─────────────────────────────────────────────────────────┐
+│ Integrações                          [+ Nova Integração]│
+│ Gerencie canais que enviam leads para o CRM             │
+├─────────────────────────────────────────────────────────┤
+│ ┌─ Card: Landing Page Circular Experience ───────────┐ │
+│ │ slug: lp_ce              [● Ativo]  [Como integrar]│ │
+│ │ Chave: pk_lpce_OZ0...WJ  Criada há 2h              │ │
+│ │ CORS: experience.movimentocircular.io              │ │
+│ │ Rate limit: 30/min  ·  Leads recebidos: 12         │ │
+│ │ [Editar] [Rotacionar chave] [Desativar]            │ │
+│ └────────────────────────────────────────────────────┘ │
+│ ┌─ Card: Webhook Meta Ads ───────────────────────────┐ │
+│ │ ...                                                 │ │
+│ └────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
 ```
 
-(Confirmar que `api_key_prefix` bate com `rawKey.slice(0, 8)` = `pk_lpce_`.)
+**Componentes:**
+- `IntegrationsList.tsx` — lista os cards de fontes
+- `IntegrationCard.tsx` — card de cada fonte (status, métricas, ações)
+- `IntegrationFormDialog.tsx` — Dialog de criar/editar (slug, nome, CORS multi-input, rate limit, default_stage, default_assignee, email_notificar, capi_habilitado, custom_field_schema como JSON textarea)
+- `IntegrationKeyDialog.tsx` — exibe a chave gerada **uma única vez** com botão copiar e aviso "guarde agora, não poderemos mostrar novamente"
+- `IntegrationGuideDialog.tsx` — modal "Como integrar" com aba **cURL** e aba **JavaScript** (snippet pronto, com a chave preenchida e instruções resumidas)
+- `RotateKeyDialog.tsx` — confirma rotação, mostra contador "chave antiga válida até [data+24h]"
 
-### 2. Smoke tests via `supabase--curl_edge_functions`
+---
 
-| # | Cenário | Header `x-mc-api-key` | `source` no body | `source_id` | Esperado |
-|---|---------|----------------------|------------------|-------------|----------|
-| A | Sucesso | raw key válida | `lp_ce` | `smoke-test-001` | `201 created` + `lead_id` |
-| B | Duplicata | raw key válida | `lp_ce` | `smoke-test-001` | `200 duplicate` |
-| C | Source mismatch | raw key válida (lp_ce) | `meta_ads` | — | `403 forbidden` |
-| D | Auth inválida | `pk_lpce_invalidaaaaaaaa` | `lp_ce` | — | `401 invalid` |
+### 3. Edge Function `manage-lead-source`
 
-Body padrão (Test A/B):
-```json
-{
-  "source": "lp_ce",
-  "source_id": "smoke-test-001",
-  "name": "Teste Ingest",
-  "email": "smoketest+ingest1@example.com",
-  "company": "QA Corp",
-  "cargo": "QA Lead",
-  "telefone": "11987654321",
-  "utm": { "source": "smoke", "medium": "curl" },
-  "consent_marketing": true
-}
-```
+Nova function (`verify_jwt = true`, valida admin no código) que centraliza operações sensíveis:
 
-### 3. Verificações no banco (`supabase--read_query`)
+- `POST /create` — gera `pk_<slug>_<random32>`, salva bcrypt hash, retorna chave em texto puro **uma única vez**
+- `POST /rotate` — gera nova chave, move atual para `previous_api_key_*` com expiração `now() + 24h`, retorna nova chave
+- `POST /update` — atualiza campos não-sensíveis (nome, CORS, rate, etc.) — pode ser feito via supabase client direto também, mas centralizamos por consistência
 
-- `leads`: 1 registro com `origem='lp_ce'`, `source_id='smoke-test-001'`, `kanban_stage='novo'`, `ingest_ip` preenchido.
-- `lead_activities`: linha `lead_recebido` com `metadata.source_slug='lp_ce'`.
-- `lead_ingest_log`: 4 entradas (`created`, `duplicate`, `forbidden`, `invalid`).
+Por que edge e não client direto: bcrypt não roda no browser e a geração de chave precisa ser server-side para garantir entropia.
 
-### 4. Logs de side effects (`supabase--edge_function_logs`)
+Operações de leitura (listar fontes, métricas) vão direto via supabase client (já protegido por RLS admin).
 
-- `send-transactional-email`: template `novo-lead-interno` enviado pra `contato@movimentocircular.io`.
-- `send-meta-capi-event`: resultado `skipped` (stage `novo` não está no STAGE_MAP).
-- `ingest-lead`: ver logs dos 4 requests.
+---
 
-### 5. Limpeza (migration)
+### 4. Métricas por fonte
 
-```sql
-DELETE FROM lead_activities WHERE lead_id IN (SELECT id FROM leads WHERE source_id = 'smoke-test-001');
-DELETE FROM leads WHERE source_id = 'smoke-test-001';
-```
+No card, mostrar contadores rápidos consultando `lead_ingest_log`:
+- Leads recebidos (últimos 7 dias)
+- Última recepção (relative time)
+- Taxa de erro (status != 'created' / total)
 
-## Como você reproduz de fora
+Query simples agrupada por `source_slug`.
 
+---
+
+### 5. Guia "Como integrar" (modal)
+
+Conteúdo dinâmico baseado na fonte selecionada, com snippets prontos:
+
+**Aba cURL:**
 ```bash
 curl -X POST https://gxqrmxhpltfkkhhtqvmh.supabase.co/functions/v1/ingest-lead \
   -H "Content-Type: application/json" \
-  -H "x-mc-api-key: pk_lpce_OZ0-v2OErbMMDsyL8Afdi0X6AoricrWJ" \
-  -d '{"source":"lp_ce","name":"Fulano","email":"fulano@empresa.com","telefone":"11999999999"}'
+  -H "x-api-key: <CHAVE_DA_FONTE>" \
+  -d '{"source":"<slug>","name":"...","email":"..."}'
 ```
 
-## Riscos
+**Aba JavaScript:** snippet de fetch com captura de UTM básica.
 
-- Email real disparado pra `contato@movimentocircular.io` (você confirmou que pode).
-- Lead de teste deletado no passo 5 — não polui Kanban.
-- Zero impacto sobre webhook Meta Ads e CAPI atual (canais separados).
+**Aba Campos:** lista campos aceitos (name, email, phone, company, cargo, utm.*, custom_fields) e o `custom_field_schema` da fonte se preenchido.
+
+Botão "Baixar guia completo (.md)" gera o markdown equivalente ao `integracao-crm-muti.md` parametrizado pela fonte.
+
+---
+
+### 6. Detalhes técnicos
+
+**Geração de chave:** `pk_<slug_curto>_<32_chars_base64url>` no edge usando `crypto.getRandomValues`. Slug curto = primeiros 6 chars do slug sanitizado.
+
+**bcrypt:** mesma lib já usada em `_shared/auth.ts` (`deno.land/x/bcrypt@v0.4.1`), `hashSync` com cost 10.
+
+**Validação de slug:** regex `^[a-z0-9_]{3,32}$`, único na tabela.
+
+**CORS input:** componente de tags (cada Enter adiciona um domínio), validação `https?://...` ou `*` para liberar tudo (com warning visual).
+
+**Lógica de graça no auth:**
+```ts
+// Tenta chave atual
+for (const c of candidates) if (compareSync(rawKey, c.api_key_hash)) return c;
+// Tenta chave anterior se ainda válida
+const graceCandidates = await supabase.from('lead_sources')
+  .select('...').eq('previous_api_key_prefix', prefix)
+  .gt('previous_api_key_expires_at', new Date().toISOString());
+for (const c of graceCandidates) if (compareSync(rawKey, c.previous_api_key_hash)) return c;
+```
+
+---
+
+### 7. Arquivos a criar/editar
+
+**Criar:**
+- `supabase/migrations/<ts>_lead_sources_grace_period.sql`
+- `supabase/functions/manage-lead-source/index.ts`
+- `src/pages/admin/Integrations.tsx`
+- `src/components/admin/integrations/IntegrationsList.tsx`
+- `src/components/admin/integrations/IntegrationCard.tsx`
+- `src/components/admin/integrations/IntegrationFormDialog.tsx`
+- `src/components/admin/integrations/IntegrationKeyDialog.tsx`
+- `src/components/admin/integrations/IntegrationGuideDialog.tsx`
+- `src/components/admin/integrations/RotateKeyDialog.tsx`
+- `src/hooks/useLeadSources.ts`
+
+**Editar:**
+- `src/App.tsx` — rota `/admin/integracoes`
+- `src/components/admin/CrmNavbar.tsx` — item de menu (admin only)
+- `supabase/functions/_shared/auth.ts` — suporte a chave de graça
+- Memória do projeto — adicionar `mem://crm/integrations-management`
+
+---
+
+### Fora de escopo (fica para depois)
+- Dashboard analítico avançado por fonte (conversão por canal, CAC)
+- Webhooks de saída (notificar sistema externo quando lead muda de stage)
+- Templates de guia para outros canais (Typeform, RD, HubSpot) — começamos só com cURL/JS genéricos

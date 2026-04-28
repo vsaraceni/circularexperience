@@ -33,22 +33,20 @@ export async function authenticateApiKey(
 
   const prefix = rawKey.slice(0, 8);
 
+  const SELECT_COLS =
+    "id, slug, nome, api_key_prefix, api_key_hash, previous_api_key_prefix, previous_api_key_hash, previous_api_key_expires_at, ativo, capi_habilitado, capi_action_source, email_notificar, default_stage, default_assignee, cors_origins, rate_limit_per_min, custom_field_schema";
+
   const { data: candidates, error } = await supabase
     .from("lead_sources")
-    .select(
-      "id, slug, nome, api_key_prefix, api_key_hash, ativo, capi_habilitado, capi_action_source, email_notificar, default_stage, default_assignee, cors_origins, rate_limit_per_min, custom_field_schema",
-    )
+    .select(SELECT_COLS)
     .eq("api_key_prefix", prefix)
     .eq("ativo", true);
 
   if (error) {
     throw new AuthError(`auth lookup failed: ${error.message}`, 500);
   }
-  if (!candidates || candidates.length === 0) {
-    throw new AuthError("invalid api key", 401);
-  }
 
-  for (const candidate of candidates) {
+  for (const candidate of candidates ?? []) {
     try {
       const match = compareSync(rawKey, candidate.api_key_hash);
       if (match) {
@@ -56,6 +54,32 @@ export async function authenticateApiKey(
       }
     } catch (err) {
       console.error("bcrypt compare failed:", err);
+      throw new AuthError("verify failed", 500);
+    }
+  }
+
+  // Tenta chave anterior dentro do período de graça (24h pós-rotação).
+  const nowIso = new Date().toISOString();
+  const { data: graceCandidates, error: graceError } = await supabase
+    .from("lead_sources")
+    .select(SELECT_COLS)
+    .eq("previous_api_key_prefix", prefix)
+    .eq("ativo", true)
+    .gt("previous_api_key_expires_at", nowIso);
+
+  if (graceError) {
+    throw new AuthError(`auth lookup failed: ${graceError.message}`, 500);
+  }
+
+  for (const candidate of graceCandidates ?? []) {
+    try {
+      const match = compareSync(rawKey, candidate.previous_api_key_hash ?? "");
+      if (match) {
+        console.log(`[auth] grace key used for source ${candidate.slug}`);
+        return candidate as LeadSource;
+      }
+    } catch (err) {
+      console.error("bcrypt grace compare failed:", err);
       throw new AuthError("verify failed", 500);
     }
   }
