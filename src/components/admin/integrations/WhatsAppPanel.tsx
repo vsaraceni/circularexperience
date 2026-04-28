@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, AlertCircle, Eye } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { MessageCircle, CheckCircle2, AlertCircle, Eye, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -58,9 +58,11 @@ export default function WhatsAppPanel() {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [logOpen, setLogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (silent) setRefreshing(true);
+    else setLoading(true);
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const { data } = await supabase
       .from("whatsapp_send_log")
@@ -79,11 +81,29 @@ export default function WhatsAppPanel() {
     }
     setStats(s);
     setLoading(false);
-  };
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+    const channel = supabase
+      .channel("whatsapp-send-log-panel")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_send_log" },
+        () => load(true),
+      )
+      .subscribe();
+    const interval = window.setInterval(() => load(true), 15000);
+    const handleFocus = () => load(true);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
 
   return (
     <div className="border rounded-lg p-4 bg-card">
@@ -105,9 +125,14 @@ export default function WhatsAppPanel() {
           </div>
         </div>
 
-        <Button size="sm" variant="outline" onClick={() => setLogOpen(true)}>
-          <Eye className="h-3.5 w-3.5 mr-1.5" /> Ver últimos envios
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="icon" variant="outline" onClick={() => load(true)} disabled={refreshing} aria-label="Atualizar envios de WhatsApp">
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => { load(true); setLogOpen(true); }}>
+            <Eye className="h-3.5 w-3.5 mr-1.5" /> Ver últimos envios
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 mt-4">
