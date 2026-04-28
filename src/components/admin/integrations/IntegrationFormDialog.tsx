@@ -21,6 +21,7 @@ export interface IntegrationFormValues {
   notas: string;
   whatsapp_auto_send: boolean;
   whatsapp_channel_id: string | null;
+  produto_label: string | null;
 }
 
 interface Props {
@@ -47,6 +48,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [capi, setCapi] = useState(false);
   const [whatsappAuto, setWhatsappAuto] = useState(false);
   const [whatsappChannelId, setWhatsappChannelId] = useState("");
+  const [produtoLabel, setProdutoLabel] = useState("");
   const [schemaText, setSchemaText] = useState("{}");
   const [notas, setNotas] = useState("");
   const [schemaError, setSchemaError] = useState("");
@@ -62,6 +64,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setCapi(source?.capi_habilitado ?? false);
     setWhatsappAuto(source?.whatsapp_auto_send ?? false);
     setWhatsappChannelId(source?.whatsapp_channel_id ?? "");
+    setProdutoLabel(source?.produto_label ?? "");
     setSchemaText(JSON.stringify(source?.custom_field_schema ?? {}, null, 2));
     setNotas(source?.notas ?? "");
     setCorsInput("");
@@ -108,6 +111,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         notas,
         whatsapp_auto_send: whatsappAuto,
         whatsapp_channel_id: whatsappChannelId.trim() || null,
+        produto_label: produtoLabel.trim() || null,
       });
     } finally {
       setSubmitting(false);
@@ -137,6 +141,18 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
               <Label>Nome *</Label>
               <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Landing Page Circular Experience" />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Produto / contexto humano</Label>
+            <Input
+              value={produtoLabel}
+              onChange={(e) => setProdutoLabel(e.target.value)}
+              placeholder="Ex: Circular Experience — workshop de economia circular"
+            />
+            <p className="text-xs text-muted-foreground">
+              Texto que vai pro agente do WhatsApp como contexto. Se vazio, usa o nome da fonte. A campanha específica vem do <code className="text-[10px]">utm_campaign</code> ou de <code className="text-[10px]">custom_fields.campanha_label</code> do anúncio.
+            </p>
           </div>
 
           <div className="space-y-1.5">
