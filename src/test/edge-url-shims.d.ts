@@ -1,10 +1,7 @@
-// Shim de tipos para imports estilo Deno (URL) usados pelos módulos _shared.
-// Permite que o TypeScript do projeto front (Vite/Vitest) consiga type-checar
-// esses arquivos, reaproveitando os tipos dos pacotes npm já instalados como
-// devDependencies (`zod`, `@supabase/supabase-js`).
-//
-// Em runtime no Deno Edge, as URLs são resolvidas normalmente pelo Deno —
-// este arquivo .d.ts não interfere lá.
+// Shim de tipos para imports estilo Deno (URL) usados pelos módulos
+// `supabase/functions/_shared/*` quando importados a partir dos testes Vitest.
+// Em runtime no Deno Edge, as URLs são resolvidas pelo Deno — este shim só
+// existe para o TypeScript do front conseguir type-checar.
 
 declare module "https://esm.sh/zod@3.23.8" {
   export * from "zod";
