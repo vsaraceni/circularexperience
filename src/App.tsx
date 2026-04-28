@@ -14,6 +14,7 @@ import StrategicDashboard from "./pages/admin/StrategicDashboard";
 import PerformanceDashboard from "./pages/admin/PerformanceDashboard";
 import Pipeline from "./pages/admin/Pipeline";
 import Products from "./pages/admin/Products";
+import Integrations from "./pages/admin/Integrations";
 import Unsubscribe from "./pages/Unsubscribe";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
@@ -81,6 +82,14 @@ const CrmRoutes = () => (
         </ProtectedRoute>
       }
     />
+    <Route
+      path="/admin/integracoes"
+      element={
+        <ProtectedRoute requireAdmin>
+          <Integrations />
+        </ProtectedRoute>
+      }
+    />
     <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
     <Route path="*" element={<Navigate to="/admin/pipeline" replace />} />
   </Routes>
@@ -144,6 +153,14 @@ const SiteRoutes = () => (
       element={
         <ProtectedRoute requireAdmin>
           <Products />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/admin/integracoes"
+      element={
+        <ProtectedRoute requireAdmin>
+          <Integrations />
         </ProtectedRoute>
       }
     />
