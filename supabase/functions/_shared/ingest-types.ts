@@ -44,6 +44,8 @@ export interface LeadSource {
   cors_origins: string[];
   rate_limit_per_min: number;
   custom_field_schema: Record<string, unknown>;
+  whatsapp_auto_send?: boolean;
+  whatsapp_channel_id?: string | null;
 }
 
 export type IngestStatus =

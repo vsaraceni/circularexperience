@@ -2,7 +2,7 @@ import { useState } from "react";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Plug, BookOpen, RotateCw, Pencil, Power, Clock } from "lucide-react";
+import { Plus, Plug, BookOpen, RotateCw, Pencil, Power, Clock, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLeadSources, type LeadSourceRow } from "@/hooks/useLeadSources";
@@ -10,6 +10,7 @@ import IntegrationFormDialog, { type IntegrationFormValues } from "@/components/
 import IntegrationKeyDialog from "@/components/admin/integrations/IntegrationKeyDialog";
 import IntegrationGuideDialog from "@/components/admin/integrations/IntegrationGuideDialog";
 import RotateKeyDialog from "@/components/admin/integrations/RotateKeyDialog";
+import WhatsAppPanel from "@/components/admin/integrations/WhatsAppPanel";
 
 function formatRelative(iso: string | null) {
   if (!iso) return "—";
@@ -100,16 +101,18 @@ export default function Integrations() {
 
         {loading ? (
           <div className="text-center py-12 text-muted-foreground">Carregando...</div>
-        ) : sources.length === 0 ? (
-          <div className="border rounded-lg p-12 text-center">
-            <Plug className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">Nenhuma integração cadastrada ainda.</p>
-            <Button className="mt-4" onClick={() => { setEditing(null); setFormOpen(true); }}>
-              <Plus className="h-4 w-4 mr-1.5" /> Criar primeira
-            </Button>
-          </div>
         ) : (
           <div className="space-y-3">
+            <WhatsAppPanel />
+            {sources.length === 0 && (
+              <div className="border rounded-lg p-12 text-center">
+                <Plug className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">Nenhuma integração cadastrada ainda.</p>
+                <Button className="mt-4" onClick={() => { setEditing(null); setFormOpen(true); }}>
+                  <Plus className="h-4 w-4 mr-1.5" /> Criar primeira
+                </Button>
+              </div>
+            )}
             {sources.map((s) => {
               const m = metrics[s.slug];
               const grace = s.previous_api_key_expires_at && new Date(s.previous_api_key_expires_at) > new Date();
@@ -128,6 +131,11 @@ export default function Integrations() {
                         {grace && (
                           <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 gap-1">
                             <Clock className="h-3 w-3" /> Chave anterior em graça
+                          </Badge>
+                        )}
+                        {s.whatsapp_auto_send && (
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 gap-1">
+                            <MessageCircle className="h-3 w-3" /> WhatsApp auto
                           </Badge>
                         )}
                       </div>

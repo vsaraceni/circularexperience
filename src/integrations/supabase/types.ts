@@ -437,6 +437,8 @@ export type Database = {
           rate_limit_per_min: number
           slug: string
           updated_at: string
+          whatsapp_auto_send: boolean
+          whatsapp_channel_id: string | null
         }
         Insert: {
           api_key_hash: string
@@ -460,6 +462,8 @@ export type Database = {
           rate_limit_per_min?: number
           slug: string
           updated_at?: string
+          whatsapp_auto_send?: boolean
+          whatsapp_channel_id?: string | null
         }
         Update: {
           api_key_hash?: string
@@ -483,6 +487,8 @@ export type Database = {
           rate_limit_per_min?: number
           slug?: string
           updated_at?: string
+          whatsapp_auto_send?: boolean
+          whatsapp_channel_id?: string | null
         }
         Relationships: [
           {
@@ -1125,6 +1131,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_send_log: {
+        Row: {
+          created_at: string
+          error: string | null
+          gptmaker_response: Json | null
+          id: string
+          lead_id: string | null
+          phone: string | null
+          source_slug: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          gptmaker_response?: Json | null
+          id?: string
+          lead_id?: string | null
+          phone?: string | null
+          source_slug?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          gptmaker_response?: Json | null
+          id?: string
+          lead_id?: string | null
+          phone?: string | null
+          source_slug?: string | null
+          status?: string
+        }
+        Relationships: []
       }
     }
     Views: {
