@@ -158,10 +158,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, status: "skipped_duplicate" }, 200);
   }
 
-  // 5. Chamar GPT Maker
-  const url = `https://api.gptmaker.ai/v2/channel/${channelId}/start-conversation`;
-
-  // Monta contexto humano para o agente (produto + campanha + nome do lead).
+  // 5. Montar contexto humano (produto + campanha + nome do lead) para
+  // GPT Maker. Enviado em duas etapas:
+  //   5a) add-message → injeta briefing rico no agente (se houver agentId)
+  //   5b) start-conversation → dispara a primeira mensagem no canal
   // É enviado tanto como `metadata` (estruturado) quanto como cabeçalho na própria
   // `message` — garante que o agente tenha contexto independente de como o GPT Maker
   // expõe metadata internamente.
