@@ -7,7 +7,9 @@
 // roda em Deno Edge.
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.94.0";
-import { compare } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+// compareSync evita o uso de Web Workers, que não estão disponíveis
+// no Edge Runtime do Supabase. compare() async dispara worker e quebra.
+import { compareSync } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 import type { LeadSource } from "./ingest-types.ts";
 
 export class AuthError extends Error {
@@ -48,7 +50,7 @@ export async function authenticateApiKey(
 
   for (const candidate of candidates) {
     try {
-      const match = await compare(rawKey, candidate.api_key_hash);
+      const match = compareSync(rawKey, candidate.api_key_hash);
       if (match) {
         return candidate as LeadSource;
       }
