@@ -19,9 +19,11 @@ export interface TemplateEntry {
 import { template as dailyDigest } from './daily-digest.tsx'
 import { template as callScheduledAlert } from './call-scheduled-alert.tsx'
 import { template as dailyPerformance } from './daily-performance.tsx'
+import { template as novoLeadInterno } from './novo-lead-interno.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'daily-digest': dailyDigest,
   'call-scheduled-alert': callScheduledAlert,
   'daily-performance': dailyPerformance,
+  'novo-lead-interno': novoLeadInterno,
 }

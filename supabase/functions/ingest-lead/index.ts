@@ -336,26 +336,29 @@ Deno.serve(async (req) => {
 
   // 10. Email interno condicional (não bloqueia resposta)
   if (source.email_notificar && source.email_notificar.length > 0) {
-    EdgeRuntime.waitUntil(
-      supabase.functions
-        .invoke("send-transactional-email", {
-          body: {
-            to: source.email_notificar,
-            template: "novo-lead-interno",
-            data: {
-              lead_name: payload.name,
-              lead_email: email,
-              lead_company: payload.company ?? "",
-              lead_cargo: payload.cargo ?? "",
-              lead_telefone: telefone ?? "",
-              source_nome: source.nome,
-              custom_fields: payload.custom_fields ?? {},
-              lead_id: leadId,
+    const templateData = {
+      lead_name: payload.name,
+      lead_email: email,
+      lead_company: payload.company ?? "",
+      lead_cargo: payload.cargo ?? "",
+      lead_telefone: telefone ?? "",
+      source_nome: source.nome,
+      custom_fields: payload.custom_fields ?? {},
+      lead_id: leadId,
+    };
+    for (const recipient of source.email_notificar) {
+      EdgeRuntime.waitUntil(
+        supabase.functions
+          .invoke("send-transactional-email", {
+            body: {
+              templateName: "novo-lead-interno",
+              recipientEmail: recipient,
+              templateData,
             },
-          },
-        })
-        .catch((err) => console.error("notify-email invoke failed:", err)),
-    );
+          })
+          .catch((err) => console.error("notify-email invoke failed:", err)),
+      );
+    }
   }
 
   // 11. Log final
