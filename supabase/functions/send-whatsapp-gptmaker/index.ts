@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
   // 1. Buscar lead
   const { data: lead, error: leadErr } = await supabase
     .from("leads")
-    .select("id, name, telefone, origem")
+    .select("id, name, telefone, origem, company, utm_campaign, utm_source, utm_medium, custom_fields")
     .eq("id", leadId)
     .maybeSingle();
 
@@ -102,15 +102,19 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 2. Buscar source para canal específico (se houver)
+  // 2. Buscar source para canal específico e produto_label
   let channelId = defaultChannelId;
+  let produtoLabel: string | null = null;
+  let sourceNome: string | null = null;
   if (lead.origem) {
     const { data: src } = await supabase
       .from("lead_sources")
-      .select("whatsapp_channel_id")
+      .select("whatsapp_channel_id, produto_label, nome")
       .eq("slug", lead.origem)
       .maybeSingle();
     if (src?.whatsapp_channel_id) channelId = src.whatsapp_channel_id;
+    produtoLabel = src?.produto_label ?? null;
+    sourceNome = src?.nome ?? null;
   }
 
   // 3. Validar telefone
@@ -153,6 +157,47 @@ Deno.serve(async (req) => {
 
   // 5. Chamar GPT Maker
   const url = `https://api.gptmaker.ai/v2/channel/${channelId}/start-conversation`;
+
+  // Monta contexto humano para o agente (produto + campanha + nome do lead).
+  // É enviado tanto como `metadata` (estruturado) quanto como cabeçalho na própria
+  // `message` — garante que o agente tenha contexto independente de como o GPT Maker
+  // expõe metadata internamente.
+  const customCampanha =
+    typeof lead.custom_fields === "object" && lead.custom_fields !== null
+      ? (lead.custom_fields as Record<string, unknown>).campanha_label
+      : null;
+  const campanha =
+    (typeof customCampanha === "string" && customCampanha) ||
+    lead.utm_campaign ||
+    null;
+
+  const produto = produtoLabel || sourceNome || lead.origem || null;
+
+  const contextParts: string[] = [];
+  if (produto) contextParts.push(`Produto: ${produto}`);
+  if (campanha) contextParts.push(`Campanha: ${campanha}`);
+  if (lead.name) contextParts.push(`Nome: ${lead.name}`);
+  if (lead.company) contextParts.push(`Empresa: ${lead.company}`);
+
+  const contextLine =
+    contextParts.length > 0
+      ? `[Lead novo · ${contextParts.join(" · ")}]`
+      : "[Lead novo]";
+
+  const messageBody = `${contextLine}\n${initialMessage}`;
+
+  const metadata = {
+    lead_id: leadId,
+    lead_name: lead.name ?? null,
+    lead_company: lead.company ?? null,
+    produto: produto,
+    produto_slug: lead.origem ?? null,
+    campanha: campanha,
+    utm_source: lead.utm_source ?? null,
+    utm_medium: lead.utm_medium ?? null,
+    utm_campaign: lead.utm_campaign ?? null,
+  };
+
   let response: Response;
   let respJson: unknown = null;
   try {
@@ -164,7 +209,12 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         phone,
-        message: initialMessage,
+        message: messageBody,
+        metadata,
+        contact: {
+          name: lead.name ?? undefined,
+          metadata,
+        },
       }),
     });
     try {
@@ -212,8 +262,8 @@ Deno.serve(async (req) => {
   await supabase.from("lead_activities").insert({
     lead_id: leadId,
     activity_type: "whatsapp_iniciado",
-    content: `WhatsApp iniciado via GPT Maker para ${phone}`,
-    metadata: { phone, channel_id: channelId },
+    content: `WhatsApp iniciado via GPT Maker para ${phone}${produto ? ` (${produto}${campanha ? ` / ${campanha}` : ""})` : ""}`,
+    metadata: { phone, channel_id: channelId, produto, campanha },
   });
 
   await supabase
