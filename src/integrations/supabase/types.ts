@@ -363,6 +363,135 @@ export type Database = {
           },
         ]
       }
+      lead_ingest_log: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          id: number
+          ip: unknown
+          lead_id: string | null
+          payload_hash: string | null
+          source_slug: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: number
+          ip?: unknown
+          lead_id?: string | null
+          payload_hash?: string | null
+          source_slug?: string | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          id?: number
+          ip?: unknown
+          lead_id?: string | null
+          payload_hash?: string | null
+          source_slug?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_ingest_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_ingest_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "vw_proposals_leads"
+            referencedColumns: ["lead_id"]
+          },
+        ]
+      }
+      lead_sources: {
+        Row: {
+          api_key_hash: string
+          api_key_prefix: string
+          ativo: boolean
+          capi_action_source: string | null
+          capi_habilitado: boolean
+          cors_origins: string[]
+          created_at: string
+          created_by: string | null
+          custom_field_schema: Json
+          default_assignee: string | null
+          default_stage: string
+          email_notificar: string[]
+          id: string
+          nome: string
+          notas: string | null
+          rate_limit_per_min: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_hash: string
+          api_key_prefix: string
+          ativo?: boolean
+          capi_action_source?: string | null
+          capi_habilitado?: boolean
+          cors_origins?: string[]
+          created_at?: string
+          created_by?: string | null
+          custom_field_schema?: Json
+          default_assignee?: string | null
+          default_stage?: string
+          email_notificar?: string[]
+          id?: string
+          nome: string
+          notas?: string | null
+          rate_limit_per_min?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_hash?: string
+          api_key_prefix?: string
+          ativo?: boolean
+          capi_action_source?: string | null
+          capi_habilitado?: boolean
+          cors_origins?: string[]
+          created_at?: string
+          created_by?: string | null
+          custom_field_schema?: Json
+          default_assignee?: string | null
+          default_stage?: string
+          email_notificar?: string[]
+          id?: string
+          nome?: string
+          notas?: string | null
+          rate_limit_per_min?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_sources_default_assignee_fkey"
+            columns: ["default_assignee"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           ad_id: string | null
@@ -378,10 +507,14 @@ export type Database = {
           company: string | null
           company_description: string | null
           company_website: string | null
+          consent_marketing: boolean | null
           created_at: string | null
+          custom_fields: Json | null
           email: string
           fb_lead_id: string | null
           id: string
+          ingest_ip: unknown
+          ingest_user_agent: string | null
           kanban_stage: string
           last_activity_at: string | null
           lead_heat: number | null
@@ -395,9 +528,16 @@ export type Database = {
           name: string
           origem: string
           proxima_acao: string | null
+          source_id: string | null
+          source_metadata: Json | null
           stage_updated_at: string | null
           status: string
           telefone: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
           valor_proposta: number | null
           welcome_sent: boolean
           welcome_sent_at: string | null
@@ -418,10 +558,14 @@ export type Database = {
           company?: string | null
           company_description?: string | null
           company_website?: string | null
+          consent_marketing?: boolean | null
           created_at?: string | null
+          custom_fields?: Json | null
           email: string
           fb_lead_id?: string | null
           id?: string
+          ingest_ip?: unknown
+          ingest_user_agent?: string | null
           kanban_stage?: string
           last_activity_at?: string | null
           lead_heat?: number | null
@@ -435,9 +579,16 @@ export type Database = {
           name: string
           origem?: string
           proxima_acao?: string | null
+          source_id?: string | null
+          source_metadata?: Json | null
           stage_updated_at?: string | null
           status?: string
           telefone?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           valor_proposta?: number | null
           welcome_sent?: boolean
           welcome_sent_at?: string | null
@@ -458,10 +609,14 @@ export type Database = {
           company?: string | null
           company_description?: string | null
           company_website?: string | null
+          consent_marketing?: boolean | null
           created_at?: string | null
+          custom_fields?: Json | null
           email?: string
           fb_lead_id?: string | null
           id?: string
+          ingest_ip?: unknown
+          ingest_user_agent?: string | null
           kanban_stage?: string
           last_activity_at?: string | null
           lead_heat?: number | null
@@ -475,9 +630,16 @@ export type Database = {
           name?: string
           origem?: string
           proxima_acao?: string | null
+          source_id?: string | null
+          source_metadata?: Json | null
           stage_updated_at?: string | null
           status?: string
           telefone?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
           valor_proposta?: number | null
           welcome_sent?: boolean
           welcome_sent_at?: string | null
@@ -1078,6 +1240,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: { uid: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
