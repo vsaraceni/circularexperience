@@ -1,154 +1,75 @@
-## Painel de Integrações de Leads
+## Integração WhatsApp via GPT Maker — Plano final
 
-Criar uma UI dentro do CRM para gerenciar as fontes de leads (`lead_sources`) que hoje só existem no banco. Permite cadastrar novos canais (LPs, formulários externos, parceiros) sem precisar de migration manual.
+Decisões fechadas:
+- **Disparo:** automático ao entrar lead novo (configurável por fonte).
+- **Idempotência:** bloqueia reenvio se já houve envio nas últimas 24h pro mesmo lead.
+- **Mensagem:** GPT Maker gera — **não enviamos `message` no body**, só `phone`. O agente do GPT Maker assume a conversa.
 
-**Decisões aprovadas:**
-- Localização: **Admin → Integrações** (item novo na navbar admin)
-- Acesso: **Apenas admin**
-- Rotação de chave: **Período de graça de 24h** (chave antiga continua válida até expirar)
-
----
-
-### 1. Mudanças no banco
-
-**Tabela `lead_sources`** — adicionar colunas para suportar rotação com graça:
-- `previous_api_key_hash text` — hash da chave anterior (nullable)
-- `previous_api_key_prefix text` — prefixo anterior (nullable)
-- `previous_api_key_expires_at timestamptz` — quando a chave antiga deixa de funcionar (nullable)
-
-RLS já está OK (`is_admin(auth.uid())` cobre tudo). Sem mudanças em policies.
-
-**`authenticateApiKey` (edge `_shared/auth.ts`)** — ampliar lookup para também tentar `previous_api_key_prefix` quando o prefixo bater e `previous_api_key_expires_at > now()`. Se a chave antiga for usada, logar em `lead_ingest_log` com flag `using_grace_key: true` no payload do erro/contexto (apenas observabilidade).
+> Nota técnica: a doc do Makerzinho mostra `message` como obrigatório, mas vamos confirmar via teste real se o endpoint aceita só `phone` (alguns endpoints do GPT Maker têm modo "iniciar atendimento sem mensagem prévia"). Se exigir, mandamos uma mensagem técnica mínima tipo `"."` ou um placeholder configurável por fonte. Isso fica como fallback no código, sem te incomodar.
 
 ---
 
-### 2. Página `/admin/integracoes`
+## O que vai ser feito
 
-**Rota protegida** com `<ProtectedRoute requireAdmin>` no `App.tsx`.
+### 1. Secrets (você precisa fornecer)
+- `GPTMAKER_TOKEN` — token de autenticação da API.
+- `GPTMAKER_CHANNEL_ID` — channelId do canal WhatsApp não oficial.
 
-**Item de menu** em `CrmNavbar.tsx`, visível apenas para admin (já existe lógica `isAdmin`). Ícone: `Plug` (lucide).
+Vou pedir via `add_secret` no início da implementação.
 
-**Layout da página:**
+### 2. Banco de dados
+- Adicionar em `lead_sources`:
+  - `whatsapp_auto_send` (boolean, default `false`) — liga/desliga por fonte.
+  - `whatsapp_channel_id` (text, nullable) — override opcional do channelId padrão (caso futuro com múltiplos canais).
+- Nova tabela `whatsapp_send_log`:
+  - `id`, `lead_id`, `source_slug`, `phone`, `status` (`sent` | `skipped_no_phone` | `skipped_duplicate` | `error`), `gptmaker_response` (jsonb), `error` (text), `created_at`.
+  - RLS: admin SELECT only, service role insert.
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│ Integrações                          [+ Nova Integração]│
-│ Gerencie canais que enviam leads para o CRM             │
-├─────────────────────────────────────────────────────────┤
-│ ┌─ Card: Landing Page Circular Experience ───────────┐ │
-│ │ slug: lp_ce              [● Ativo]  [Como integrar]│ │
-│ │ Chave: pk_lpce_OZ0...WJ  Criada há 2h              │ │
-│ │ CORS: experience.movimentocircular.io              │ │
-│ │ Rate limit: 30/min  ·  Leads recebidos: 12         │ │
-│ │ [Editar] [Rotacionar chave] [Desativar]            │ │
-│ └────────────────────────────────────────────────────┘ │
-│ ┌─ Card: Webhook Meta Ads ───────────────────────────┐ │
-│ │ ...                                                 │ │
-│ └────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-```
+### 3. Edge Function nova: `send-whatsapp-gptmaker`
+- `verify_jwt = false` (chamada por outra edge function via service role).
+- Input: `{ lead_id }`.
+- Lê o lead, valida e normaliza telefone pra E.164 sem `+` (ex: `5511999999999`).
+- Verifica idempotência: existe `whatsapp_send_log` com `status='sent'` nas últimas 24h pro mesmo `lead_id`? Se sim, retorna `skipped_duplicate`.
+- `POST https://api.gptmaker.ai/v2/channel/{channelId}/start-conversation` com Bearer token.
+- Registra resultado em `whatsapp_send_log` e cria `lead_activities` (`activity_type: "whatsapp_iniciado"`).
+- Marca `leads.whatsapp_sent = true` e atualiza `last_activity_at`.
 
-**Componentes:**
-- `IntegrationsList.tsx` — lista os cards de fontes
-- `IntegrationCard.tsx` — card de cada fonte (status, métricas, ações)
-- `IntegrationFormDialog.tsx` — Dialog de criar/editar (slug, nome, CORS multi-input, rate limit, default_stage, default_assignee, email_notificar, capi_habilitado, custom_field_schema como JSON textarea)
-- `IntegrationKeyDialog.tsx` — exibe a chave gerada **uma única vez** com botão copiar e aviso "guarde agora, não poderemos mostrar novamente"
-- `IntegrationGuideDialog.tsx` — modal "Como integrar" com aba **cURL** e aba **JavaScript** (snippet pronto, com a chave preenchida e instruções resumidas)
-- `RotateKeyDialog.tsx` — confirma rotação, mostra contador "chave antiga válida até [data+24h]"
+### 4. Editar `ingest-lead`
+- No fim do fluxo, se `source.whatsapp_auto_send = true`, dispara `send-whatsapp-gptmaker` via `EdgeRuntime.waitUntil` (não bloqueia resposta — mesmo padrão do CAPI e email interno).
 
----
+### 5. Painel de Integrações (admin) — `/admin/integracoes`
+Nova seção "WhatsApp (GPT Maker)" no topo da página, separada das fontes de lead:
+- Status: token e channelId configurados? (verifica via edge function que retorna boolean, nunca expõe valores).
+- Métrica simples: WhatsApps enviados / falhados nos últimos 7 dias (lendo `whatsapp_send_log`).
+- Link "Ver últimos envios" → modal com lista (lead, status, hora, erro).
 
-### 3. Edge Function `manage-lead-source`
+E no card de cada fonte (na lista existente), adicionar:
+- Toggle "Disparar WhatsApp automático ao receber lead" (controla `whatsapp_auto_send`).
 
-Nova function (`verify_jwt = true`, valida admin no código) que centraliza operações sensíveis:
-
-- `POST /create` — gera `pk_<slug>_<random32>`, salva bcrypt hash, retorna chave em texto puro **uma única vez**
-- `POST /rotate` — gera nova chave, move atual para `previous_api_key_*` com expiração `now() + 24h`, retorna nova chave
-- `POST /update` — atualiza campos não-sensíveis (nome, CORS, rate, etc.) — pode ser feito via supabase client direto também, mas centralizamos por consistência
-
-Por que edge e não client direto: bcrypt não roda no browser e a geração de chave precisa ser server-side para garantir entropia.
-
-Operações de leitura (listar fontes, métricas) vão direto via supabase client (já protegido por RLS admin).
+### 6. Normalização de telefone
+- Reforçar regra E.164 BR no `_shared/normalize.ts`: aceita `(11) 99999-9999`, `+55 11...`, `5511...` → sempre devolve `5511999999999`. Rejeita se < 10 dígitos após DDI.
 
 ---
 
-### 4. Métricas por fonte
+## Arquivos previstos
 
-No card, mostrar contadores rápidos consultando `lead_ingest_log`:
-- Leads recebidos (últimos 7 dias)
-- Última recepção (relative time)
-- Taxa de erro (status != 'created' / total)
-
-Query simples agrupada por `source_slug`.
-
----
-
-### 5. Guia "Como integrar" (modal)
-
-Conteúdo dinâmico baseado na fonte selecionada, com snippets prontos:
-
-**Aba cURL:**
-```bash
-curl -X POST https://gxqrmxhpltfkkhhtqvmh.supabase.co/functions/v1/ingest-lead \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: <CHAVE_DA_FONTE>" \
-  -d '{"source":"<slug>","name":"...","email":"..."}'
-```
-
-**Aba JavaScript:** snippet de fetch com captura de UTM básica.
-
-**Aba Campos:** lista campos aceitos (name, email, phone, company, cargo, utm.*, custom_fields) e o `custom_field_schema` da fonte se preenchido.
-
-Botão "Baixar guia completo (.md)" gera o markdown equivalente ao `integracao-crm-muti.md` parametrizado pela fonte.
+- `supabase/migrations/..._whatsapp_gptmaker.sql` (novo)
+- `supabase/functions/send-whatsapp-gptmaker/index.ts` (novo)
+- `supabase/functions/ingest-lead/index.ts` (editar — disparo condicional)
+- `supabase/functions/_shared/normalize.ts` (editar — validador E.164 estrito)
+- `supabase/config.toml` (editar — registrar nova função com `verify_jwt = false`)
+- `src/pages/admin/Integrations.tsx` (editar — seção GPT Maker + toggle por fonte)
+- `src/components/admin/integrations/IntegrationFormDialog.tsx` (editar — toggle whatsapp_auto_send)
+- `src/components/admin/integrations/WhatsAppPanel.tsx` (novo — status + métricas + log)
+- `src/hooks/useLeadSources.ts` (editar — incluir `whatsapp_auto_send`)
+- `src/integrations/supabase/types.ts` (auto-regenerado)
 
 ---
 
-### 6. Detalhes técnicos
+## Fora do escopo (a fazer no futuro, se precisar)
+- Botão de envio manual no Lead Drawer.
+- Templates customizados (você confirmou que não precisa — GPT Maker resolve).
+- Múltiplos canais por fonte.
+- Webhook reverso recebendo mensagens do lead (entrada bidirecional).
 
-**Geração de chave:** `pk_<slug_curto>_<32_chars_base64url>` no edge usando `crypto.getRandomValues`. Slug curto = primeiros 6 chars do slug sanitizado.
-
-**bcrypt:** mesma lib já usada em `_shared/auth.ts` (`deno.land/x/bcrypt@v0.4.1`), `hashSync` com cost 10.
-
-**Validação de slug:** regex `^[a-z0-9_]{3,32}$`, único na tabela.
-
-**CORS input:** componente de tags (cada Enter adiciona um domínio), validação `https?://...` ou `*` para liberar tudo (com warning visual).
-
-**Lógica de graça no auth:**
-```ts
-// Tenta chave atual
-for (const c of candidates) if (compareSync(rawKey, c.api_key_hash)) return c;
-// Tenta chave anterior se ainda válida
-const graceCandidates = await supabase.from('lead_sources')
-  .select('...').eq('previous_api_key_prefix', prefix)
-  .gt('previous_api_key_expires_at', new Date().toISOString());
-for (const c of graceCandidates) if (compareSync(rawKey, c.previous_api_key_hash)) return c;
-```
-
----
-
-### 7. Arquivos a criar/editar
-
-**Criar:**
-- `supabase/migrations/<ts>_lead_sources_grace_period.sql`
-- `supabase/functions/manage-lead-source/index.ts`
-- `src/pages/admin/Integrations.tsx`
-- `src/components/admin/integrations/IntegrationsList.tsx`
-- `src/components/admin/integrations/IntegrationCard.tsx`
-- `src/components/admin/integrations/IntegrationFormDialog.tsx`
-- `src/components/admin/integrations/IntegrationKeyDialog.tsx`
-- `src/components/admin/integrations/IntegrationGuideDialog.tsx`
-- `src/components/admin/integrations/RotateKeyDialog.tsx`
-- `src/hooks/useLeadSources.ts`
-
-**Editar:**
-- `src/App.tsx` — rota `/admin/integracoes`
-- `src/components/admin/CrmNavbar.tsx` — item de menu (admin only)
-- `supabase/functions/_shared/auth.ts` — suporte a chave de graça
-- Memória do projeto — adicionar `mem://crm/integrations-management`
-
----
-
-### Fora de escopo (fica para depois)
-- Dashboard analítico avançado por fonte (conversão por canal, CAC)
-- Webhooks de saída (notificar sistema externo quando lead muda de stage)
-- Templates de guia para outros canais (Typeform, RD, HubSpot) — começamos só com cURL/JS genéricos
+Posso começar?
