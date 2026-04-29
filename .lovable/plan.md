@@ -1,66 +1,66 @@
-## Objetivo
 
-Transformar `/login` numa tela split-screen moderna: formulário compacto à esquerda, imagem hero com overlay roxo à direita. Reorganizar a UX para reduzir poluição visual.
+## Como funciona hoje
 
-## Imagem
+- O envio do welcome é **manual**: SDR clica "Enviar Boas-Vindas" no Kanban/Lista
+- A função `send-welcome-email` envia usando como remetente os dados do **SDR logado** (`sender_name/email/phone`)
+- No callback de sucesso, o front faz: `assigned_to = user.id` + `kanban_stage = 'boas_vindas'` → é isso que faz o SDR **assumir** o lead
+- Existiu trigger `on_lead_insert` chamando essa função, mas **foi removido** (a função `trigger_welcome_email` ficou órfã no banco)
+- Template `lead-welcome` em `email_templates` usa placeholders `{{sender_name}}`, `{{sender_email}}`, `{{sender_phone}}` no corpo, no `from_name` e no `cc`
 
-Já temos boas imagens no projeto. Sugiro usar **`src/assets/hero-workshop.jpg`** (foto de workshop, mais humana e institucional) como padrão. Se preferir, pode mandar outra — só dizer no próximo turno e troco antes de implementar.
+## Solução: welcome 100% automático
 
-## Layout (desktop ≥ lg)
+### Remetente institucional padrão (não amarra a SDR)
 
-```text
-┌──────────────────────────┬──────────────────────────────────┐
-│                          │                                  │
-│   [logo]                 │   imagem hero-workshop.jpg       │
-│                          │   + overlay roxo (#5F2558 / 55%) │
-│   Bem-vindo de volta     │   + gradient sutil bottom        │
-│   Entre na sua conta     │                                  │
-│                          │   Sobreposto (canto inferior):   │
-│   [Google] [secondary]   │   "Movimento Circular CRM"       │
-│                          │   "Gestão de leads e propostas   │
-│   ─── ou continue com ───│    para parcerias de impacto."   │
-│                          │                                  │
-│   Email                  │                                  │
-│   [_________________]    │                                  │
-│   Senha       Esqueci?   │                                  │
-│   [_________________]    │                                  │
-│                          │                                  │
-│   [    Entrar    ]       │                                  │
-│                          │                                  │
-│   Link mágico • Criar    │                                  │
-│                          │                                  │
-└──────────────────────────┴──────────────────────────────────┘
-   max-w ~ 420px               flex-1 (cobre o resto)
-```
+- **From name:** `Lívia Lins · Movimento Circular`
+- **From email:** `contato@lovable.movimentocircular.io` (domínio já verificado)
+- **Reply-To:** `contato@movimentocircular.io`
+- **Sem CC** (no fluxo automático)
+- **Variáveis no corpo:**
+  - `{{sender_name}}` → `Lívia Lins`
+  - `{{sender_email}}` → `contato@movimentocircular.io`
+  - `{{sender_phone}}` → `+55 11 98244-1551`
 
-Mobile (< lg): coluna única, painel da imagem some, formulário centralizado como hoje (mas com o mesmo refinamento visual).
+### Quando dispara
 
-## UX — o que muda
+Trigger `AFTER INSERT` em `public.leads` chamando a edge function via `pg_net`. Só dispara se **todas** as condições baterem:
 
-1. **Modo padrão = senha** (não link mágico). Hoje abre em "magic" e isso confunde quem só quer entrar.
-2. **Link mágico vira ação secundária** dentro do form: um botão `ghost` discreto abaixo de "Entrar", com ícone de sparkle. Ao clicar, alterna o campo Senha por uma mensagem inline ("Te enviaremos um link no email") e troca o CTA para "Enviar link mágico".
-3. **"Criar conta"** vira link pequeno no rodapé do card, separado por um `Separator`. Mantém o fluxo atual de signup, mas o estado padrão deixa de ser tríade confusa.
-4. **Remover** o botão "← Voltar ao site" — não existe mais site neste projeto (CRM-only, regra do `mem://`).
-5. **Esqueci a senha**: adicionar link discreto à direita do label "Senha" (apenas visual + toast "Em breve" por enquanto, OU se preferir já implemento `resetPasswordForEmail` + página `/reset-password`). Vou perguntar antes de implementar se quiser o fluxo completo — por padrão **deixo só o link visual com toast**, para manter o escopo focado no redesign.
-6. **Hierarquia tipográfica**: "Bem-vindo de volta" (text-3xl, bold) + subtítulo muted. Logo menor (h-10) e alinhado à esquerda, não centralizado.
-7. **Espaçamento**: card sem borda, fundo `background`. Inputs com `h-11`, foco com ring na cor primary (purple #5F2558). Botão principal h-11.
+- `welcome_sent = false` (idempotente)
+- email **não pertence** aos domínios de teste (`@atinaedu.com.br`, `@movimentocircular.io`)
+- `kanban_stage = 'novo'` (não dispara para leads criados já em estágio avançado / propostas diretas)
+- `status NOT IN ('converted', 'archived')`
+- Email **não está em** `suppressed_emails`
 
-## Detalhes técnicos
+### O que a edge function passa a fazer após envio bem-sucedido
 
-**Arquivo único alterado:** `src/pages/Login.tsx`
+1. `welcome_sent = true`, `welcome_sent_at = now()`
+2. Move para `kanban_stage = 'boas_vindas'` (apenas se ainda em `novo`)
+3. Atualiza `stage_updated_at` e `last_activity_at`
+4. **NÃO atribui o lead** (`assigned_to` continua `NULL`) → regra existente de auto-assign na primeira ação real do SDR continua valendo
+5. Insere `lead_activities` com `activity_type = 'welcome_enviado'`, `user_id = NULL`, conteúdo "E-mail de boas-vindas enviado automaticamente"
 
-- Container raiz: `min-h-screen grid lg:grid-cols-2`.
-- Esquerda: `flex items-center justify-center px-6 lg:px-12`, conteúdo num `w-full max-w-[420px]`.
-- Direita: `hidden lg:block relative overflow-hidden`, com:
-  - `<img src={heroWorkshop} className="absolute inset-0 w-full h-full object-cover" />`
-  - Overlay: `<div className="absolute inset-0 bg-[#5F2558]/55 mix-blend-multiply" />`
-  - Gradient de leitura: `<div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />`
-  - Texto institucional posicionado em `absolute bottom-10 left-10 right-10 text-white`.
-- Import: `import heroWorkshop from "@/assets/hero-workshop.jpg";`
-- Lógica de auth (signIn / signUp / signInWithOtp / Google OAuth): mantida 100% — só reorganizo a UI e o estado inicial (`useState<Mode>("password")`).
-- Acessibilidade: mantém labels, foco visível 2px na cor primary (já é regra core), botões ≥ 44px.
-- Sem mudanças em rotas, hooks ou backend.
+### Fluxo manual continua existindo (fallback)
 
-## Fora do escopo (confirmar se quer incluir)
+O botão "Enviar Boas-Vindas" no Kanban/Lista vira fallback de reenvio:
 
-- Fluxo real de "Esqueci a senha" com página `/reset-password`. Por padrão **não incluo** — fica como link com toast "Em breve". Avise se quiser que eu adicione.
+- Quando clicado manualmente, **mantém a regra atual** de assumir o lead (`assigned_to = user.id`) — agora é ação intencional do SDR, e não o disparo padrão
+- Para a maioria dos leads o botão já vai aparecer como "Enviado ✓" porque o automático rodou no insert
+
+## Mudanças técnicas
+
+1. **Migration**
+   - Recriar `trigger_welcome_email()` com todos os filtros acima (welcome_sent, domínios de teste, stage `novo`, status, supressão), **sem** passar `sender_*` no payload
+   - Criar trigger `on_lead_insert_welcome AFTER INSERT ON public.leads FOR EACH ROW EXECUTE FUNCTION trigger_welcome_email()`
+
+2. **Edge function `send-welcome-email`**
+   - Quando `sender_*` vier vazio (caso automático), aplicar defaults: `Lívia Lins` / `contato@movimentocircular.io` / `+55 11 98244-1551`
+   - Após envio com sucesso, além do `welcome_sent`, atualizar `kanban_stage`, `stage_updated_at`, `last_activity_at` (somente se ainda em `novo`)
+   - Inserir `lead_activities` com `user_id = NULL`
+   - Pular CC quando não houver `sender_email` no payload
+   - Manter guarda de idempotência
+
+3. **Frontend** — sem mudanças. O botão segue funcionando como reenvio manual.
+
+## Memória a atualizar após implementação
+
+Adicionar nota em `mem://crm/automation-rules-and-logic`:
+> Welcome automático no INSERT de leads via trigger `on_lead_insert_welcome`. Remetente padrão Lívia Lins (`contato@movimentocircular.io`, +55 11 98244-1551). Não atribui lead. Filtros: welcome_sent=false, stage=novo, status ativo, sem supressão, sem domínios de teste. Botão manual permanece como fallback e mantém regra de assumir o lead.
