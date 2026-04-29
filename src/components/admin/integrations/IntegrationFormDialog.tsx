@@ -23,6 +23,7 @@ export interface IntegrationFormValues {
   whatsapp_channel_id: string | null;
   produto_label: string | null;
   whatsapp_agent_id: string | null;
+  whatsapp_initial_message: string | null;
 }
 
 interface Props {
@@ -51,6 +52,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [whatsappChannelId, setWhatsappChannelId] = useState("");
   const [whatsappAgentId, setWhatsappAgentId] = useState("");
   const [produtoLabel, setProdutoLabel] = useState("");
+  const [whatsappInitialMessage, setWhatsappInitialMessage] = useState("");
   const [schemaText, setSchemaText] = useState("{}");
   const [notas, setNotas] = useState("");
   const [schemaError, setSchemaError] = useState("");
@@ -68,6 +70,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setWhatsappChannelId(source?.whatsapp_channel_id ?? "");
     setWhatsappAgentId(source?.whatsapp_agent_id ?? "");
     setProdutoLabel(source?.produto_label ?? "");
+    setWhatsappInitialMessage(source?.whatsapp_initial_message ?? "");
     setSchemaText(JSON.stringify(source?.custom_field_schema ?? {}, null, 2));
     setNotas(source?.notas ?? "");
     setCorsInput("");
@@ -116,6 +119,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         whatsapp_channel_id: whatsappChannelId.trim() || null,
         whatsapp_agent_id: whatsappAgentId.trim() || null,
         produto_label: produtoLabel.trim() || null,
+        whatsapp_initial_message: whatsappInitialMessage.trim() || null,
       });
     } finally {
       setSubmitting(false);
