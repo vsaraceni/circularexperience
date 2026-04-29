@@ -23,6 +23,7 @@ export interface IntegrationFormValues {
   whatsapp_channel_id: string | null;
   produto_label: string | null;
   whatsapp_agent_id: string | null;
+  whatsapp_initial_message: string | null;
 }
 
 interface Props {
@@ -51,6 +52,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [whatsappChannelId, setWhatsappChannelId] = useState("");
   const [whatsappAgentId, setWhatsappAgentId] = useState("");
   const [produtoLabel, setProdutoLabel] = useState("");
+  const [whatsappInitialMessage, setWhatsappInitialMessage] = useState("");
   const [schemaText, setSchemaText] = useState("{}");
   const [notas, setNotas] = useState("");
   const [schemaError, setSchemaError] = useState("");
@@ -68,6 +70,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setWhatsappChannelId(source?.whatsapp_channel_id ?? "");
     setWhatsappAgentId(source?.whatsapp_agent_id ?? "");
     setProdutoLabel(source?.produto_label ?? "");
+    setWhatsappInitialMessage(source?.whatsapp_initial_message ?? "");
     setSchemaText(JSON.stringify(source?.custom_field_schema ?? {}, null, 2));
     setNotas(source?.notas ?? "");
     setCorsInput("");
@@ -116,6 +119,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         whatsapp_channel_id: whatsappChannelId.trim() || null,
         whatsapp_agent_id: whatsappAgentId.trim() || null,
         produto_label: produtoLabel.trim() || null,
+        whatsapp_initial_message: whatsappInitialMessage.trim() || null,
       });
     } finally {
       setSubmitting(false);
@@ -263,7 +267,20 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
                     className="text-sm"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Se preenchido, o briefing do lead (produto, campanha, nome, empresa) é injetado no contexto deste agente antes do <code>start-conversation</code>.
+                    Se preenchido, o briefing do lead viaja em <code>metadata</code> para este agente — sem virar mensagem visível e sem criar thread duplicada.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Mensagem inicial no WhatsApp</Label>
+                  <Textarea
+                    value={whatsappInitialMessage}
+                    onChange={(e) => setWhatsappInitialMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Oi {{primeiro_nome}}! 👋 Vi seu interesse em {{produto}}. Posso te contar mais? 😊"
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Variáveis: <code>{"{{primeiro_nome}}"}</code>, <code>{"{{nome}}"}</code>, <code>{"{{produto}}"}</code>, <code>{"{{empresa}}"}</code>, <code>{"{{campanha}}"}</code>. Se vazio, usa o padrão global.
                   </p>
                 </div>
               </div>

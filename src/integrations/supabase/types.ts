@@ -441,6 +441,7 @@ export type Database = {
           whatsapp_agent_id: string | null
           whatsapp_auto_send: boolean
           whatsapp_channel_id: string | null
+          whatsapp_initial_message: string | null
         }
         Insert: {
           api_key_hash: string
@@ -468,6 +469,7 @@ export type Database = {
           whatsapp_agent_id?: string | null
           whatsapp_auto_send?: boolean
           whatsapp_channel_id?: string | null
+          whatsapp_initial_message?: string | null
         }
         Update: {
           api_key_hash?: string
@@ -495,6 +497,7 @@ export type Database = {
           whatsapp_agent_id?: string | null
           whatsapp_auto_send?: boolean
           whatsapp_channel_id?: string | null
+          whatsapp_initial_message?: string | null
         }
         Relationships: [
           {
