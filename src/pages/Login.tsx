@@ -256,10 +256,10 @@ const Login = () => {
             Movimento Circular · CRM
           </p>
           <h2 className="mt-3 text-4xl font-bold leading-tight">
-            Gestão de leads e propostas para parcerias de impacto.
+            Gestão integrada de oportunidades
           </h2>
           <p className="mt-4 text-base opacity-90 max-w-md">
-            Centralize sua operação comercial e acompanhe cada conversa que pode virar transformação.
+            Acesso restrito
           </p>
         </div>
       </div>
