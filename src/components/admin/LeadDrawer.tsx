@@ -7,12 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
   Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
-  ChevronRight,
+  ChevronRight, Pencil, Check, X as XIcon, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -290,13 +295,76 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2">
-                      <InfoRow icon={<User className="h-4 w-4" />} label="Contato" value={lead.name} linkedin={lead.name} company={lead.company} />
-                      <InfoRow icon={<Mail className="h-4 w-4" />} label="E-mail" value={lead.email} copyable />
-                      {lead.telefone && (
-                        <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={lead.telefone} whatsapp={lead.telefone} />
-                      )}
+                      <EditableField
+                        icon={<User className="h-4 w-4" />}
+                        label="Contato"
+                        value={lead.name}
+                        field="name"
+                        leadId={lead.id}
+                        userId={userId}
+                        validate={(v) => {
+                          if (!v.trim()) return "Nome obrigatório";
+                          if (v.length > 200) return "Máximo 200 caracteres";
+                          return null;
+                        }}
+                        linkHref={`https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(`${lead.name} ${lead.company || ""}`.trim())}`}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Mail className="h-4 w-4" />}
+                        label="E-mail"
+                        value={lead.email}
+                        field="email"
+                        leadId={lead.id}
+                        userId={userId}
+                        validate={(v) => {
+                          if (!v.trim()) return "E-mail obrigatório";
+                          if (v.length > 320) return "Máximo 320 caracteres";
+                          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return "E-mail inválido";
+                          return null;
+                        }}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Phone className="h-4 w-4" />}
+                        label="Telefone"
+                        value={lead.telefone || ""}
+                        field="telefone"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => {
+                          if (!v.trim()) return null;
+                          if (v.length > 40) return "Máximo 40 caracteres";
+                          if (!/^[\d\s+()\-]+$/.test(v.trim())) return "Use apenas dígitos, +, espaços, () e -";
+                          return null;
+                        }}
+                        linkHref={lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : undefined}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Building2 className="h-4 w-4" />}
+                        label="Empresa"
+                        value={lead.company || ""}
+                        field="company"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => v.length > 255 ? "Máximo 255 caracteres" : null}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Briefcase className="h-4 w-4" />}
+                        label="Cargo"
+                        value={lead.cargo || ""}
+                        field="cargo"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => v.length > 120 ? "Máximo 120 caracteres" : null}
+                        onSaved={() => onNoteAdded?.()}
+                      />
                       <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
-                      <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo ? lead.cargo.replace(/_/g, " ").replace(/^./, c => c.toUpperCase()) : "—"} />
                       <InfoRow icon={<Building2 className="h-4 w-4" />} label="Porte" value={formatColaboradores(lead.colaboradores)} />
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><Sparkles className="h-4 w-4" /></span>
@@ -643,7 +711,16 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
         <div className="shrink-0 border-t border-border pt-3 pb-2 px-1">
           <div className="grid grid-cols-2 gap-2">
             {lead.kanban_stage === "novo" && (
-              <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
+              <>
+                <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
+                {isAdmin && (
+                  <DeleteLeadButton
+                    leadId={lead.id}
+                    leadLabel={lead.company || lead.name}
+                    onDeleted={() => { onOpenChange(false); onNoteAdded?.(); }}
+                  />
+                )}
+              </>
             )}
             {lead.kanban_stage === "boas_vindas" && (
               <>
