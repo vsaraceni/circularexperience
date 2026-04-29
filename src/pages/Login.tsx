@@ -21,7 +21,7 @@ const Login = () => {
   const [fullName, setFullName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [mode, setMode] = useState<Mode>("password");
+  const [mode, setMode] = useState<Mode>("magic");
   const isSignUp = mode === "signup";
   const isMagic = mode === "magic";
   const { signIn, signUp } = useAuth();
