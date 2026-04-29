@@ -13,6 +13,7 @@ const LOST_REASONS = [
   "Escolheu outro fornecedor",
   "Projeto cancelado ou adiado",
   "Sem fit com o produto",
+  "Parceria que não gerou proposta",
   "Timing — pode voltar no futuro",
 ];
 

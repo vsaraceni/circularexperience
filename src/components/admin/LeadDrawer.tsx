@@ -7,12 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
   Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
-  ChevronRight,
+  ChevronRight, Pencil, Check, X as XIcon, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -290,13 +295,76 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2">
-                      <InfoRow icon={<User className="h-4 w-4" />} label="Contato" value={lead.name} linkedin={lead.name} company={lead.company} />
-                      <InfoRow icon={<Mail className="h-4 w-4" />} label="E-mail" value={lead.email} copyable />
-                      {lead.telefone && (
-                        <InfoRow icon={<Phone className="h-4 w-4" />} label="Telefone" value={lead.telefone} whatsapp={lead.telefone} />
-                      )}
+                      <EditableField
+                        icon={<User className="h-4 w-4" />}
+                        label="Contato"
+                        value={lead.name}
+                        field="name"
+                        leadId={lead.id}
+                        userId={userId}
+                        validate={(v) => {
+                          if (!v.trim()) return "Nome obrigatório";
+                          if (v.length > 200) return "Máximo 200 caracteres";
+                          return null;
+                        }}
+                        linkHref={`https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(`${lead.name} ${lead.company || ""}`.trim())}`}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Mail className="h-4 w-4" />}
+                        label="E-mail"
+                        value={lead.email}
+                        field="email"
+                        leadId={lead.id}
+                        userId={userId}
+                        validate={(v) => {
+                          if (!v.trim()) return "E-mail obrigatório";
+                          if (v.length > 320) return "Máximo 320 caracteres";
+                          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return "E-mail inválido";
+                          return null;
+                        }}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Phone className="h-4 w-4" />}
+                        label="Telefone"
+                        value={lead.telefone || ""}
+                        field="telefone"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => {
+                          if (!v.trim()) return null;
+                          if (v.length > 40) return "Máximo 40 caracteres";
+                          if (!/^[\d\s+()\-]+$/.test(v.trim())) return "Use apenas dígitos, +, espaços, () e -";
+                          return null;
+                        }}
+                        linkHref={lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : undefined}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Building2 className="h-4 w-4" />}
+                        label="Empresa"
+                        value={lead.company || ""}
+                        field="company"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => v.length > 255 ? "Máximo 255 caracteres" : null}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
+                        icon={<Briefcase className="h-4 w-4" />}
+                        label="Cargo"
+                        value={lead.cargo || ""}
+                        field="cargo"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => v.length > 120 ? "Máximo 120 caracteres" : null}
+                        onSaved={() => onNoteAdded?.()}
+                      />
                       <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
-                      <InfoRow icon={<Briefcase className="h-4 w-4" />} label="Cargo" value={lead.cargo ? lead.cargo.replace(/_/g, " ").replace(/^./, c => c.toUpperCase()) : "—"} />
                       <InfoRow icon={<Building2 className="h-4 w-4" />} label="Porte" value={formatColaboradores(lead.colaboradores)} />
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><Sparkles className="h-4 w-4" /></span>
@@ -643,7 +711,16 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
         <div className="shrink-0 border-t border-border pt-3 pb-2 px-1">
           <div className="grid grid-cols-2 gap-2">
             {lead.kanban_stage === "novo" && (
-              <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
+              <>
+                <ActionBtn icon={<Send />} label={lead.welcome_sent ? "Enviado ✓" : "Enviar Boas-Vindas"} tooltip="Enviar e-mail de boas-vindas" onClick={() => onQuickAction(lead, "send_welcome")} />
+                {isAdmin && (
+                  <DeleteLeadButton
+                    leadId={lead.id}
+                    leadLabel={lead.company || lead.name}
+                    onDeleted={() => { onOpenChange(false); onNoteAdded?.(); }}
+                  />
+                )}
+              </>
             )}
             {lead.kanban_stage === "boas_vindas" && (
               <>
@@ -808,6 +885,165 @@ function AdvanceStageButton({ lead, userId, onDone }: { lead: Lead; userId?: str
       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ChevronRight className="h-3 w-3" />}
       {isClosing ? "Marcar como Ganho" : `Avançar → ${nextLabel}`}
     </Button>
+  );
+}
+
+function EditableField({
+  icon, label, value, field, leadId, userId, validate, linkHref, placeholder, onSaved,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  field: "name" | "email" | "telefone" | "company" | "cargo";
+  leadId: string;
+  userId?: string;
+  validate?: (v: string) => string | null;
+  linkHref?: string;
+  placeholder?: string;
+  onSaved?: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setDraft(value); }, [value]);
+
+  const handleSave = async () => {
+    const trimmed = draft.trim();
+    if (trimmed === (value || "").trim()) { setEditing(false); return; }
+    const err = validate?.(trimmed);
+    if (err) { toast.error(err); return; }
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from("leads")
+        .update({ [field]: trimmed, last_activity_at: now } as any)
+        .eq("id", leadId);
+      if (error) throw error;
+      if (userId) {
+        await supabase.from("lead_activities").insert({
+          lead_id: leadId,
+          user_id: userId,
+          activity_type: "lead_editado",
+          content: `${label} alterado: "${value || "—"}" → "${trimmed || "—"}"`,
+          metadata: { field, from: value, to: trimmed } as any,
+        });
+      }
+      toast.success("Atualizado!");
+      setEditing(false);
+      onSaved?.();
+    } catch (e: any) {
+      toast.error("Erro ao salvar: " + (e.message || ""));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const display = value || placeholder || "—";
+
+  return (
+    <div className="flex items-center gap-2 text-sm group min-h-[28px]">
+      {linkHref && !editing ? (
+        <a href={linkHref} target="_blank" rel="noopener noreferrer" className="text-muted-foreground shrink-0 hover:text-primary transition-colors" title={`Abrir ${label}`}>
+          {icon}
+        </a>
+      ) : (
+        <span className="text-muted-foreground shrink-0">{icon}</span>
+      )}
+      <span className="text-muted-foreground text-xs w-16 shrink-0">{label}</span>
+      {editing ? (
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          <Input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); handleSave(); }
+              else if (e.key === "Escape") { e.preventDefault(); setDraft(value); setEditing(false); }
+            }}
+            disabled={saving}
+            className="h-7 text-xs flex-1"
+          />
+          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" disabled={saving} onClick={handleSave} title="Salvar">
+            {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+          </Button>
+          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" disabled={saving} onClick={() => { setDraft(value); setEditing(false); }} title="Cancelar">
+            <XIcon className="h-3 w-3" />
+          </Button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="flex items-center gap-1 flex-1 min-w-0 text-left hover:text-primary transition-colors"
+          title={`Editar ${label}`}
+        >
+          <span className={cn("truncate", !value && "italic text-muted-foreground")}>{display}</span>
+          <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function DeleteLeadButton({ leadId, leadLabel, onDeleted }: { leadId: string; leadLabel: string; onDeleted: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("leads").delete().eq("id", leadId);
+      if (error) throw error;
+      toast.success("Lead excluído");
+      setOpen(false);
+      onDeleted();
+    } catch (e: any) {
+      toast.error("Erro ao excluir: " + (e.message || ""));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="justify-start gap-2 h-9 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+            onClick={() => setOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Excluir
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Excluir lead permanentemente (admin)</TooltipContent>
+      </Tooltip>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lead permanentemente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O lead "{leadLabel}" e todas as atividades vinculadas serão removidos. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
