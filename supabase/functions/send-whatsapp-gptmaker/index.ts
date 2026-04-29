@@ -162,10 +162,10 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, status: "skipped_duplicate" }, 200);
   }
 
-  // 5. Montar contexto humano (produto + campanha + nome do lead).
-  // Apenas UMA chamada à GPT Maker (`start-conversation`) — o briefing técnico
-  // viaja em `metadata` para o agente, sem virar mensagem visível e sem criar
-  // uma segunda thread no painel.
+  // 5. Montar contexto humano (produto + campanha + nome do lead) usado
+  // apenas para renderizar o template de mensagem. A rota oficial
+  // start-conversation aceita somente { phone, message } — não enviamos
+  // metadata/agentId/contact para a GPT Maker.
   const customCampanha =
     typeof lead.custom_fields === "object" && lead.custom_fields !== null
       ? (lead.custom_fields as Record<string, unknown>).campanha_label
@@ -193,30 +193,11 @@ Deno.serve(async (req) => {
     .replace(/\{\{\s*campanha\s*\}\}/gi, (campanha ?? "").toString())
     .trim();
 
-  // Briefing humano-legível para o agente (vai no metadata, não na mensagem)
-  const briefingLines: string[] = ["[Briefing interno do lead]"];
-  if (produto) briefingLines.push(`• Produto/Interesse: ${produto}`);
-  if (campanha) briefingLines.push(`• Campanha: ${campanha}`);
-  if (lead.name) briefingLines.push(`• Nome: ${lead.name}`);
-  if (lead.company) briefingLines.push(`• Empresa: ${lead.company}`);
-  if (lead.utm_source) briefingLines.push(`• UTM source: ${lead.utm_source}`);
-  if (lead.utm_medium) briefingLines.push(`• UTM medium: ${lead.utm_medium}`);
-  const briefing = briefingLines.join("\n");
-
-  const metadata = {
-    lead_id: leadId,
-    lead_name: lead.name ?? null,
-    lead_company: lead.company ?? null,
-    produto: produto,
-    produto_slug: lead.origem ?? null,
-    campanha: campanha,
-    utm_source: lead.utm_source ?? null,
-    utm_medium: lead.utm_medium ?? null,
-    utm_campaign: lead.utm_campaign ?? null,
-    briefing,
-  };
-
-  // 6. Iniciar conversa via canal — chamada única
+  // 6. Iniciar conversa via canal — payload estritamente conforme docs oficiais:
+  // https://developer.gptmaker.ai/api-reference/channels/start-conversation
+  // Body suportado: { phone, message }. Campos extras (name, metadata, agentId,
+  // contact) NÃO são reconhecidos pela rota e podem causar a mensagem não
+  // chegar ao destinatário mesmo quando a API responde { success: true }.
   let response: Response;
   let respJson: unknown = null;
   try {
@@ -229,15 +210,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         phone,
-        name: lead.name ?? undefined,
         message: messageBody,
-        metadata,
-        agentId: agentId ?? undefined,
-        contact: {
-          name: lead.name ?? undefined,
-          phone,
-          metadata,
-        },
       }),
     });
     try {
@@ -282,6 +255,8 @@ Deno.serve(async (req) => {
     gptmaker_response: {
       start_conversation: respJson,
       agent_id: agentId,
+      channel_id: channelId,
+      request_body: { phone, message: messageBody },
     } as Record<string, unknown>,
   });
 
