@@ -40,6 +40,31 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("email and name are required");
     }
 
+    // Institutional defaults (used when no SDR-specific sender is provided,
+    // i.e. the automatic welcome triggered on lead INSERT).
+    const DEFAULT_SENDER_NAME = "Lívia Lins";
+    const DEFAULT_SENDER_EMAIL = "contato@movimentocircular.io";
+    const DEFAULT_SENDER_PHONE = "+55 11 98244-1551";
+    const isAutomatic = !data.sender_email;
+    const senderName = data.sender_name || DEFAULT_SENDER_NAME;
+    const senderEmail = data.sender_email || DEFAULT_SENDER_EMAIL;
+    const senderPhone = data.sender_phone || DEFAULT_SENDER_PHONE;
+
+    // Idempotency guard: skip if already sent
+    if (data.lead_id) {
+      const { data: existing } = await supabaseAdmin
+        .from("leads")
+        .select("welcome_sent, kanban_stage")
+        .eq("id", data.lead_id)
+        .maybeSingle();
+      if (existing?.welcome_sent) {
+        return new Response(
+          JSON.stringify({ success: true, skipped: "already_sent" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
     // Fetch template
     const { data: template } = await supabaseAdmin
       .from("email_templates")
@@ -64,9 +89,9 @@ const handler = async (req: Request): Promise<Response> => {
         .replace(/\{\{email\}\}/g, data.email)
         .replace(/\{\{company\}\}/g, data.company || "")
         .replace(/\{\{cargo\}\}/g, data.cargo || "")
-        .replace(/\{\{sender_name\}\}/g, data.sender_name || "")
-        .replace(/\{\{sender_email\}\}/g, data.sender_email || "")
-        .replace(/\{\{sender_phone\}\}/g, data.sender_phone || "");
+        .replace(/\{\{sender_name\}\}/g, senderName)
+        .replace(/\{\{sender_email\}\}/g, senderEmail)
+        .replace(/\{\{sender_phone\}\}/g, senderPhone);
 
     const subject = replacePlaceholders(template.subject);
     const body = replacePlaceholders(template.body_html);
@@ -87,20 +112,49 @@ const handler = async (req: Request): Promise<Response> => {
       sendOptions.reply_to = template.reply_to;
     }
 
-    // CC the logged-in admin
-    if (data.sender_email) {
+    // CC only when triggered manually by an SDR (not in automatic flow)
+    if (!isAutomatic && data.sender_email) {
       sendOptions.cc = [data.sender_email];
     }
 
     const emailResponse = await resend.emails.send(sendOptions);
     console.log("Welcome email sent:", emailResponse);
 
-    // Mark as sent
+    // Post-send updates
     if (data.lead_id) {
+      const nowIso = new Date().toISOString();
+      const updates: Record<string, unknown> = {
+        welcome_sent: true,
+        welcome_sent_at: nowIso,
+        last_activity_at: nowIso,
+      };
+
+      // Move stage novo -> boas_vindas only when still in novo
+      const { data: leadRow } = await supabaseAdmin
+        .from("leads")
+        .select("kanban_stage")
+        .eq("id", data.lead_id)
+        .maybeSingle();
+      if (leadRow?.kanban_stage === "novo") {
+        updates.kanban_stage = "boas_vindas";
+        updates.stage_updated_at = nowIso;
+      }
+
       await supabaseAdmin
         .from("leads")
-        .update({ welcome_sent: true, welcome_sent_at: new Date().toISOString() })
+        .update(updates)
         .eq("id", data.lead_id);
+
+      // Log activity (system-level when automatic)
+      await supabaseAdmin.from("lead_activities").insert({
+        lead_id: data.lead_id,
+        user_id: null,
+        activity_type: "welcome_enviado",
+        content: isAutomatic
+          ? "E-mail de boas-vindas enviado automaticamente"
+          : `E-mail de boas-vindas enviado por ${senderName}`,
+        metadata: { automatic: isAutomatic, sender_name: senderName },
+      });
     }
 
     return new Response(
