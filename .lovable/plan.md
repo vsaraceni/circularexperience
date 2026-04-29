@@ -1,66 +1,74 @@
+## Diagnóstico
 
-## Como funciona hoje
+Cada lead novo abre **duas conversas no painel GPT Maker**:
 
-- O envio do welcome é **manual**: SDR clica "Enviar Boas-Vindas" no Kanban/Lista
-- A função `send-welcome-email` envia usando como remetente os dados do **SDR logado** (`sender_name/email/phone`)
-- No callback de sucesso, o front faz: `assigned_to = user.id` + `kanban_stage = 'boas_vindas'` → é isso que faz o SDR **assumir** o lead
-- Existiu trigger `on_lead_insert` chamando essa função, mas **foi removido** (a função `trigger_welcome_email` ficou órfã no banco)
-- Template `lead-welcome` em `email_templates` usa placeholders `{{sender_name}}`, `{{sender_email}}`, `{{sender_phone}}` no corpo, no `from_name` e no `cc`
+1. **Card com ícone "API"** → vem do `POST /v2/agent/{agentId}/add-message` (etapa 5a no `send-whatsapp-gptmaker/index.ts`). Esse endpoint cria/usa um `contextId` (hoje passamos o `phone`) e injeta o briefing técnico (`📋 BRIEFING DO LEAD...`) como mensagem `role: assistant`. A GPT Maker renderiza isso como uma "conversa via API".
+2. **Card com ícone WhatsApp** → vem do `POST /v2/channel/{channelId}/start-conversation` (etapa 5b). Esse sim envia mensagem real pelo canal WhatsApp e cria a conversa "de verdade" no painel.
 
-## Solução: welcome 100% automático
+Os dois cards aparecem como "Desconhecido" porque:
+- O `add-message` usa o `phone` como `contextId` mas não cria contato vinculado — vira uma thread anônima.
+- O `start-conversation` usa `phone` mas o nome do contato fica em `contact.name` que aparentemente nem sempre é renderizado no card-resumo (mostra só "Desconhecido").
 
-### Remetente institucional padrão (não amarra a SDR)
+## Plano de correção (combinando as 3 dores: briefing visível, mensagem técnica, threads duplicadas)
 
-- **From name:** `Lívia Lins · Movimento Circular`
-- **From email:** `contato@lovable.movimentocircular.io` (domínio já verificado)
-- **Reply-To:** `contato@movimentocircular.io`
-- **Sem CC** (no fluxo automático)
-- **Variáveis no corpo:**
-  - `{{sender_name}}` → `Lívia Lins`
-  - `{{sender_email}}` → `contato@movimentocircular.io`
-  - `{{sender_phone}}` → `+55 11 98244-1551`
+### Eliminar a thread duplicada
 
-### Quando dispara
+A solução mais limpa é **parar de chamar `add-message`** e injetar o briefing **dentro da mesma conversa do WhatsApp**, usando um recurso da própria GPT Maker:
 
-Trigger `AFTER INSERT` em `public.leads` chamando a edge function via `pg_net`. Só dispara se **todas** as condições baterem:
+**Opção A (preferida)** — Usar o campo `metadata` do `start-conversation` (já enviamos hoje) **enriquecido** com o briefing humano-legível, e um campo `contextMessage`/`systemContext` se a API suportar. Isso faz o agente IA receber o contexto sem aparecer como mensagem visível e sem criar segunda thread.
 
-- `welcome_sent = false` (idempotente)
-- email **não pertence** aos domínios de teste (`@atinaedu.com.br`, `@movimentocircular.io`)
-- `kanban_stage = 'novo'` (não dispara para leads criados já em estágio avançado / propostas diretas)
-- `status NOT IN ('converted', 'archived')`
-- Email **não está em** `suppressed_emails`
+**Opção B (fallback se a API não tiver isso)** — Manter `add-message` mas usar como `contextId` o **chatId que retorna do `start-conversation`** em vez do `phone`. Aí as duas chamadas ficam vinculadas à mesma conversa, sem criar card duplicado. A ordem fica: chamar `start-conversation` primeiro, capturar `chatId` ou `conversationId` da resposta, depois `add-message` com esse id.
 
-### O que a edge function passa a fazer após envio bem-sucedido
+**Opção C (mais simples e segura)** — **Remover totalmente o `add-message`** e injetar o briefing como **prefixo invisível no system prompt do agente** via `metadata` (que a GPT Maker já encaminha pro agente). Funciona se o agente tiver instrução pra ler `metadata.briefing`. Sem segunda chamada → sem segunda thread.
 
-1. `welcome_sent = true`, `welcome_sent_at = now()`
-2. Move para `kanban_stage = 'boas_vindas'` (apenas se ainda em `novo`)
-3. Atualiza `stage_updated_at` e `last_activity_at`
-4. **NÃO atribui o lead** (`assigned_to` continua `NULL`) → regra existente de auto-assign na primeira ação real do SDR continua valendo
-5. Insere `lead_activities` com `activity_type = 'welcome_enviado'`, `user_id = NULL`, conteúdo "E-mail de boas-vindas enviado automaticamente"
+Vou implementar **Opção C como default** + suporte a Opção B se a Opção C não bastar (configurável). Razão: menos chamadas, menos chance de erro, não polui o painel.
 
-### Fluxo manual continua existindo (fallback)
+### Resolver "Desconhecido" no card
 
-O botão "Enviar Boas-Vindas" no Kanban/Lista vira fallback de reenvio:
+No `start-conversation`, garantir que enviamos:
+```json
+{
+  "phone": "...",
+  "message": "...",
+  "contact": { "name": "Everton 2", "metadata": {...} },
+  "name": "Everton 2"  // alguns endpoints leem do top-level também
+}
+```
+Adicionar `name` no top-level do payload (além de `contact.name`) — barato e cobre as duas convenções.
 
-- Quando clicado manualmente, **mantém a regra atual** de assumir o lead (`assigned_to = user.id`) — agora é ação intencional do SDR, e não o disparo padrão
-- Para a maioria dos leads o botão já vai aparecer como "Enviado ✓" porque o automático rodou no insert
+### Mensagem inicial humana e contextual (foco do usuário agora)
 
-## Mudanças técnicas
+Já planejado nas iterações anteriores, fica assim:
 
-1. **Migration**
-   - Recriar `trigger_welcome_email()` com todos os filtros acima (welcome_sent, domínios de teste, stage `novo`, status, supressão), **sem** passar `sender_*` no payload
-   - Criar trigger `on_lead_insert_welcome AFTER INSERT ON public.leads FOR EACH ROW EXECUTE FUNCTION trigger_welcome_email()`
+1. **Banco** — adicionar `lead_sources.whatsapp_initial_message text` (nullable). Template suporta `{{primeiro_nome}}`, `{{nome}}`, `{{produto}}`, `{{empresa}}`.
+2. **Edge function** — resolver template com prioridade: coluna da fonte → env `GPTMAKER_INITIAL_MESSAGE` → fallback hardcoded `"Oi {{primeiro_nome}}! Vi seu interesse em {{produto}}. Posso te contar mais? 😊"`.
+3. **Remover** o cabeçalho `[Lead novo · …]` do `messageBody`.
+4. **Remover** a chamada `add-message` (ou condicionar via flag).
+5. **Adicionar** `name` no top-level + `contact.name` populado no `start-conversation`.
+6. Briefing rico vai como `metadata.briefing` (string formatada) dentro do `start-conversation` — disponível pro agente sem virar mensagem visível.
 
-2. **Edge function `send-welcome-email`**
-   - Quando `sender_*` vier vazio (caso automático), aplicar defaults: `Lívia Lins` / `contato@movimentocircular.io` / `+55 11 98244-1551`
-   - Após envio com sucesso, além do `welcome_sent`, atualizar `kanban_stage`, `stage_updated_at`, `last_activity_at` (somente se ainda em `novo`)
-   - Inserir `lead_activities` com `user_id = NULL`
-   - Pular CC quando não houver `sender_email` no payload
-   - Manter guarda de idempotência
+### UI Admin — `IntegrationFormDialog.tsx`
 
-3. **Frontend** — sem mudanças. O botão segue funcionando como reenvio manual.
+Adicionar Textarea **"Mensagem inicial no WhatsApp"** dentro do bloco WhatsApp já existente:
+- Helper text: variáveis disponíveis + "Se vazio, usa o padrão global."
+- Placeholder com exemplo bom.
 
-## Memória a atualizar após implementação
+## Arquivos afetados
 
-Adicionar nota em `mem://crm/automation-rules-and-logic`:
-> Welcome automático no INSERT de leads via trigger `on_lead_insert_welcome`. Remetente padrão Lívia Lins (`contato@movimentocircular.io`, +55 11 98244-1551). Não atribui lead. Filtros: welcome_sent=false, stage=novo, status ativo, sem supressão, sem domínios de teste. Botão manual permanece como fallback e mantém regra de assumir o lead.
+- `supabase/migrations/<novo>.sql` — coluna `whatsapp_initial_message`
+- `supabase/functions/send-whatsapp-gptmaker/index.ts` — remover `add-message`, resolver template, enriquecer `start-conversation`
+- `supabase/functions/manage-lead-source/index.ts` — aceitar novo campo
+- `src/hooks/useLeadSources.ts` — tipo
+- `src/components/admin/integrations/IntegrationFormDialog.tsx` — campo no form
+
+## Resultado esperado
+
+- **Uma única thread por lead** no painel GPT Maker (some o card "API").
+- Card mostra **nome do lead** (não mais "Desconhecido").
+- Primeira mensagem visível é **humana e contextual**: "Oi Everton! Vi seu interesse em Circular Experience. Posso te contar mais? 😊"
+- Agente IA continua tendo briefing completo via `metadata`.
+- Cada fonte pode ter saudação própria.
+
+## Risco / Plano B
+
+Se ao testar virmos que o agente IA não está lendo `metadata.briefing` (Opção C falhou), ativamos Opção B na mesma edge function por feature flag — capturar `chatId` da resposta do `start-conversation` e chamar `add-message` com esse id (vincula à mesma thread em vez de criar nova). Sem mudança de schema, só lógica.
