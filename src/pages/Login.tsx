@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Sparkles } from "lucide-react";
 import logo from "@/assets/movimento-circular-logo.png";
-import heroImage from "@/assets/hero-workshop.jpg";
+import heroImage from "@/assets/hero-workshop.webp";
 import { LogoImage } from "@/components/LogoImage";
 import { lovable } from "@/integrations/lovable/index";
 import { supabase } from "@/integrations/supabase/client";
@@ -247,6 +247,8 @@ const Login = () => {
         <img
           src={heroImage}
           alt="Movimento Circular em ação"
+          loading="eager"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-primary/55 mix-blend-multiply" aria-hidden />
