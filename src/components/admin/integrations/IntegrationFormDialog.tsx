@@ -267,7 +267,20 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
                     className="text-sm"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Se preenchido, o briefing do lead (produto, campanha, nome, empresa) é injetado no contexto deste agente antes do <code>start-conversation</code>.
+                    Se preenchido, o briefing do lead viaja em <code>metadata</code> para este agente — sem virar mensagem visível e sem criar thread duplicada.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Mensagem inicial no WhatsApp</Label>
+                  <Textarea
+                    value={whatsappInitialMessage}
+                    onChange={(e) => setWhatsappInitialMessage(e.target.value)}
+                    rows={3}
+                    placeholder="Oi {{primeiro_nome}}! 👋 Vi seu interesse em {{produto}}. Posso te contar mais? 😊"
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Variáveis: <code>{"{{primeiro_nome}}"}</code>, <code>{"{{nome}}"}</code>, <code>{"{{produto}}"}</code>, <code>{"{{empresa}}"}</code>, <code>{"{{campanha}}"}</code>. Se vazio, usa o padrão global.
                   </p>
                 </div>
               </div>
