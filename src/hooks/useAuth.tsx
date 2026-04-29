@@ -34,7 +34,11 @@ export function useAuth() {
       setUser(nextSession?.user ?? null);
 
       if (nextSession?.user) {
-        void checkRole(nextSession.user.id);
+        // Defer Supabase calls out of the auth callback to avoid deadlocks
+        // (Supabase docs: never await DB queries inside onAuthStateChange).
+        setTimeout(() => {
+          if (isMounted) void checkRole(nextSession.user.id);
+        }, 0);
       } else {
         setIsAdmin(false);
         setHasRole(false);
