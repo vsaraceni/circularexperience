@@ -3,8 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Proposals from "./pages/admin/Proposals";
 import PrintablePresentation from "./pages/PrintablePresentation";
@@ -15,159 +13,9 @@ import PerformanceDashboard from "./pages/admin/PerformanceDashboard";
 import Pipeline from "./pages/admin/Pipeline";
 import Products from "./pages/admin/Products";
 import Integrations from "./pages/admin/Integrations";
-import Unsubscribe from "./pages/Unsubscribe";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
-
-const isCrmDomain = window.location.hostname.startsWith("crm.");
-
-const CrmRoutes = () => (
-  <Routes>
-    <Route path="/" element={<Navigate to="/admin/pipeline" replace />} />
-    <Route path="/login" element={<Login />} />
-    <Route
-      path="/admin/pipeline"
-      element={
-        <ProtectedRoute>
-          <Pipeline />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/propostas"
-      element={
-        <ProtectedRoute>
-          <Proposals />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/dashboard"
-      element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/templates"
-      element={
-        <ProtectedRoute requireAdmin>
-          <Templates />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/performance"
-      element={
-        <ProtectedRoute>
-          <PerformanceDashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/painel"
-      element={
-        <ProtectedRoute>
-          <StrategicDashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/produtos"
-      element={
-        <ProtectedRoute requireAdmin>
-          <Products />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/integracoes"
-      element={
-        <ProtectedRoute requireAdmin>
-          <Integrations />
-        </ProtectedRoute>
-      }
-    />
-    <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
-    <Route path="*" element={<Navigate to="/admin/pipeline" replace />} />
-  </Routes>
-);
-
-const SiteRoutes = () => (
-  <Routes>
-    <Route path="/" element={<Index />} />
-    <Route path="/login" element={<Login />} />
-    <Route
-      path="/admin/pipeline"
-      element={
-        <ProtectedRoute>
-          <Pipeline />
-        </ProtectedRoute>
-      }
-    />
-    <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
-    <Route
-      path="/admin/propostas"
-      element={
-        <ProtectedRoute>
-          <Proposals />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/dashboard"
-      element={
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/templates"
-      element={
-        <ProtectedRoute requireAdmin>
-          <Templates />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/performance"
-      element={
-        <ProtectedRoute>
-          <PerformanceDashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/painel"
-      element={
-        <ProtectedRoute>
-          <StrategicDashboard />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/produtos"
-      element={
-        <ProtectedRoute requireAdmin>
-          <Products />
-        </ProtectedRoute>
-      }
-    />
-    <Route
-      path="/admin/integracoes"
-      element={
-        <ProtectedRoute requireAdmin>
-          <Integrations />
-        </ProtectedRoute>
-      }
-    />
-    <Route path="/unsubscribe" element={<Unsubscribe />} />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -175,7 +23,76 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        {isCrmDomain ? <CrmRoutes /> : <SiteRoutes />}
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route
+            path="/admin/pipeline"
+            element={
+              <ProtectedRoute>
+                <Pipeline />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/propostas"
+            element={
+              <ProtectedRoute>
+                <Proposals />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/templates"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Templates />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/performance"
+            element={
+              <ProtectedRoute>
+                <PerformanceDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/painel"
+            element={
+              <ProtectedRoute>
+                <StrategicDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/produtos"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Products />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/integracoes"
+            element={
+              <ProtectedRoute requireAdmin>
+                <Integrations />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/apresentacao-print/:slug" element={<PrintablePresentation />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
