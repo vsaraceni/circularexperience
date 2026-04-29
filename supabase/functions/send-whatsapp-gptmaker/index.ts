@@ -281,15 +281,15 @@ Deno.serve(async (req) => {
     status: "sent",
     gptmaker_response: {
       start_conversation: respJson,
-      agent_context: { status: agentContextStatus, agent_id: agentId, error: agentContextError },
+      agent_id: agentId,
     } as Record<string, unknown>,
   });
 
   await supabase.from("lead_activities").insert({
     lead_id: leadId,
     activity_type: "whatsapp_iniciado",
-    content: `WhatsApp iniciado via GPT Maker para ${phone}${produto ? ` (${produto}${campanha ? ` / ${campanha}` : ""})` : ""}${agentContextStatus === "ok" ? " — briefing injetado" : agentContextStatus === "error" ? " — briefing falhou" : ""}`,
-    metadata: { phone, channel_id: channelId, agent_id: agentId, agent_context_status: agentContextStatus, produto, campanha },
+    content: `WhatsApp iniciado via GPT Maker para ${phone}${produto ? ` (${produto}${campanha ? ` / ${campanha}` : ""})` : ""}`,
+    metadata: { phone, channel_id: channelId, agent_id: agentId, produto, campanha, message_preview: messageBody.slice(0, 120) },
   });
 
   await supabase
