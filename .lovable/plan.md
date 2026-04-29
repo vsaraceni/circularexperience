@@ -1,74 +1,42 @@
 ## Diagnóstico
 
-Cada lead novo abre **duas conversas no painel GPT Maker**:
+A documentação oficial (`POST /v2/channel/{channelId}/start-conversation`) é categórica em dois pontos que explicam exatamente o sintoma "GPT Maker responde `success: true`, abre thread no painel, mas o lead não recebe nada no WhatsApp":
 
-1. **Card com ícone "API"** → vem do `POST /v2/agent/{agentId}/add-message` (etapa 5a no `send-whatsapp-gptmaker/index.ts`). Esse endpoint cria/usa um `contextId` (hoje passamos o `phone`) e injeta o briefing técnico (`📋 BRIEFING DO LEAD...`) como mensagem `role: assistant`. A GPT Maker renderiza isso como uma "conversa via API".
-2. **Card com ícone WhatsApp** → vem do `POST /v2/channel/{channelId}/start-conversation` (etapa 5b). Esse sim envia mensagem real pelo canal WhatsApp e cria a conversa "de verdade" no painel.
+1. **Payload aceito é apenas `{ phone, message }`.** Hoje nossa edge function envia também `name`, `metadata`, `agentId` e `contact`. A API ignora silenciosamente esses campos extras (por isso o `success: true`), mas isso indica que o request está sendo aceito como genérico — não como o fluxo esperado.
 
-Os dois cards aparecem como "Desconhecido" porque:
-- O `add-message` usa o `phone` como `contextId` mas não cria contato vinculado — vira uma thread anônima.
-- O `start-conversation` usa `phone` mas o nome do contato fica em `contact.name` que aparentemente nem sempre é renderizado no card-resumo (mostra só "Desconhecido").
+2. **Restrição crítica:** *"iniciar a conversa só está disponível para canais do tipo Whatsapp **não oficial**"*. Se o `GPTMAKER_CHANNEL_ID` configurado for um canal **WhatsApp Cloud API (oficial / Meta)**, o endpoint retorna sucesso na criação da thread, mas o WhatsApp da Meta bloqueia o envio porque exige *Message Template* aprovado para iniciar conversa. Isso bate 100% com o que vimos: thread #1006 criada, lead Lívia sem mensagem.
 
-## Plano de correção (combinando as 3 dores: briefing visível, mensagem técnica, threads duplicadas)
+Logs confirmam: todos os envios recentes recebem `{ success: true }` da GPT Maker — o problema não é nosso código falhando, é a Meta dropando a mensagem do lado deles.
 
-### Eliminar a thread duplicada
+## O que vamos fazer
 
-A solução mais limpa é **parar de chamar `add-message`** e injetar o briefing **dentro da mesma conversa do WhatsApp**, usando um recurso da própria GPT Maker:
+### 1. Ajustar `send-whatsapp-gptmaker` ao contrato oficial
+- Reduzir o body do POST para **estritamente** `{ phone, message }`, conforme docs.
+- Remover `name`, `metadata`, `agentId`, `contact` do payload (não são suportados pela rota). O briefing continua salvo em `lead_activities` (uso interno do CRM), mas não viaja mais para a GPT Maker — não tem efeito lá.
+- Manter idempotência 24h, normalização BR e logging atuais.
 
-**Opção A (preferida)** — Usar o campo `metadata` do `start-conversation` (já enviamos hoje) **enriquecido** com o briefing humano-legível, e um campo `contextMessage`/`systemContext` se a API suportar. Isso faz o agente IA receber o contexto sem aparecer como mensagem visível e sem criar segunda thread.
+### 2. Detectar a causa real (oficial vs. não oficial)
+Adicionar uma mensagem de erro explícita quando a resposta vier `success: true` mas suspeita (ou `400/403`). Hoje tratamos só `!response.ok`. A doc lista 400 e 403 como respostas possíveis — vamos logar o body inteiro em todos os casos para detectar bloqueios futuros.
 
-**Opção B (fallback se a API não tiver isso)** — Manter `add-message` mas usar como `contextId` o **chatId que retorna do `start-conversation`** em vez do `phone`. Aí as duas chamadas ficam vinculadas à mesma conversa, sem criar card duplicado. A ordem fica: chamar `start-conversation` primeiro, capturar `chatId` ou `conversationId` da resposta, depois `add-message` com esse id.
+### 3. Confirmação manual com o usuário (necessária — não temos como descobrir via código)
+Precisamos que você verifique no painel da GPT Maker:
+- O canal usado (`GPTMAKER_CHANNEL_ID`) é do tipo **WhatsApp não oficial** (QR Code / Baileys) ou **WhatsApp Oficial (Cloud API/Meta)**?
+  - Se **oficial** → este endpoint não funciona para iniciar conversa fria. Precisamos: (a) trocar para um canal não-oficial **ou** (b) usar a rota de envio por *template* aprovado da Meta (não documentada nesta página — exigirá outra integração).
+  - Se **não oficial** → o canal pode estar desconectado/sessão expirada. Reconectar via QR Code resolve.
 
-**Opção C (mais simples e segura)** — **Remover totalmente o `add-message`** e injetar o briefing como **prefixo invisível no system prompt do agente** via `metadata` (que a GPT Maker já encaminha pro agente). Funciona se o agente tiver instrução pra ler `metadata.briefing`. Sem segunda chamada → sem segunda thread.
+## Detalhes técnicos
 
-Vou implementar **Opção C como default** + suporte a Opção B se a Opção C não bastar (configurável). Razão: menos chamadas, menos chance de erro, não polui o painel.
-
-### Resolver "Desconhecido" no card
-
-No `start-conversation`, garantir que enviamos:
-```json
-{
-  "phone": "...",
-  "message": "...",
-  "contact": { "name": "Everton 2", "metadata": {...} },
-  "name": "Everton 2"  // alguns endpoints leem do top-level também
-}
+Body novo (edge function):
+```ts
+body: JSON.stringify({ phone, message: messageBody })
 ```
-Adicionar `name` no top-level do payload (além de `contact.name`) — barato e cobre as duas convenções.
 
-### Mensagem inicial humana e contextual (foco do usuário agora)
+Tudo que era `metadata`, `agentId`, `contact.metadata` sai do request. A lógica de montagem do `messageBody` (template humanizado com `{{primeiro_nome}}`, `{{produto}}`, etc.) **continua igual** — é nele que o lead é cumprimentado.
 
-Já planejado nas iterações anteriores, fica assim:
+O `briefing` interno deixa de existir como campo enviado; informação de produto/campanha/UTM já está em `lead_activities.metadata` para consumo do CRM.
 
-1. **Banco** — adicionar `lead_sources.whatsapp_initial_message text` (nullable). Template suporta `{{primeiro_nome}}`, `{{nome}}`, `{{produto}}`, `{{empresa}}`.
-2. **Edge function** — resolver template com prioridade: coluna da fonte → env `GPTMAKER_INITIAL_MESSAGE` → fallback hardcoded `"Oi {{primeiro_nome}}! Vi seu interesse em {{produto}}. Posso te contar mais? 😊"`.
-3. **Remover** o cabeçalho `[Lead novo · …]` do `messageBody`.
-4. **Remover** a chamada `add-message` (ou condicionar via flag).
-5. **Adicionar** `name` no top-level + `contact.name` populado no `start-conversation`.
-6. Briefing rico vai como `metadata.briefing` (string formatada) dentro do `start-conversation` — disponível pro agente sem virar mensagem visível.
+## Próximo passo bloqueante
 
-### UI Admin — `IntegrationFormDialog.tsx`
-
-Adicionar Textarea **"Mensagem inicial no WhatsApp"** dentro do bloco WhatsApp já existente:
-- Helper text: variáveis disponíveis + "Se vazio, usa o padrão global."
-- Placeholder com exemplo bom.
-
-## Arquivos afetados
-
-- `supabase/migrations/<novo>.sql` — coluna `whatsapp_initial_message`
-- `supabase/functions/send-whatsapp-gptmaker/index.ts` — remover `add-message`, resolver template, enriquecer `start-conversation`
-- `supabase/functions/manage-lead-source/index.ts` — aceitar novo campo
-- `src/hooks/useLeadSources.ts` — tipo
-- `src/components/admin/integrations/IntegrationFormDialog.tsx` — campo no form
-
-## Resultado esperado
-
-- **Uma única thread por lead** no painel GPT Maker (some o card "API").
-- Card mostra **nome do lead** (não mais "Desconhecido").
-- Primeira mensagem visível é **humana e contextual**: "Oi Everton! Vi seu interesse em Circular Experience. Posso te contar mais? 😊"
-- Agente IA continua tendo briefing completo via `metadata`.
-- Cada fonte pode ter saudação própria.
-
-## Risco / Plano B
-
-Se ao testar virmos que o agente IA não está lendo `metadata.briefing` (Opção C falhou), ativamos Opção B na mesma edge function por feature flag — capturar `chatId` da resposta do `start-conversation` e chamar `add-message` com esse id (vincula à mesma thread em vez de criar nova). Sem mudança de schema, só lógica.
+Antes de eu mexer no código, **me confirma o tipo do canal no painel da GPT Maker** (oficial Meta vs. não-oficial QR Code). Isso muda a solução final:
+- não-oficial com sessão ativa → ajuste de payload resolve;
+- oficial Meta → precisamos de outra rota (templates) e isso vira um segundo plano.

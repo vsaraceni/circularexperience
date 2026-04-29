@@ -216,7 +216,11 @@ Deno.serve(async (req) => {
     briefing,
   };
 
-  // 6. Iniciar conversa via canal — chamada única
+  // 6. Iniciar conversa via canal — payload estritamente conforme docs oficiais:
+  // https://developer.gptmaker.ai/api-reference/channels/start-conversation
+  // Body suportado: { phone, message }. Campos extras (name, metadata, agentId,
+  // contact) NÃO são reconhecidos pela rota e podem causar a mensagem não
+  // chegar ao destinatário mesmo quando a API responde { success: true }.
   let response: Response;
   let respJson: unknown = null;
   try {
@@ -229,15 +233,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         phone,
-        name: lead.name ?? undefined,
         message: messageBody,
-        metadata,
-        agentId: agentId ?? undefined,
-        contact: {
-          name: lead.name ?? undefined,
-          phone,
-          metadata,
-        },
       }),
     });
     try {
@@ -282,6 +278,8 @@ Deno.serve(async (req) => {
     gptmaker_response: {
       start_conversation: respJson,
       agent_id: agentId,
+      channel_id: channelId,
+      request_body: { phone, message: messageBody },
     } as Record<string, unknown>,
   });
 
