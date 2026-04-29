@@ -63,7 +63,9 @@ Deno.serve(async (req) => {
   const gptmakerToken = Deno.env.get("GPTMAKER_TOKEN");
   const defaultChannelId = Deno.env.get("GPTMAKER_CHANNEL_ID");
   const defaultAgentId = Deno.env.get("GPTMAKER_AGENT_ID");
-  const initialMessage = Deno.env.get("GPTMAKER_INITIAL_MESSAGE") ?? ".";
+  const envInitialMessage = Deno.env.get("GPTMAKER_INITIAL_MESSAGE") ?? null;
+  const FALLBACK_INITIAL_MESSAGE =
+    "Oi {{primeiro_nome}}! 👋 Vi seu interesse em {{produto}}. Posso te contar mais? 😊";
 
   if (!gptmakerToken || !defaultChannelId) {
     return jsonResponse(
@@ -108,16 +110,18 @@ Deno.serve(async (req) => {
   let agentId: string | null = defaultAgentId ?? null;
   let produtoLabel: string | null = null;
   let sourceNome: string | null = null;
+  let sourceInitialMessage: string | null = null;
   if (lead.origem) {
     const { data: src } = await supabase
       .from("lead_sources")
-      .select("whatsapp_channel_id, whatsapp_agent_id, produto_label, nome")
+      .select("whatsapp_channel_id, whatsapp_agent_id, produto_label, nome, whatsapp_initial_message")
       .eq("slug", lead.origem)
       .maybeSingle();
     if (src?.whatsapp_channel_id) channelId = src.whatsapp_channel_id;
     if (src?.whatsapp_agent_id) agentId = src.whatsapp_agent_id;
     produtoLabel = src?.produto_label ?? null;
     sourceNome = src?.nome ?? null;
+    sourceInitialMessage = src?.whatsapp_initial_message ?? null;
   }
 
   // 3. Validar telefone
