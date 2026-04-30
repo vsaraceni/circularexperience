@@ -63,9 +63,26 @@ const COLABORADORES_LABELS: Record<string, string> = {
   "acima_de_2000": "Acima de 2.000",
 };
 
-const formatColaboradores = (value?: string | null): string => {
-  if (!value) return "—";
-  return COLABORADORES_LABELS[value] || value.replace(/_/g, " ");
+type TierKey = "1" | "2" | "3" | "";
+
+const TIER_COLORS: Record<"1" | "2" | "3", string> = {
+  "1": "#F4A736",
+  "2": "#2FB2C0",
+  "3": "#9E9E9E",
+};
+
+const getTierFromColaboradores = (c?: string | null): TierKey => {
+  if (!c) return "";
+  if (c === "501_a_2000" || c === "acima_de_2000" || c === "mais_de_2000") return "1";
+  if (c === "101_a_500") return "2";
+  return "3";
+};
+
+const tierToColaboradores = (t: TierKey): string | null => {
+  if (t === "1") return "acima_de_2000";
+  if (t === "2") return "101_a_500";
+  if (t === "3") return "51_a_100";
+  return null;
 };
 
 interface LeadDrawerProps {
@@ -365,7 +382,39 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                         onSaved={() => onNoteAdded?.()}
                       />
                       <InfoRow icon={<Tag className="h-4 w-4" />} label="Origem" value={lead.origem} />
-                      <InfoRow icon={<Building2 className="h-4 w-4" />} label="Porte" value={formatColaboradores(lead.colaboradores)} />
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="shrink-0" style={{ color: getTierFromColaboradores(lead.colaboradores) ? TIER_COLORS[getTierFromColaboradores(lead.colaboradores) as "1" | "2" | "3"] : undefined }}>
+                          <Building2 className="h-4 w-4" />
+                        </span>
+                        <span className="text-muted-foreground text-xs w-16 shrink-0">Tier</span>
+                        <Select
+                          value={getTierFromColaboradores(lead.colaboradores) || "none"}
+                          onValueChange={async (val) => {
+                            const tier = (val === "none" ? "" : val) as TierKey;
+                            const newColaboradores = tierToColaboradores(tier);
+                            const { error } = await supabase
+                              .from("leads")
+                              .update({ colaboradores: newColaboradores })
+                              .eq("id", lead.id);
+                            if (error) {
+                              toast.error("Falha ao atualizar tier");
+                              return;
+                            }
+                            toast.success("Tier atualizado!");
+                            onNoteAdded?.();
+                          }}
+                        >
+                          <SelectTrigger className="h-7 text-xs flex-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Não informado</SelectItem>
+                            <SelectItem value="1">Tier 1 — 500+</SelectItem>
+                            <SelectItem value="2">Tier 2 — 101 a 500</SelectItem>
+                            <SelectItem value="3">Tier 3 — até 100</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><Sparkles className="h-4 w-4" /></span>
                         <span className="text-muted-foreground text-xs w-16 shrink-0">Calor</span>
