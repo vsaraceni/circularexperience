@@ -63,9 +63,26 @@ const COLABORADORES_LABELS: Record<string, string> = {
   "acima_de_2000": "Acima de 2.000",
 };
 
-const formatColaboradores = (value?: string | null): string => {
-  if (!value) return "—";
-  return COLABORADORES_LABELS[value] || value.replace(/_/g, " ");
+type TierKey = "1" | "2" | "3" | "";
+
+const TIER_COLORS: Record<"1" | "2" | "3", string> = {
+  "1": "#F4A736",
+  "2": "#2FB2C0",
+  "3": "#9E9E9E",
+};
+
+const getTierFromColaboradores = (c?: string | null): TierKey => {
+  if (!c) return "";
+  if (c === "501_a_2000" || c === "acima_de_2000" || c === "mais_de_2000") return "1";
+  if (c === "101_a_500") return "2";
+  return "3";
+};
+
+const tierToColaboradores = (t: TierKey): string | null => {
+  if (t === "1") return "acima_de_2000";
+  if (t === "2") return "101_a_500";
+  if (t === "3") return "51_a_100";
+  return null;
 };
 
 interface LeadDrawerProps {
