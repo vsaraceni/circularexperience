@@ -556,7 +556,11 @@ export type Database = {
           source_metadata: Json | null
           stage_updated_at: string | null
           status: string
+          suggested_tier: number | null
           telefone: string | null
+          tier_confirmed: boolean
+          tier_reasoning: string | null
+          tier_signals: Json | null
           utm_campaign: string | null
           utm_content: string | null
           utm_medium: string | null
@@ -607,7 +611,11 @@ export type Database = {
           source_metadata?: Json | null
           stage_updated_at?: string | null
           status?: string
+          suggested_tier?: number | null
           telefone?: string | null
+          tier_confirmed?: boolean
+          tier_reasoning?: string | null
+          tier_signals?: Json | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null
@@ -658,7 +666,11 @@ export type Database = {
           source_metadata?: Json | null
           stage_updated_at?: string | null
           status?: string
+          suggested_tier?: number | null
           telefone?: string | null
+          tier_confirmed?: boolean
+          tier_reasoning?: string | null
+          tier_signals?: Json | null
           utm_campaign?: string | null
           utm_content?: string | null
           utm_medium?: string | null

@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lead_id, user_id } = await req.json();
+    const { lead_id, user_id, force } = await req.json();
     if (!lead_id) {
       return new Response(JSON.stringify({ error: "lead_id required" }), {
         status: 400,
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
-      .select("email, company")
+      .select("email, company, cargo, colaboradores, company_description, company_website, suggested_tier, tier_confirmed")
       .eq("id", lead_id)
       .single();
 
@@ -42,6 +42,24 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Skip test domains
+    const emailLower = (lead.email || "").toLowerCase();
+    if (emailLower.endsWith("@atinaedu.com.br") || emailLower.endsWith("@movimentocircular.io")) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "test_domain" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Idempotency: skip if already enriched (unless force=true)
+    const alreadyEnriched = !!(lead.company_description && lead.suggested_tier);
+    if (alreadyEnriched && !force) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "already_enriched" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const companyName = (lead.company || "").trim();
@@ -129,25 +147,48 @@ Deno.serve(async (req) => {
       description = await summarizeWithAI(companyName || emailDomain, null);
     }
 
-    // Save
-    await supabase
-      .from("leads")
-      .update({
-        company_website: website,
-        company_description: description,
-        last_activity_at: new Date().toISOString(),
-      })
-      .eq("id", lead_id);
+    // Suggest tier with AI based on declared headcount + enrichment context
+    const tierResult = await suggestTier({
+      companyName: companyName || emailDomain,
+      cargo: (lead as any).cargo || "",
+      colaboradoresDeclared: (lead as any).colaboradores || "",
+      enrichedDescription: description,
+      siteSnippet: siteMarkdown ? siteMarkdown.slice(0, 2000) : "",
+    });
+
+    // Save (preserve user-confirmed tier)
+    const updatePayload: Record<string, unknown> = {
+      company_website: website,
+      company_description: description,
+      last_activity_at: new Date().toISOString(),
+    };
+    if (tierResult) {
+      updatePayload.suggested_tier = tierResult.suggested_tier;
+      updatePayload.tier_reasoning = tierResult.reasoning;
+      updatePayload.tier_signals = tierResult.signals;
+    }
+    await supabase.from("leads").update(updatePayload).eq("id", lead_id);
 
     await supabase.from("lead_activities").insert({
       lead_id,
       user_id: user_id || null,
       activity_type: "empresa_enriquecida",
-      content: `Empresa enriquecida: ${website || "sem site encontrado"}`,
+      content: tierResult
+        ? `Empresa enriquecida (Tier sugerido: ${tierResult.suggested_tier})`
+        : `Empresa enriquecida: ${website || "sem site encontrado"}`,
+      metadata: tierResult
+        ? ({ suggested_tier: tierResult.suggested_tier, reasoning: tierResult.reasoning } as any)
+        : null,
     });
 
     return new Response(
-      JSON.stringify({ success: true, company_website: website, company_description: description }),
+      JSON.stringify({
+        success: true,
+        company_website: website,
+        company_description: description,
+        suggested_tier: tierResult?.suggested_tier ?? null,
+        tier_reasoning: tierResult?.reasoning ?? null,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
@@ -198,5 +239,124 @@ async function summarizeWithAI(
   } catch (e) {
     console.error("AI error:", e);
     return "";
+  }
+}
+
+interface TierResult {
+  suggested_tier: 1 | 2 | 3;
+  reasoning: string;
+  signals: {
+    is_multinational: boolean;
+    is_global_brand: boolean;
+    estimated_global_revenue: "small" | "mid" | "large" | "enterprise" | "unknown";
+    estimated_global_headcount: "<100" | "100-1000" | "1000-10000" | "10000+" | "unknown";
+  };
+}
+
+async function suggestTier(input: {
+  companyName: string;
+  cargo: string;
+  colaboradoresDeclared: string;
+  enrichedDescription: string;
+  siteSnippet: string;
+}): Promise<TierResult | null> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) {
+    console.error("LOVABLE_API_KEY not set for tier suggestion");
+    return null;
+  }
+
+  const systemPrompt = `Você é um analista B2B que classifica empresas em tiers para priorização de vendas.
+
+REGRAS DE TIER:
+- Tier 1 (alta prioridade): multinacional/global, marca reconhecida internacionalmente, faturamento estimado bilionário, ou 500+ colaboradores globais — MESMO se a operação no Brasil for pequena. Exemplo: subsidiária BR com 50 funcionários de uma multinacional bilionária = Tier 1.
+- Tier 2 (média prioridade): empresa nacional média ou grande (~100-500 colaboradores), regional consolidada, ou marca brasileira reconhecida.
+- Tier 3 (baixa prioridade): pequena empresa local, startup early-stage, microempresa, ou empresa não identificada com poucos sinais.
+
+Use o número de colaboradores declarado pelo lead apenas como UMA das pistas. Se a descrição enriquecida indica que é uma multinacional/global brand, priorize esse sinal sobre o headcount declarado no Brasil.
+
+Responda SEMPRE chamando a tool suggest_tier com JSON válido. reasoning em português, máximo 200 caracteres.`;
+
+  const userPrompt = `Empresa: ${input.companyName || "(desconhecida)"}
+Cargo do lead: ${input.cargo || "(não informado)"}
+Colaboradores declarados pelo lead: ${input.colaboradoresDeclared || "(não informado)"}
+
+Descrição enriquecida:
+${input.enrichedDescription || "(sem descrição)"}
+
+${input.siteSnippet ? `Trecho do site oficial:\n${input.siteSnippet}` : ""}`;
+
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-5-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "suggest_tier",
+              description: "Retorna a classificação de tier sugerida para a empresa.",
+              parameters: {
+                type: "object",
+                properties: {
+                  suggested_tier: { type: "integer", enum: [1, 2, 3] },
+                  reasoning: { type: "string" },
+                  signals: {
+                    type: "object",
+                    properties: {
+                      is_multinational: { type: "boolean" },
+                      is_global_brand: { type: "boolean" },
+                      estimated_global_revenue: {
+                        type: "string",
+                        enum: ["small", "mid", "large", "enterprise", "unknown"],
+                      },
+                      estimated_global_headcount: {
+                        type: "string",
+                        enum: ["<100", "100-1000", "1000-10000", "10000+", "unknown"],
+                      },
+                    },
+                    required: [
+                      "is_multinational",
+                      "is_global_brand",
+                      "estimated_global_revenue",
+                      "estimated_global_headcount",
+                    ],
+                    additionalProperties: false,
+                  },
+                },
+                required: ["suggested_tier", "reasoning", "signals"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "suggest_tier" } },
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Tier AI error status:", res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
+    const args = toolCall?.function?.arguments;
+    if (!args) return null;
+    const parsed = typeof args === "string" ? JSON.parse(args) : args;
+    if (!parsed?.suggested_tier || ![1, 2, 3].includes(parsed.suggested_tier)) return null;
+    return parsed as TierResult;
+  } catch (e) {
+    console.error("suggestTier error:", e);
+    return null;
   }
 }
