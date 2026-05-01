@@ -171,7 +171,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
     setEnriching(true);
     try {
       const { data, error } = await supabase.functions.invoke("enrich-lead", {
-        body: { lead_id: lead.id, user_id: userId },
+        body: { lead_id: lead.id, user_id: userId, force: true },
       });
       if (error) throw error;
       if (data?.success) {
