@@ -241,3 +241,123 @@ async function summarizeWithAI(
     return "";
   }
 }
+
+interface TierResult {
+  suggested_tier: 1 | 2 | 3;
+  reasoning: string;
+  signals: {
+    is_multinational: boolean;
+    is_global_brand: boolean;
+    estimated_global_revenue: "small" | "mid" | "large" | "enterprise" | "unknown";
+    estimated_global_headcount: "<100" | "100-1000" | "1000-10000" | "10000+" | "unknown";
+  };
+}
+
+async function suggestTier(input: {
+  companyName: string;
+  cargo: string;
+  colaboradoresDeclared: string;
+  enrichedDescription: string;
+  siteSnippet: string;
+}): Promise<TierResult | null> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) {
+    console.error("LOVABLE_API_KEY not set for tier suggestion");
+    return null;
+  }
+
+  const systemPrompt = `Você é um analista B2B que classifica empresas em tiers para priorização de vendas.
+
+REGRAS DE TIER:
+- Tier 1 (alta prioridade): multinacional/global, marca reconhecida internacionalmente, faturamento estimado bilionário, ou 500+ colaboradores globais — MESMO se a operação no Brasil for pequena. Exemplo: subsidiária BR com 50 funcionários de uma multinacional bilionária = Tier 1.
+- Tier 2 (média prioridade): empresa nacional média ou grande (~100-500 colaboradores), regional consolidada, ou marca brasileira reconhecida.
+- Tier 3 (baixa prioridade): pequena empresa local, startup early-stage, microempresa, ou empresa não identificada com poucos sinais.
+
+Use o número de colaboradores declarado pelo lead apenas como UMA das pistas. Se a descrição enriquecida indica que é uma multinacional/global brand, priorize esse sinal sobre o headcount declarado no Brasil.
+
+Responda SEMPRE chamando a tool suggest_tier com JSON válido. reasoning em português, máximo 200 caracteres.`;
+
+  const userPrompt = `Empresa: ${input.companyName || "(desconhecida)"}
+Cargo do lead: ${input.cargo || "(não informado)"}
+Colaboradores declarados pelo lead: ${input.colaboradoresDeclared || "(não informado)"}
+
+Descrição enriquecida:
+${input.enrichedDescription || "(sem descrição)"}
+
+${input.siteSnippet ? `Trecho do site oficial:\n${input.siteSnippet}` : ""}`;
+
+  try {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "suggest_tier",
+              description: "Retorna a classificação de tier sugerida para a empresa.",
+              parameters: {
+                type: "object",
+                properties: {
+                  suggested_tier: { type: "integer", enum: [1, 2, 3] },
+                  reasoning: { type: "string" },
+                  signals: {
+                    type: "object",
+                    properties: {
+                      is_multinational: { type: "boolean" },
+                      is_global_brand: { type: "boolean" },
+                      estimated_global_revenue: {
+                        type: "string",
+                        enum: ["small", "mid", "large", "enterprise", "unknown"],
+                      },
+                      estimated_global_headcount: {
+                        type: "string",
+                        enum: ["<100", "100-1000", "1000-10000", "10000+", "unknown"],
+                      },
+                    },
+                    required: [
+                      "is_multinational",
+                      "is_global_brand",
+                      "estimated_global_revenue",
+                      "estimated_global_headcount",
+                    ],
+                    additionalProperties: false,
+                  },
+                },
+                required: ["suggested_tier", "reasoning", "signals"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "suggest_tier" } },
+        max_tokens: 400,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Tier AI error status:", res.status, await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const toolCall = data?.choices?.[0]?.message?.tool_calls?.[0];
+    const args = toolCall?.function?.arguments;
+    if (!args) return null;
+    const parsed = typeof args === "string" ? JSON.parse(args) : args;
+    if (!parsed?.suggested_tier || ![1, 2, 3].includes(parsed.suggested_tier)) return null;
+    return parsed as TierResult;
+  } catch (e) {
+    console.error("suggestTier error:", e);
+    return null;
+  }
+}
