@@ -394,7 +394,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                             const newColaboradores = tierToColaboradores(tier);
                             const { error } = await supabase
                               .from("leads")
-                              .update({ colaboradores: newColaboradores })
+                              .update({ colaboradores: newColaboradores, tier_confirmed: true })
                               .eq("id", lead.id);
                             if (error) {
                               toast.error("Falha ao atualizar tier");
@@ -415,6 +415,70 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                           </SelectContent>
                         </Select>
                       </div>
+                      {(() => {
+                        const suggested = (lead as any).suggested_tier as 1 | 2 | 3 | null | undefined;
+                        const confirmed = (lead as any).tier_confirmed as boolean | undefined;
+                        const reasoning = (lead as any).tier_reasoning as string | null | undefined;
+                        const currentTier = getTierFromColaboradores(lead.colaboradores);
+                        if (!suggested || confirmed) return null;
+                        if (String(suggested) === currentTier) return null;
+                        const suggestedColor = TIER_COLORS[String(suggested) as "1" | "2" | "3"];
+                        return (
+                          <div className="flex items-center gap-2 pl-6 text-xs">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant="outline"
+                                  className="gap-1 cursor-help"
+                                  style={{ borderColor: suggestedColor, color: suggestedColor }}
+                                >
+                                  <Sparkles className="h-3 w-3" />
+                                  Sugerido: Tier {suggested}
+                                </Badge>
+                              </TooltipTrigger>
+                              {reasoning && (
+                                <TooltipContent className="max-w-xs">
+                                  <p className="text-xs">{reasoning}</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs"
+                              onClick={async () => {
+                                const newColab = tierToColaboradores(String(suggested) as TierKey);
+                                const { error } = await supabase
+                                  .from("leads")
+                                  .update({ colaboradores: newColab, tier_confirmed: true })
+                                  .eq("id", lead.id);
+                                if (error) {
+                                  toast.error("Falha ao aplicar sugestão");
+                                  return;
+                                }
+                                toast.success(`Tier ${suggested} aplicado`);
+                                onNoteAdded?.();
+                              }}
+                            >
+                              Aplicar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs text-muted-foreground"
+                              onClick={async () => {
+                                await supabase
+                                  .from("leads")
+                                  .update({ tier_confirmed: true })
+                                  .eq("id", lead.id);
+                                onNoteAdded?.();
+                              }}
+                            >
+                              Ignorar
+                            </Button>
+                          </div>
+                        );
+                      })()}
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-muted-foreground shrink-0"><Sparkles className="h-4 w-4" /></span>
                         <span className="text-muted-foreground text-xs w-16 shrink-0">Calor</span>
