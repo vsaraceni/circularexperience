@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { lead_id, user_id } = await req.json();
+    const { lead_id, user_id, force } = await req.json();
     if (!lead_id) {
       return new Response(JSON.stringify({ error: "lead_id required" }), {
         status: 400,
@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
-      .select("email, company")
+      .select("email, company, cargo, colaboradores, company_description, company_website, suggested_tier, tier_confirmed")
       .eq("id", lead_id)
       .single();
 
@@ -42,6 +42,24 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Skip test domains
+    const emailLower = (lead.email || "").toLowerCase();
+    if (emailLower.endsWith("@atinaedu.com.br") || emailLower.endsWith("@movimentocircular.io")) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "test_domain" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Idempotency: skip if already enriched (unless force=true)
+    const alreadyEnriched = !!(lead.company_description && lead.suggested_tier);
+    if (alreadyEnriched && !force) {
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "already_enriched" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const companyName = (lead.company || "").trim();
