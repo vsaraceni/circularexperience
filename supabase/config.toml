@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-whatsapp-gptmaker]
 verify_jwt = false
+
+[functions.enrich-lead]
+verify_jwt = false
