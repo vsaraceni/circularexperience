@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +24,14 @@ const Login = () => {
   const [mode, setMode] = useState<Mode>("magic");
   const isSignUp = mode === "signup";
   const isMagic = mode === "magic";
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, hasRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && user && hasRole) {
+      navigate("/admin/pipeline", { replace: true });
+    }
+  }, [authLoading, user, hasRole, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -11,6 +11,7 @@ export function useAuth() {
 
   useEffect(() => {
     let isMounted = true;
+    let initialResolved = false;
 
     const checkRole = async (userId: string) => {
       const { data, error } = await supabase
@@ -39,7 +40,10 @@ export function useAuth() {
         setTimeout(() => {
           if (isMounted) void checkRole(nextSession.user.id);
         }, 0);
-      } else {
+      } else if (initialResolved) {
+        // Only clear role state once the initial session lookup has resolved,
+        // otherwise transient null events on boot would flip loading=false
+        // before the persisted session is restored.
         setIsAdmin(false);
         setHasRole(false);
         setLoading(false);
@@ -48,6 +52,7 @@ export function useAuth() {
 
     void supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       if (!isMounted) return;
+      initialResolved = true;
 
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
