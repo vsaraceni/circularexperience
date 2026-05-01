@@ -147,25 +147,48 @@ Deno.serve(async (req) => {
       description = await summarizeWithAI(companyName || emailDomain, null);
     }
 
-    // Save
-    await supabase
-      .from("leads")
-      .update({
-        company_website: website,
-        company_description: description,
-        last_activity_at: new Date().toISOString(),
-      })
-      .eq("id", lead_id);
+    // Suggest tier with AI based on declared headcount + enrichment context
+    const tierResult = await suggestTier({
+      companyName: companyName || emailDomain,
+      cargo: (lead as any).cargo || "",
+      colaboradoresDeclared: (lead as any).colaboradores || "",
+      enrichedDescription: description,
+      siteSnippet: siteMarkdown ? siteMarkdown.slice(0, 2000) : "",
+    });
+
+    // Save (preserve user-confirmed tier)
+    const updatePayload: Record<string, unknown> = {
+      company_website: website,
+      company_description: description,
+      last_activity_at: new Date().toISOString(),
+    };
+    if (tierResult) {
+      updatePayload.suggested_tier = tierResult.suggested_tier;
+      updatePayload.tier_reasoning = tierResult.reasoning;
+      updatePayload.tier_signals = tierResult.signals;
+    }
+    await supabase.from("leads").update(updatePayload).eq("id", lead_id);
 
     await supabase.from("lead_activities").insert({
       lead_id,
       user_id: user_id || null,
       activity_type: "empresa_enriquecida",
-      content: `Empresa enriquecida: ${website || "sem site encontrado"}`,
+      content: tierResult
+        ? `Empresa enriquecida (Tier sugerido: ${tierResult.suggested_tier})`
+        : `Empresa enriquecida: ${website || "sem site encontrado"}`,
+      metadata: tierResult
+        ? ({ suggested_tier: tierResult.suggested_tier, reasoning: tierResult.reasoning } as any)
+        : null,
     });
 
     return new Response(
-      JSON.stringify({ success: true, company_website: website, company_description: description }),
+      JSON.stringify({
+        success: true,
+        company_website: website,
+        company_description: description,
+        suggested_tier: tierResult?.suggested_tier ?? null,
+        tier_reasoning: tierResult?.reasoning ?? null,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
