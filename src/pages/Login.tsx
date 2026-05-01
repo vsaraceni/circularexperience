@@ -24,9 +24,8 @@ const Login = () => {
   const [mode, setMode] = useState<Mode>("magic");
   const isSignUp = mode === "signup";
   const isMagic = mode === "magic";
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, hasRole, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { user, hasRole, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!authLoading && user && hasRole) {
