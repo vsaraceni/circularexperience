@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { toE164, isE164 } from "@/lib/phone";
 import { useNavigate } from "react-router-dom";
 import UrgencyBadge from "./UrgencyBadge";
 import ActivityTimeline from "./ActivityTimeline";
@@ -350,10 +351,14 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                         leadId={lead.id}
                         userId={userId}
                         placeholder="—"
+                        transform={(v) => {
+                          if (!v.trim()) return "";
+                          const r = toE164(v);
+                          return r.ok ? r.value : v;
+                        }}
                         validate={(v) => {
-                          if (!v.trim()) return null;
-                          if (v.length > 40) return "Máximo 40 caracteres";
-                          if (!/^[\d\s+()\-]+$/.test(v.trim())) return "Use apenas dígitos, +, espaços, () e -";
+                          if (!v) return null;
+                          if (!isE164(v)) return "Use formato com DDD/país. Ex.: +55 31 99724-6145";
                           return null;
                         }}
                         linkHref={lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : undefined}
