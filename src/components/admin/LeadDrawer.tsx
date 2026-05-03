@@ -1002,7 +1002,7 @@ function AdvanceStageButton({ lead, userId, onDone }: { lead: Lead; userId?: str
 }
 
 function EditableField({
-  icon, label, value, field, leadId, userId, validate, linkHref, placeholder, onSaved,
+  icon, label, value, field, leadId, userId, validate, linkHref, placeholder, onSaved, transform,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -1014,6 +1014,7 @@ function EditableField({
   linkHref?: string;
   placeholder?: string;
   onSaved?: () => void;
+  transform?: (v: string) => string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -1023,15 +1024,16 @@ function EditableField({
 
   const handleSave = async () => {
     const trimmed = draft.trim();
-    if (trimmed === (value || "").trim()) { setEditing(false); return; }
-    const err = validate?.(trimmed);
+    const transformed = transform ? transform(trimmed) : trimmed;
+    if (transformed === (value || "").trim()) { setEditing(false); return; }
+    const err = validate?.(transformed);
     if (err) { toast.error(err); return; }
     setSaving(true);
     try {
       const now = new Date().toISOString();
       const { error } = await supabase
         .from("leads")
-        .update({ [field]: trimmed, last_activity_at: now } as any)
+        .update({ [field]: transformed, last_activity_at: now } as any)
         .eq("id", leadId);
       if (error) throw error;
       if (userId) {
@@ -1039,8 +1041,8 @@ function EditableField({
           lead_id: leadId,
           user_id: userId,
           activity_type: "lead_editado",
-          content: `${label} alterado: "${value || "—"}" → "${trimmed || "—"}"`,
-          metadata: { field, from: value, to: trimmed } as any,
+          content: `${label} alterado: "${value || "—"}" → "${transformed || "—"}"`,
+          metadata: { field, from: value, to: transformed } as any,
         });
       }
       toast.success("Atualizado!");
