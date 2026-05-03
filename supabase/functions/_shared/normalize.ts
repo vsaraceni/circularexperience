@@ -4,10 +4,15 @@ export function normalizeEmail(email: string): string {
   return email.toLowerCase().trim();
 }
 
+import { toE164 } from "./phone.ts";
+
+/**
+ * Retorna telefone em formato E.164 (`+5531997246145`) ou null se não for normalizável.
+ */
 export function normalizePhone(phone: string | undefined | null): string | null {
   if (!phone) return null;
-  const digits = phone.replace(/\D/g, "");
-  return digits.length > 0 ? digits : null;
+  const r = toE164(phone);
+  return r.ok ? r.value : null;
 }
 
 export function pickClientIp(req: Request): string | null {
