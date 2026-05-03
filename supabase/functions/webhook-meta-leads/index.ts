@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.94.0";
+import { toE164 } from "../_shared/phone.ts";
 
 /**
  * webhook-meta-leads
@@ -177,12 +178,14 @@ Deno.serve(async (req) => {
             `${fields["first_name"] ?? ""} ${fields["last_name"] ?? ""}`.trim() ||
             "";
           const email = fields["email"] || fields["e-mail"] || fields["email_address"] || "";
-          const phone =
+          const rawPhone =
             fields["phone_number"] ||
             fields["telefone"] ||
             fields["phone"] ||
             fields["whatsapp"] ||
             "";
+          const phoneResult = toE164(rawPhone);
+          const phone = phoneResult.ok ? phoneResult.value : "";
           const company =
             fields["company_name"] ||
             fields["empresa"] ||

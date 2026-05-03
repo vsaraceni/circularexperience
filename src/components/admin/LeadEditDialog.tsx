@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Archive } from "lucide-react";
 import HeatDots from "./HeatDots";
+import { toE164, formatPhoneDisplay } from "@/lib/phone";
 import type { Lead } from "./LeadList";
 
 interface LeadEditDialogProps {
@@ -48,6 +49,15 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
 
   const handleSave = async () => {
     if (!lead) return;
+    let telefoneE164 = "";
+    if (form.telefone.trim()) {
+      const r = toE164(form.telefone);
+      if (!r.ok) {
+        toast.error("Telefone inválido. Use formato com DDD (ex.: +55 31 99724-6145)");
+        return;
+      }
+      telefoneE164 = r.value;
+    }
     setSaving(true);
     try {
       const { error } = await supabase
@@ -57,7 +67,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           email: form.email,
           cargo: form.cargo,
           company: form.company,
-          telefone: form.telefone,
+          telefone: telefoneE164,
           origem: form.origem,
           mensagem: form.mensagem,
           lead_heat: form.lead_heat,
@@ -129,7 +139,19 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           </div>
           <div>
             <Label htmlFor="edit-telefone">Telefone</Label>
-            <Input id="edit-telefone" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} />
+            <Input
+              id="edit-telefone"
+              value={form.telefone}
+              placeholder="+55 (31) 99724-6145"
+              onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+              onBlur={(e) => {
+                const r = toE164(e.target.value);
+                if (r.ok) setForm((f) => ({ ...f, telefone: formatPhoneDisplay(r.value) }));
+              }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Salvo como E.164 (+país DDD número). Ex.: +5531997246145
+            </p>
           </div>
           <div>
             <Label htmlFor="edit-origem">Origem</Label>

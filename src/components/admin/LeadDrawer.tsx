@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { toE164, isE164 } from "@/lib/phone";
 import { useNavigate } from "react-router-dom";
 import UrgencyBadge from "./UrgencyBadge";
 import ActivityTimeline from "./ActivityTimeline";
@@ -350,10 +351,14 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                         leadId={lead.id}
                         userId={userId}
                         placeholder="—"
+                        transform={(v) => {
+                          if (!v.trim()) return "";
+                          const r = toE164(v);
+                          return r.ok ? r.value : v;
+                        }}
                         validate={(v) => {
-                          if (!v.trim()) return null;
-                          if (v.length > 40) return "Máximo 40 caracteres";
-                          if (!/^[\d\s+()\-]+$/.test(v.trim())) return "Use apenas dígitos, +, espaços, () e -";
+                          if (!v) return null;
+                          if (!isE164(v)) return "Use formato com DDD/país. Ex.: +55 31 99724-6145";
                           return null;
                         }}
                         linkHref={lead.telefone ? `https://wa.me/${lead.telefone.replace(/\D/g, "")}` : undefined}
@@ -1002,7 +1007,7 @@ function AdvanceStageButton({ lead, userId, onDone }: { lead: Lead; userId?: str
 }
 
 function EditableField({
-  icon, label, value, field, leadId, userId, validate, linkHref, placeholder, onSaved,
+  icon, label, value, field, leadId, userId, validate, linkHref, placeholder, onSaved, transform,
 }: {
   icon: React.ReactNode;
   label: string;
@@ -1014,6 +1019,7 @@ function EditableField({
   linkHref?: string;
   placeholder?: string;
   onSaved?: () => void;
+  transform?: (v: string) => string;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -1023,15 +1029,16 @@ function EditableField({
 
   const handleSave = async () => {
     const trimmed = draft.trim();
-    if (trimmed === (value || "").trim()) { setEditing(false); return; }
-    const err = validate?.(trimmed);
+    const transformed = transform ? transform(trimmed) : trimmed;
+    if (transformed === (value || "").trim()) { setEditing(false); return; }
+    const err = validate?.(transformed);
     if (err) { toast.error(err); return; }
     setSaving(true);
     try {
       const now = new Date().toISOString();
       const { error } = await supabase
         .from("leads")
-        .update({ [field]: trimmed, last_activity_at: now } as any)
+        .update({ [field]: transformed, last_activity_at: now } as any)
         .eq("id", leadId);
       if (error) throw error;
       if (userId) {
@@ -1039,8 +1046,8 @@ function EditableField({
           lead_id: leadId,
           user_id: userId,
           activity_type: "lead_editado",
-          content: `${label} alterado: "${value || "—"}" → "${trimmed || "—"}"`,
-          metadata: { field, from: value, to: trimmed } as any,
+          content: `${label} alterado: "${value || "—"}" → "${transformed || "—"}"`,
+          metadata: { field, from: value, to: transformed } as any,
         });
       }
       toast.success("Atualizado!");
