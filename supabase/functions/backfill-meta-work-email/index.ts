@@ -103,6 +103,14 @@ async function fetchLeadDataFromEdge(edgeOwnerId: string, leadgenId: string, acc
   return { ok: false as const, status: 404, error: `lead ${leadgenId} not found in ${edgeType} ${edgeOwnerId}` };
 }
 
+async function fetchJson(path: string, accessToken: string, fields?: string) {
+  const params = new URLSearchParams({ access_token: accessToken });
+  if (fields) params.set("fields", fields);
+  const res = await fetch(`${GRAPH_BASE}/${path}?${params.toString()}`);
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, body: text.slice(0, 800) };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -144,9 +152,11 @@ Deno.serve(async (req) => {
   }
 
   let limit = 200;
+  let diagnose = false;
   try {
     const body = await req.json().catch(() => ({}));
     if (body && typeof body.limit === "number") limit = Math.min(500, Math.max(1, body.limit));
+    if (body && body.diagnose === true) diagnose = true;
   } catch { /* ignore */ }
 
   const supabase = createClient(supabaseUrl, serviceKey);
@@ -180,14 +190,17 @@ Deno.serve(async (req) => {
     no_work_email: 0,
     stale_or_error: 0,
     recovered_via_form: 0,
+    diagnostics: [] as Array<Record<string, unknown>>,
     errors: [] as Array<{ id: string; fb_lead_id: string; error: string }>,
   };
 
   for (const lead of targets) {
     try {
       let r = await fetchLeadData(lead.fb_lead_id as string, accessToken);
+      const diagnostic: Record<string, unknown> = { id: lead.id, fb_lead_id: lead.fb_lead_id, direct: r.ok ? "ok" : r.status };
       if (!r.ok && lead.ad_id) {
         const fromAd = await fetchLeadDataFromAd(String(lead.ad_id), String(lead.fb_lead_id), accessToken);
+        diagnostic.ad_leads = fromAd.ok ? "ok" : fromAd.status;
         if (fromAd.ok) {
           r = fromAd;
           summary.recovered_via_form++;
@@ -195,13 +208,21 @@ Deno.serve(async (req) => {
       }
       if (!r.ok && lead.ad_id) {
         const formId = await fetchAdCreativeFormId(String(lead.ad_id), accessToken);
+        diagnostic.form_id_from_ad = formId || null;
         if (formId) {
           const fromForm = await fetchLeadDataFromForm(formId, String(lead.fb_lead_id), accessToken);
+          diagnostic.form_leads = fromForm.ok ? "ok" : fromForm.status;
           if (fromForm.ok) {
             r = fromForm;
             summary.recovered_via_form++;
           }
         }
+      }
+      if (diagnose) {
+        if (lead.ad_id) {
+          diagnostic.ad = await fetchJson(String(lead.ad_id), accessToken, "id,name,creative{id,name,object_story_spec,effective_object_story_id}");
+        }
+        summary.diagnostics.push(diagnostic);
       }
       if (!r.ok) {
         summary.stale_or_error++;
