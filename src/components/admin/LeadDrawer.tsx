@@ -1028,7 +1028,7 @@ function EditableField({
   icon: React.ReactNode;
   label: string;
   value: string;
-  field: "name" | "email" | "telefone" | "company" | "cargo";
+  field: "name" | "email" | "telefone" | "company" | "cargo" | "work_email";
   leadId: string;
   userId?: string;
   validate?: (v: string) => string | null;
