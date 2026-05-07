@@ -80,10 +80,24 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Auth check: requer Bearer == service role (admin chamando manualmente)
+  // Auth: aceita service-role direto OU usuário autenticado com role 'admin'
   const auth = req.headers.get("authorization") || "";
   const token = auth.replace(/^Bearer\s+/i, "").trim();
-  if (token !== serviceKey) {
+  let allowed = token === serviceKey;
+  if (!allowed && token) {
+    try {
+      const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || serviceKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const { data: u } = await userClient.auth.getUser();
+      if (u?.user?.id) {
+        const adminClient = createClient(supabaseUrl, serviceKey);
+        const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", u.user.id);
+        allowed = (roles ?? []).some((r: any) => r.role === "admin");
+      }
+    } catch { /* ignore */ }
+  }
+  if (!allowed) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
