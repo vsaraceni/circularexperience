@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.94.0";
 import { toE164 } from "../_shared/phone.ts";
+import { pickMetaLeadEmails } from "../_shared/meta-lead-fields.ts";
 
 /**
  * webhook-meta-leads
@@ -173,6 +174,8 @@ Deno.serve(async (req) => {
             fields[key] = field.values?.[0] ?? "";
           }
           console.log("Meta lead field keys:", Object.keys(fields));
+          const emailPick = pickMetaLeadEmails(leadData.field_data ?? []);
+          console.log("Meta normalized lead field keys:", Object.keys(emailPick.fields));
 
           // Nomes comuns nos formulários da Meta — ajuste conforme seus campos
           const name =
@@ -180,25 +183,7 @@ Deno.serve(async (req) => {
             fields["nome"] ||
             `${fields["first_name"] ?? ""} ${fields["last_name"] ?? ""}`.trim() ||
             "";
-          const personalEmail = (
-            fields["email"] ||
-            fields["e-mail"] ||
-            fields["email_address"] ||
-            fields["email_pessoal"] ||
-            ""
-          ).trim();
-          const workEmailRaw = (
-            fields["work_email"] ||
-            fields["email_profissional"] ||
-            fields["e-mail_profissional"] ||
-            fields["email_corporativo"] ||
-            fields["e-mail_corporativo"] ||
-            fields["email_de_trabalho"] ||
-            fields["email_trabalho"] ||
-            fields["company_email"] ||
-            fields["business_email"] ||
-            ""
-          ).trim();
+          const { personalEmail, workEmailRaw } = emailPick;
           // Email profissional vira o principal do CRM. Pessoal fica de backup.
           const email = workEmailRaw || personalEmail;
           const work_email = workEmailRaw || null;
