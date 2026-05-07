@@ -1,75 +1,100 @@
+## Confirmado
 
-## Objetivo
+Você quer que email profissional vire o principal do CRM, com pessoal de backup em `custom_fields.personal_email`.
 
-Garantir que todo telefone — novo ou existente — fique salvo no formato E.164:
-`+<país><DDD><número>` (ex.: `+5531997246145`). Padrão de país: Brasil (`+55`).
+## Estado atual no banco
 
-## Como vamos garantir
+- 308 leads de `meta_ads` no total
+- 145 já têm `work_email` ≠ `email` (versões antigas do webhook capturavam — esses ficam OK)
+- 80 leads têm `fb_lead_id` mas `work_email` vazio/igual ao `email` → **dá pra refazer fetch na Graph API da Meta** e tentar recuperar
+- 83 sem `fb_lead_id` (leads antigos pré-webhook) → não tem como puxar de volta, ficam como estão
 
-### 1. Função única de normalização (`toE164`)
+## Plano
 
-Criar um utilitário compartilhado (frontend e edge functions) com a regra:
+### 1. `webhook-meta-leads` — passar a capturar email profissional
 
-- Remove tudo que não for dígito (mantendo o `+` inicial se houver).
-- Se começa com `+`, mantém o código de país informado.
-- Se tem 10 ou 11 dígitos (DDD + número BR), prefixa `55`.
-- Se tem 12 ou 13 dígitos e começa com `55`, considera já BR completo.
-- Se tem 8 ou 9 dígitos (sem DDD), rejeita pedindo DDD.
-- Resultado final sempre: `+` seguido de 11 a 15 dígitos.
-- Retorna `{ ok, value, error }` para ser usado tanto na UI quanto na ingestão.
+Mapeamento estendido (cobre os slugs comuns que a Meta usa):
 
-Validação via zod: `/^\+\d{11,15}$/`.
+```ts
+const personalEmail = fields["email"] || fields["e-mail"] || fields["email_address"] || "";
+const workEmailRaw =
+  fields["work_email"] ||
+  fields["email_profissional"] ||
+  fields["email_corporativo"] ||
+  fields["email_de_trabalho"] ||
+  fields["email_trabalho"] ||
+  fields["company_email"] ||
+  fields["business_email"] ||
+  fields["e-mail_profissional"] ||
+  fields["e-mail_corporativo"] ||
+  "";
 
-### 2. Entrada de dados — todos os pontos cobertos
-
-Aplicar `toE164` em:
-
-- `supabase/functions/ingest-lead` — substituir `normalizePhone` (que hoje só tira não-dígitos) pela nova função; rejeitar com `invalid` se telefone vier mas não for normalizável.
-- `src/components/admin/LeadEditDialog.tsx` — normaliza no `onBlur` e ao salvar; mostra erro inline se inválido.
-- `src/components/admin/LeadDrawer.tsx` (edição inline do campo telefone) — mesmo tratamento no save.
-- Webhook Meta Leads (`webhook-meta-leads`) — passa pelo `toE164` antes de inserir.
-- Formulário de contato público se houver (verificar `ContactDialog.tsx`).
-
-UX: o input continua livre, mas ao perder o foco mostramos o valor formatado em E.164. Placeholder: `+55 31 99724-6145`.
-
-### 3. Backend — defesa em profundidade
-
-Migration adicionando:
-
-- **Trigger de validação** em `leads` (BEFORE INSERT/UPDATE): se `telefone` não for `NULL`/vazio e não casar com `^\+\d{11,15}$`, tenta normalizar via função SQL `public.normalize_phone_e164(text)`; se ainda assim falhar, lança erro.
-- **Função SQL** `normalize_phone_e164(text)` espelhando a regra do TS (mesma lógica BR-first).
-- Não usamos CHECK constraint (seguindo a regra do projeto: triggers em vez de CHECK quando há lógica não-imutável/normalizadora).
-
-### 4. Backfill dos dados atuais
-
-Script SQL único na migration:
-
-```
-UPDATE leads
-SET telefone = public.normalize_phone_e164(telefone)
-WHERE telefone IS NOT NULL
-  AND telefone <> ''
-  AND telefone !~ '^\+\d{11,15}$';
+const email = workEmailRaw || personalEmail;          // principal vira o profissional
+const work_email = workEmailRaw || null;              // coluna dedicada
+const personal_email = personalEmail && personalEmail !== email ? personalEmail : null;
 ```
 
-Telefones que não conseguirem ser normalizados (ex.: só "---" ou número curto demais) ficam como `NULL` e são listados num log `lead_activities` do tipo `telefone_invalido` para revisão manual.
+No insert: salvo `email`, `work_email`, e `custom_fields = { personal_email }`.
 
-### 5. WhatsApp e CAPI continuam funcionando
+Adiciono `console.log("Meta fields keys:", Object.keys(fields))` para descobrir o slug real caso a Meta use outro (ajuste rápido depois).
 
-Como agora o telefone já está em E.164, podemos simplificar:
+### 2. UI — campo "Email profissional"
 
-- `wa.me/${telefone.replace(/\D/g,'')}` continua válido.
-- `send-whatsapp-gptmaker` e `send-meta-capi-event` recebem o número limpo de forma consistente (sem mais "(68) 99232-8932" ou "p:+55…").
+`LeadDrawer.tsx` e `LeadEditDialog.tsx`: adiciono linha "Email profissional" linkada a `work_email`, com mesmo padrão `EditableField`. Tooltip pequeno explicando que esse é o que entra em propostas/CAPI/welcome.
+
+### 3. Backfill em duas frentes
+
+#### 3a. Refetch via Graph API (recupera os 80 com `fb_lead_id`)
+
+Crio edge function nova `backfill-meta-work-email`:
+
+```ts
+// Para cada lead onde origem='meta_ads' AND fb_lead_id IS NOT NULL
+//   AND (work_email IS NULL OR work_email = '' OR work_email = email)
+// Chama Graph API com META_ACCESS_TOKEN (mesmo que o webhook usa)
+// Re-aplica a lógica de mapeamento → faz UPDATE: email, work_email, custom_fields.personal_email
+```
+
+A função roda em batch (50 por vez, com `?from_id=cursor`), é chamada uma vez por mim depois do deploy. Logs detalhados pra você acompanhar quantos foram recuperados.
+
+Aviso: a Meta às vezes expira leads antigos (>90 dias) e o fetch retorna 400. Nesses casos eu logo "stale_lead" e sigo. Não bloqueia.
+
+#### 3b. Migration SQL — promover work_email já existente
+
+Para os 145 leads que já têm `work_email` ≠ `email` (capturado em versões antigas), troco o principal:
+
+```sql
+UPDATE public.leads
+SET 
+  custom_fields = jsonb_set(COALESCE(custom_fields,'{}'::jsonb), '{personal_email}', to_jsonb(email)),
+  email = work_email
+WHERE origem = 'meta_ads'
+  AND work_email IS NOT NULL
+  AND work_email <> ''
+  AND work_email <> email
+  AND split_part(lower(email), '@', 2) IN (
+    'gmail.com','googlemail.com','hotmail.com','outlook.com','outlook.com.br',
+    'yahoo.com','yahoo.com.br','live.com','icloud.com','aol.com',
+    'hotmail.com.br','uol.com.br','bol.com.br','terra.com.br','ig.com.br','globo.com','msn.com'
+  );
+```
+
+Só promove quando o email atual é genérico (gmail, hotmail etc.) — protege os 80 leads onde já está corporativo.
+
+### 4. Sem mudança de schema
+
+Coluna `work_email` já existe. Sem trigger novo.
 
 ## Resumo dos arquivos
 
-- novo: `src/lib/phone.ts` (com testes em `src/test/phone.test.ts`)
-- novo: `supabase/functions/_shared/phone.ts`
-- editado: `supabase/functions/_shared/normalize.ts` (delega para `phone.ts`)
-- editado: `supabase/functions/ingest-lead/index.ts`, `webhook-meta-leads/index.ts`
-- editado: `src/components/admin/LeadEditDialog.tsx`, `LeadDrawer.tsx`, `ContactDialog.tsx` (se aplicável)
-- nova migration: função `normalize_phone_e164` + trigger em `leads` + backfill
+- editado: `supabase/functions/webhook-meta-leads/index.ts` (mapeamento + log + insert)
+- nova: `supabase/functions/backfill-meta-work-email/index.ts` (refetch dos 80 leads via Graph API)
+- editado: `src/components/admin/LeadDrawer.tsx`, `LeadEditDialog.tsx`
+- nova migration: promove os 145 já capturados (UPDATE condicional)
 
-## Pergunta rápida
+## Ordem de execução
 
-Confirmando: padrão é **Brasil (+55)** quando o número vier sem código de país, certo? Se um lead vier com DDI explícito (ex.: `+1...`, `+351...`), respeitamos esse DDI.
+1. Aplicar migration (promove os 145 imediatamente)
+2. Deploy do `webhook-meta-leads` corrigido
+3. Deploy + invocar `backfill-meta-work-email` uma vez (recupera o que der dos 80)
+4. Você dispara um lead de teste no formulário pra confirmar que o slug do campo profissional bate com algum dos que mapeei
