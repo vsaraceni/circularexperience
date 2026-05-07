@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.94.0";
+import { isGenericEmail, pickMetaLeadEmails } from "../_shared/meta-lead-fields.ts";
 
 /**
  * backfill-meta-work-email
@@ -36,32 +37,62 @@ async function fetchLeadData(leadgenId: string, accessToken: string) {
   }
 }
 
-function mapFields(field_data: { name: string; values: string[] }[]) {
-  const fields: Record<string, string> = {};
-  for (const f of field_data ?? []) {
-    const key = String(f.name || "").toLowerCase().trim();
-    fields[key] = f.values?.[0] ?? "";
+async function fetchAdCreativeFormId(adId: string, accessToken: string): Promise<string | null> {
+  const fields = [
+    "creative{object_story_spec,asset_feed_spec,effective_object_story_id}",
+  ].join(",");
+  const url = `${GRAPH_BASE}/${adId}?fields=${encodeURIComponent(fields)}&access_token=${accessToken}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  if (!res.ok) {
+    console.warn("Could not fetch ad creative for form recovery", adId, res.status, text.slice(0, 240));
+    return null;
   }
-  const personalEmail = (
-    fields["email"] ||
-    fields["e-mail"] ||
-    fields["email_address"] ||
-    fields["email_pessoal"] ||
-    ""
-  ).trim();
-  const workEmailRaw = (
-    fields["work_email"] ||
-    fields["email_profissional"] ||
-    fields["e-mail_profissional"] ||
-    fields["email_corporativo"] ||
-    fields["e-mail_corporativo"] ||
-    fields["email_de_trabalho"] ||
-    fields["email_trabalho"] ||
-    fields["company_email"] ||
-    fields["business_email"] ||
-    ""
-  ).trim();
-  return { fields, personalEmail, workEmailRaw };
+  const data = JSON.parse(text);
+  return findLeadGenFormId(data);
+}
+
+function findLeadGenFormId(input: unknown): string | null {
+  if (!input || typeof input !== "object") return null;
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      const found = findLeadGenFormId(item);
+      if (found) return found;
+    }
+    return null;
+  }
+  const obj = input as Record<string, unknown>;
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "lead_gen_form_id" && (typeof value === "string" || typeof value === "number")) {
+      return String(value);
+    }
+    const found = findLeadGenFormId(value);
+    if (found) return found;
+  }
+  return null;
+}
+
+async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessToken: string) {
+  let after = "";
+  for (let page = 0; page < 12; page++) {
+    const params = new URLSearchParams({
+      fields: "created_time,id,ad_id,adset_id,campaign_id,form_id,field_data",
+      limit: "100",
+      access_token: accessToken,
+    });
+    if (after) params.set("after", after);
+    const res = await fetch(`${GRAPH_BASE}/${formId}/leads?${params.toString()}`);
+    const text = await res.text();
+    if (!res.ok) {
+      return { ok: false as const, status: res.status, error: text };
+    }
+    const data = JSON.parse(text);
+    const lead = (data.data ?? []).find((item: any) => String(item.id) === String(leadgenId));
+    if (lead) return { ok: true as const, data: lead };
+    after = data.paging?.cursors?.after ?? "";
+    if (!data.paging?.next || !after) break;
+  }
+  return { ok: false as const, status: 404, error: `lead ${leadgenId} not found in form ${formId}` };
 }
 
 Deno.serve(async (req) => {
