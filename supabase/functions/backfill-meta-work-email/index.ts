@@ -187,6 +187,13 @@ Deno.serve(async (req) => {
     try {
       let r = await fetchLeadData(lead.fb_lead_id as string, accessToken);
       if (!r.ok && lead.ad_id) {
+        const fromAd = await fetchLeadDataFromAd(String(lead.ad_id), String(lead.fb_lead_id), accessToken);
+        if (fromAd.ok) {
+          r = fromAd;
+          summary.recovered_via_form++;
+        }
+      }
+      if (!r.ok && lead.ad_id) {
         const formId = await fetchAdCreativeFormId(String(lead.ad_id), accessToken);
         if (formId) {
           const fromForm = await fetchLeadDataFromForm(formId, String(lead.fb_lead_id), accessToken);
