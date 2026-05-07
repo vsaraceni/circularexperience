@@ -73,6 +73,14 @@ function findLeadGenFormId(input: unknown): string | null {
 }
 
 async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessToken: string) {
+  return fetchLeadDataFromEdge(formId, leadgenId, accessToken, "form");
+}
+
+async function fetchLeadDataFromAd(adId: string, leadgenId: string, accessToken: string) {
+  return fetchLeadDataFromEdge(adId, leadgenId, accessToken, "ad");
+}
+
+async function fetchLeadDataFromEdge(edgeOwnerId: string, leadgenId: string, accessToken: string, edgeType: "ad" | "form") {
   let after = "";
   for (let page = 0; page < 12; page++) {
     const params = new URLSearchParams({
@@ -81,7 +89,7 @@ async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessTo
       access_token: accessToken,
     });
     if (after) params.set("after", after);
-    const res = await fetch(`${GRAPH_BASE}/${formId}/leads?${params.toString()}`);
+    const res = await fetch(`${GRAPH_BASE}/${edgeOwnerId}/leads?${params.toString()}`);
     const text = await res.text();
     if (!res.ok) {
       return { ok: false as const, status: res.status, error: text };
@@ -92,7 +100,7 @@ async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessTo
     after = data.paging?.cursors?.after ?? "";
     if (!data.paging?.next || !after) break;
   }
-  return { ok: false as const, status: 404, error: `lead ${leadgenId} not found in form ${formId}` };
+  return { ok: false as const, status: 404, error: `lead ${leadgenId} not found in ${edgeType} ${edgeOwnerId}` };
 }
 
 Deno.serve(async (req) => {
