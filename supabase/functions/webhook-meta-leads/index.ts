@@ -168,8 +168,11 @@ Deno.serve(async (req) => {
           // 2. Mapeia field_data para campos nomeados
           const fields: Record<string, string> = {};
           for (const field of (leadData.field_data ?? []) as { name: string; values: string[] }[]) {
-            fields[field.name] = field.values?.[0] ?? "";
+            // normaliza chave: lowercase, sem espaços/acentos comuns
+            const key = String(field.name || "").toLowerCase().trim();
+            fields[key] = field.values?.[0] ?? "";
           }
+          console.log("Meta lead field keys:", Object.keys(fields));
 
           // Nomes comuns nos formulários da Meta — ajuste conforme seus campos
           const name =
@@ -177,7 +180,32 @@ Deno.serve(async (req) => {
             fields["nome"] ||
             `${fields["first_name"] ?? ""} ${fields["last_name"] ?? ""}`.trim() ||
             "";
-          const email = fields["email"] || fields["e-mail"] || fields["email_address"] || "";
+          const personalEmail = (
+            fields["email"] ||
+            fields["e-mail"] ||
+            fields["email_address"] ||
+            fields["email_pessoal"] ||
+            ""
+          ).trim();
+          const workEmailRaw = (
+            fields["work_email"] ||
+            fields["email_profissional"] ||
+            fields["e-mail_profissional"] ||
+            fields["email_corporativo"] ||
+            fields["e-mail_corporativo"] ||
+            fields["email_de_trabalho"] ||
+            fields["email_trabalho"] ||
+            fields["company_email"] ||
+            fields["business_email"] ||
+            ""
+          ).trim();
+          // Email profissional vira o principal do CRM. Pessoal fica de backup.
+          const email = workEmailRaw || personalEmail;
+          const work_email = workEmailRaw || null;
+          const personal_email_backup =
+            personalEmail && personalEmail.toLowerCase() !== email.toLowerCase()
+              ? personalEmail
+              : null;
           const rawPhone =
             fields["phone_number"] ||
             fields["telefone"] ||
@@ -217,6 +245,10 @@ Deno.serve(async (req) => {
             .insert({
               name,
               email,
+              work_email,
+              custom_fields: personal_email_backup
+                ? { personal_email: personal_email_backup }
+                : {},
               telefone: phone,
               company,
               cargo,

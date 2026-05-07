@@ -344,6 +344,22 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                         onSaved={() => onNoteAdded?.()}
                       />
                       <EditableField
+                        icon={<Mail className="h-4 w-4" />}
+                        label="E-mail prof."
+                        value={lead.work_email || ""}
+                        field="work_email"
+                        leadId={lead.id}
+                        userId={userId}
+                        placeholder="—"
+                        validate={(v) => {
+                          if (!v.trim()) return null;
+                          if (v.length > 320) return "Máximo 320 caracteres";
+                          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) return "E-mail inválido";
+                          return null;
+                        }}
+                        onSaved={() => onNoteAdded?.()}
+                      />
+                      <EditableField
                         icon={<Phone className="h-4 w-4" />}
                         label="Telefone"
                         value={lead.telefone || ""}
@@ -1012,7 +1028,7 @@ function EditableField({
   icon: React.ReactNode;
   label: string;
   value: string;
-  field: "name" | "email" | "telefone" | "company" | "cargo";
+  field: "name" | "email" | "telefone" | "company" | "cargo" | "work_email";
   leadId: string;
   userId?: string;
   validate?: (v: string) => string | null;

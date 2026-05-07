@@ -24,6 +24,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
   const [form, setForm] = useState({
     name: "",
     email: "",
+    work_email: "",
     cargo: "",
     company: "",
     telefone: "",
@@ -37,6 +38,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
       setForm({
         name: lead.name || "",
         email: lead.email || "",
+        work_email: (lead as any).work_email || "",
         cargo: lead.cargo || "",
         company: lead.company || "",
         telefone: lead.telefone || "",
@@ -65,6 +67,7 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
         .update({
           name: form.name,
           email: form.email,
+          work_email: form.work_email.trim() || null,
           cargo: form.cargo,
           company: form.company,
           telefone: telefoneE164,
@@ -128,6 +131,19 @@ const LeadEditDialog: React.FC<LeadEditDialogProps> = ({ lead, open, onOpenChang
           <div>
             <Label htmlFor="edit-email">E-mail</Label>
             <Input id="edit-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </div>
+          <div>
+            <Label htmlFor="edit-work-email">E-mail profissional</Label>
+            <Input
+              id="edit-work-email"
+              type="email"
+              value={form.work_email}
+              placeholder="nome@empresa.com.br"
+              onChange={(e) => setForm({ ...form, work_email: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Usado em propostas, welcome e CAPI quando preenchido.
+            </p>
           </div>
           <div>
             <Label htmlFor="edit-company">Empresa</Label>
