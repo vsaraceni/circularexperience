@@ -76,6 +76,81 @@ async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessTo
   return fetchLeadDataFromEdge(formId, leadgenId, accessToken, "form");
 }
 
+async function fetchLeadDataFromExportCsv(formId: string, leadgenId: string, accessToken: string, createdAt?: string | null) {
+  const created = createdAt ? Math.floor(new Date(createdAt).getTime() / 1000) : Math.floor(Date.now() / 1000) - 31 * 86400;
+  const params = new URLSearchParams({
+    id: formId,
+    type: "form",
+    from_date: String(Math.max(0, created - 2 * 86400)),
+    to_date: String(Math.floor(Date.now() / 1000) + 86400),
+    access_token: accessToken,
+  });
+  const res = await fetch(`https://www.facebook.com/ads/lead_gen/export_csv/?${params.toString()}`);
+  const text = await res.text();
+  if (!res.ok || /^\s*</.test(text)) {
+    return { ok: false as const, status: res.status, error: text.slice(0, 400) };
+  }
+  const rows = parseDelimited(text);
+  const row = rows.find((item) => {
+    const rowId = item.id || item.leadgen_id || item.lead_id || item["lead id"] || item["leadgen id"];
+    return String(rowId || "") === String(leadgenId);
+  });
+  if (!row) return { ok: false as const, status: 404, error: `lead ${leadgenId} not found in export_csv form ${formId}` };
+
+  const metadataKeys = new Set(["id", "leadgen_id", "lead_id", "lead id", "leadgen id", "created_time", "created time", "ad_id", "ad id", "adset_id", "adset id", "campaign_id", "campaign id", "form_id", "form id", "is_organic", "is organic"]);
+  const field_data = Object.entries(row)
+    .filter(([key, value]) => value && !metadataKeys.has(key))
+    .map(([name, value]) => ({ name, values: [value] }));
+  return {
+    ok: true as const,
+    data: {
+      id: leadgenId,
+      created_time: row.created_time || row["created time"] || null,
+      ad_id: row.ad_id || row["ad id"] || null,
+      adset_id: row.adset_id || row["adset id"] || null,
+      campaign_id: row.campaign_id || row["campaign id"] || null,
+      form_id: formId,
+      field_data,
+    },
+  };
+}
+
+function parseDelimited(text: string): Array<Record<string, string>> {
+  const firstLine = text.split(/\r?\n/, 1)[0] || "";
+  const delimiter = (firstLine.match(/\t/g)?.length || 0) > (firstLine.match(/,/g)?.length || 0) ? "\t" : ",";
+  const table: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (ch === '"') {
+      if (quoted && next === '"') {
+        cell += '"';
+        i++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (ch === delimiter && !quoted) {
+      row.push(cell);
+      cell = "";
+    } else if ((ch === "\n" || ch === "\r") && !quoted) {
+      if (ch === "\r" && next === "\n") i++;
+      row.push(cell);
+      if (row.some((value) => value !== "")) table.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += ch;
+    }
+  }
+  row.push(cell);
+  if (row.some((value) => value !== "")) table.push(row);
+  const headers = (table.shift() || []).map((header) => header.trim().toLowerCase());
+  return table.map((values) => Object.fromEntries(headers.map((header, index) => [header, (values[index] || "").trim()])));
+}
+
 async function fetchLeadDataFromAd(adId: string, leadgenId: string, accessToken: string) {
   return fetchLeadDataFromEdge(adId, leadgenId, accessToken, "ad");
 }
