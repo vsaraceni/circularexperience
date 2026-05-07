@@ -76,7 +76,8 @@ async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessTo
   return fetchLeadDataFromEdge(formId, leadgenId, accessToken, "form");
 }
 
-async function fetchLeadDataFromExportCsv(formId: string, leadgenId: string, accessToken: string, createdAt?: string | null) {
+async function fetchLeadDataFromExportCsv(formId: string, lead: any, accessToken: string) {
+  const leadgenId = String(lead.fb_lead_id || "");
   const created = createdAt ? Math.floor(new Date(createdAt).getTime() / 1000) : Math.floor(Date.now() / 1000) - 31 * 86400;
   const params = new URLSearchParams({
     id: formId,
@@ -93,7 +94,13 @@ async function fetchLeadDataFromExportCsv(formId: string, leadgenId: string, acc
   const rows = parseDelimited(text);
   const row = rows.find((item) => {
     const rowId = item.id || item.leadgen_id || item.lead_id || item["lead id"] || item["leadgen id"];
-    return String(rowId || "") === String(leadgenId);
+    if (String(rowId || "") === leadgenId) return true;
+    const rowValues = Object.values(item).map((value) => String(value || ""));
+    const leadEmail = String(lead.email || "").trim().toLowerCase();
+    const leadPhone = String(lead.telefone || "").replace(/\D/g, "");
+    const hasSameEmail = !!leadEmail && rowValues.some((value) => value.trim().toLowerCase() === leadEmail);
+    const hasSamePhone = leadPhone.length >= 10 && rowValues.some((value) => value.replace(/\D/g, "") === leadPhone);
+    return hasSamePhone || hasSameEmail;
   });
   if (!row) return { ok: false as const, status: 404, error: `lead ${leadgenId} not found in export_csv form ${formId}` };
 
