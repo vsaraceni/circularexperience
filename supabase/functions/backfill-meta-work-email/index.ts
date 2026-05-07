@@ -145,9 +145,10 @@ Deno.serve(async (req) => {
 
   const { data: candidates, error: qErr } = await supabase
     .from("leads")
-    .select("id, email, work_email, custom_fields, fb_lead_id")
+    .select("id, email, work_email, custom_fields, fb_lead_id, ad_id, source_metadata")
     .ilike("origem", "%meta%")
     .not("fb_lead_id", "is", null)
+    .order("created_at", { ascending: false })
     .limit(limit);
 
   if (qErr) {
@@ -161,7 +162,7 @@ Deno.serve(async (req) => {
   const targets = (candidates ?? []).filter((l: any) => {
     const we = (l.work_email || "").trim().toLowerCase();
     const em = (l.email || "").trim().toLowerCase();
-    return !we || we === em;
+    return !we || (we === em && isGenericEmail(em));
   });
 
   const summary = {
@@ -170,18 +171,30 @@ Deno.serve(async (req) => {
     updated: 0,
     no_work_email: 0,
     stale_or_error: 0,
+    recovered_via_form: 0,
     errors: [] as Array<{ id: string; fb_lead_id: string; error: string }>,
   };
 
   for (const lead of targets) {
     try {
-      const r = await fetchLeadData(lead.fb_lead_id as string, accessToken);
+      let r = await fetchLeadData(lead.fb_lead_id as string, accessToken);
+      if (!r.ok && lead.ad_id) {
+        const formId = await fetchAdCreativeFormId(String(lead.ad_id), accessToken);
+        if (formId) {
+          const fromForm = await fetchLeadDataFromForm(formId, String(lead.fb_lead_id), accessToken);
+          if (fromForm.ok) {
+            r = fromForm;
+            summary.recovered_via_form++;
+          }
+        }
+      }
       if (!r.ok) {
         summary.stale_or_error++;
         summary.errors.push({ id: lead.id, fb_lead_id: lead.fb_lead_id, error: r.error.slice(0, 200) });
         continue;
       }
-      const { workEmailRaw, personalEmail } = mapFields(r.data.field_data ?? []);
+      const { workEmailRaw, personalEmail, rawKeys } = pickMetaLeadEmails(r.data.field_data ?? []);
+      console.log("Backfill Meta field keys:", rawKeys);
       if (!workEmailRaw) {
         summary.no_work_email++;
         continue;
