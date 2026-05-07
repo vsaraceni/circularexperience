@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
 
   const { data: candidates, error: qErr } = await supabase
     .from("leads")
-    .select("id, email, work_email, custom_fields, fb_lead_id, ad_id, source_metadata")
+    .select("id, created_at, email, work_email, custom_fields, fb_lead_id, ad_id, source_metadata")
     .ilike("origem", "%meta%")
     .not("fb_lead_id", "is", null)
     .order("created_at", { ascending: false })
@@ -291,6 +291,14 @@ Deno.serve(async (req) => {
             r = fromForm;
             summary.recovered_via_form++;
           }
+        }
+      }
+      if (!r.ok && diagnostic.form_id_from_ad) {
+        const fromCsv = await fetchLeadDataFromExportCsv(String(diagnostic.form_id_from_ad), String(lead.fb_lead_id), accessToken, lead.created_at);
+        diagnostic.export_csv = fromCsv.ok ? "ok" : fromCsv.status;
+        if (fromCsv.ok) {
+          r = fromCsv;
+          summary.recovered_via_form++;
         }
       }
       if (diagnose) {
