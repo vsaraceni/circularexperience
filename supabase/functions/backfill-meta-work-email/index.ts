@@ -78,7 +78,7 @@ async function fetchLeadDataFromForm(formId: string, leadgenId: string, accessTo
 
 async function fetchLeadDataFromExportCsv(formId: string, lead: any, accessToken: string) {
   const leadgenId = String(lead.fb_lead_id || "");
-  const created = createdAt ? Math.floor(new Date(createdAt).getTime() / 1000) : Math.floor(Date.now() / 1000) - 31 * 86400;
+  const created = lead.created_at ? Math.floor(new Date(lead.created_at).getTime() / 1000) : Math.floor(Date.now() / 1000) - 31 * 86400;
   const params = new URLSearchParams({
     id: formId,
     type: "form",
@@ -301,7 +301,7 @@ Deno.serve(async (req) => {
         }
       }
       if (!r.ok && diagnostic.form_id_from_ad) {
-        const fromCsv = await fetchLeadDataFromExportCsv(String(diagnostic.form_id_from_ad), String(lead.fb_lead_id), accessToken, lead.created_at);
+        const fromCsv = await fetchLeadDataFromExportCsv(String(diagnostic.form_id_from_ad), lead, accessToken);
         diagnostic.export_csv = fromCsv.ok ? "ok" : fromCsv.status;
         if (fromCsv.ok) {
           r = fromCsv;
