@@ -1,100 +1,62 @@
-## Confirmado
+## Objetivo
 
-Você quer que email profissional vire o principal do CRM, com pessoal de backup em `custom_fields.personal_email`.
+Transformar o atual `WhatsAppPanel` (que hoje só mostra métricas agregadas) num **painel de controle dedicado por fonte**, onde o admin liga/desliga o disparo via GPT Maker para cada `lead_source` em 1 clique, sem abrir o dialog de edição. Configurações avançadas (channel, agent, mensagem inicial) seguem no botão "Editar fonte".
 
-## Estado atual no banco
+## Onde
 
-- 308 leads de `meta_ads` no total
-- 145 já têm `work_email` ≠ `email` (versões antigas do webhook capturavam — esses ficam OK)
-- 80 leads têm `fb_lead_id` mas `work_email` vazio/igual ao `email` → **dá pra refazer fetch na Graph API da Meta** e tentar recuperar
-- 83 sem `fb_lead_id` (leads antigos pré-webhook) → não tem como puxar de volta, ficam como estão
+Topo de `/admin/integracoes`, expandindo o componente `src/components/admin/integrations/WhatsAppPanel.tsx`. Continua usando o mesmo `useLeadSources` que já alimenta a página.
 
-## Plano
+## Layout proposto
 
-### 1. `webhook-meta-leads` — passar a capturar email profissional
-
-Mapeamento estendido (cobre os slugs comuns que a Meta usa):
-
-```ts
-const personalEmail = fields["email"] || fields["e-mail"] || fields["email_address"] || "";
-const workEmailRaw =
-  fields["work_email"] ||
-  fields["email_profissional"] ||
-  fields["email_corporativo"] ||
-  fields["email_de_trabalho"] ||
-  fields["email_trabalho"] ||
-  fields["company_email"] ||
-  fields["business_email"] ||
-  fields["e-mail_profissional"] ||
-  fields["e-mail_corporativo"] ||
-  "";
-
-const email = workEmailRaw || personalEmail;          // principal vira o profissional
-const work_email = workEmailRaw || null;              // coluna dedicada
-const personal_email = personalEmail && personalEmail !== email ? personalEmail : null;
+```text
+┌─ WhatsApp via GPT Maker ─────────── [Configurado] ──┐
+│  Disparo automático por fonte. Idempotência 24h.    │
+│                                                     │
+│  [Enviados 7d: 6]  [Erros 7d: 1]  [Ignorados: 12]   │
+│                                                     │
+│  ── Habilitar por fonte ─────────────────────────── │
+│  Fonte           Status   Canal/Agente   Envios 7d  │
+│  ─────────────────────────────────────────────────  │
+│  LP Circular     [● ON]   default        4 / 0 err  │
+│  Meta Ads CE     [○ OFF]  —              0 / 0 err  │
+│  LP Workshop     [● ON]   ag_xyz         2 / 1 err  │
+│  ...                                                │
+│                                                     │
+│  [Ver últimos envios]                               │
+└─────────────────────────────────────────────────────┘
 ```
 
-No insert: salvo `email`, `work_email`, e `custom_fields = { personal_email }`.
+## Funcionalidades
 
-Adiciono `console.log("Meta fields keys:", Object.keys(fields))` para descobrir o slug real caso a Meta use outro (ajuste rápido depois).
+1. **Toggle por fonte** (`Switch` shadcn): chama `manage-lead-source/update` com `{ id, whatsapp_auto_send: !current }`. Otimista + revert em caso de erro. Toast de sucesso/erro.
+2. **Aviso de pré-requisito**: se a fonte não tem `whatsapp_initial_message` nem channel/agent customizado, ainda permite ligar (usa defaults globais), mas mostra um pequeno ícone de info ao lado do toggle com tooltip "Usando mensagem e canal padrão".
+3. **Métricas por fonte (7d)**: agrupa `whatsapp_send_log` por `source_slug` para exibir envios e erros por linha. Reaproveita o `metrics` já em `useLeadSources` (que tem `total_7d`/`errors_7d` agregado de leads) — para ser preciso, faz uma query adicional única em `whatsapp_send_log` agrupada por `source_slug` na carga do painel.
+4. **Linha por fonte**: nome + slug, status (ON/OFF), resumo do que está customizado (badge "msg custom", "agente custom", "canal custom"), envios/erros 7d, link "Editar" que abre o `IntegrationFormDialog` da fonte (reusa o estado da página via prop callback `onEditSource`).
+5. **Filtro**: só lista fontes com `ativo = true` (oculta integrações desativadas para reduzir ruído). Toggle "Mostrar inativas" se necessário.
+6. **Modal de logs**: mantém o existente "Ver últimos envios" inalterado.
 
-### 2. UI — campo "Email profissional"
+## Mudanças técnicas
 
-`LeadDrawer.tsx` e `LeadEditDialog.tsx`: adiciono linha "Email profissional" linkada a `work_email`, com mesmo padrão `EditableField`. Tooltip pequeno explicando que esse é o que entra em propostas/CAPI/welcome.
+### `src/pages/admin/Integrations.tsx`
+- Passar `sources` e callback `onEditSource={(s) => { setEditing(s); setFormOpen(true); }}` para `<WhatsAppPanel />`.
+- Sem outras mudanças nos cards inferiores (mantêm o badge "WhatsApp auto" como indicador visual).
 
-### 3. Backfill em duas frentes
+### `src/components/admin/integrations/WhatsAppPanel.tsx`
+- Aceitar props `sources: LeadSourceRow[]` e `onEditSource: (s) => void`.
+- Adicionar query agrupada: `select source_slug, status, count(*) ... from whatsapp_send_log where created_at >= 7d group by source_slug, status`. Mapear pra `Record<slug, { sent, errors }>`.
+- Render da tabela de fontes com `Switch` (shadcn) por linha.
+- Função `toggleSource(s)` chamando `supabase.functions.invoke('manage-lead-source/update', { body: { id, whatsapp_auto_send } })` com refresh local + propagação via `onToggled` (que chama `refresh()` da página).
 
-#### 3a. Refetch via Graph API (recupera os 80 com `fb_lead_id`)
+### Backend
+- **Sem mudanças**. A edge function `manage-lead-source/update` já aceita `whatsapp_auto_send`. RLS atual em `lead_sources` (`is_admin`) já protege.
 
-Crio edge function nova `backfill-meta-work-email`:
+## Fora do escopo
+- Editar mensagem/canal/agente inline (continua no dialog Editar fonte, conforme decidido).
+- Botão "enviar teste" — pode ser um próximo passo se quiser validar antes de ativar.
+- Alertas de erro (já discutido em outro ciclo).
 
-```ts
-// Para cada lead onde origem='meta_ads' AND fb_lead_id IS NOT NULL
-//   AND (work_email IS NULL OR work_email = '' OR work_email = email)
-// Chama Graph API com META_ACCESS_TOKEN (mesmo que o webhook usa)
-// Re-aplica a lógica de mapeamento → faz UPDATE: email, work_email, custom_fields.personal_email
-```
-
-A função roda em batch (50 por vez, com `?from_id=cursor`), é chamada uma vez por mim depois do deploy. Logs detalhados pra você acompanhar quantos foram recuperados.
-
-Aviso: a Meta às vezes expira leads antigos (>90 dias) e o fetch retorna 400. Nesses casos eu logo "stale_lead" e sigo. Não bloqueia.
-
-#### 3b. Migration SQL — promover work_email já existente
-
-Para os 145 leads que já têm `work_email` ≠ `email` (capturado em versões antigas), troco o principal:
-
-```sql
-UPDATE public.leads
-SET 
-  custom_fields = jsonb_set(COALESCE(custom_fields,'{}'::jsonb), '{personal_email}', to_jsonb(email)),
-  email = work_email
-WHERE origem = 'meta_ads'
-  AND work_email IS NOT NULL
-  AND work_email <> ''
-  AND work_email <> email
-  AND split_part(lower(email), '@', 2) IN (
-    'gmail.com','googlemail.com','hotmail.com','outlook.com','outlook.com.br',
-    'yahoo.com','yahoo.com.br','live.com','icloud.com','aol.com',
-    'hotmail.com.br','uol.com.br','bol.com.br','terra.com.br','ig.com.br','globo.com','msn.com'
-  );
-```
-
-Só promove quando o email atual é genérico (gmail, hotmail etc.) — protege os 80 leads onde já está corporativo.
-
-### 4. Sem mudança de schema
-
-Coluna `work_email` já existe. Sem trigger novo.
-
-## Resumo dos arquivos
-
-- editado: `supabase/functions/webhook-meta-leads/index.ts` (mapeamento + log + insert)
-- nova: `supabase/functions/backfill-meta-work-email/index.ts` (refetch dos 80 leads via Graph API)
-- editado: `src/components/admin/LeadDrawer.tsx`, `LeadEditDialog.tsx`
-- nova migration: promove os 145 já capturados (UPDATE condicional)
-
-## Ordem de execução
-
-1. Aplicar migration (promove os 145 imediatamente)
-2. Deploy do `webhook-meta-leads` corrigido
-3. Deploy + invocar `backfill-meta-work-email` uma vez (recupera o que der dos 80)
-4. Você dispara um lead de teste no formulário pra confirmar que o slug do campo profissional bate com algum dos que mapeei
+## Validação pós-implementação
+1. Abrir `/admin/integracoes` → painel topo lista todas as fontes ativas com switch refletindo `whatsapp_auto_send`.
+2. Toggle OFF→ON em uma fonte: badge "WhatsApp auto" aparece no card abaixo, e novo lead daquela fonte dispara WhatsApp.
+3. Toggle ON→OFF: novo lead da fonte vai para `whatsapp_send_log` com `status='skipped_disabled'` (ou nem registra, dependendo da lógica em `ingest-lead`).
+4. Métricas por fonte batem com filtro do log agrupado.
