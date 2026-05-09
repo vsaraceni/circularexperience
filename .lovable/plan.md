@@ -1,37 +1,63 @@
-## Diagnóstico
+## Diagnóstico definitivo
 
-**Root cause:** `supabase/functions/webhook-meta-leads/index.ts` insere o lead mas **nunca invoca** `send-whatsapp-gptmaker`. Só o `ingest-lead` (LP) chama. Por isso:
+**Os leads Meta Ads NÃO estão entrando pela edge function `webhook-meta-leads`.**
 
-- `lead_sources.meta_ads.whatsapp_auto_send = true` ✅
-- `whatsapp_send_log` com `source_slug='meta_ads'` → **0 registros**
-- 323 leads `meta_ads` sem disparo
-- `lp_ce` funciona normalmente
+Evidências:
+- `function_edge_logs` (últimas horas): zero hits em `/functions/v1/webhook-meta-leads`. Só `check-notifications` e `send-push-notification`.
+- `lead_ingest_log` últimas 24h: só `lp_ce`. Nada com `meta_ads`.
+- Mesmo assim, leads `meta_ads` continuam pingando regularmente (Ultragaz 10:00, J&J 10:01, UFSCar 06:23…) com `fb_lead_id`, `ad_id`, `created_at` em padrão de polling (`segundos = :06`).
 
-**Bug secundário:** webhook insere `origem: "Meta Lead Ads"` (linha 241), mas slug é `meta_ads`. Os dados atuais já estão como `meta_ads` (deploy anterior dessincronizado), porém um redeploy "as-is" quebraria também o lookup `WHERE slug = lead.origem` dentro do `send-whatsapp-gptmaker`.
+**Conclusão:** existe um worker externo (provável n8n/Zapier/script) que faz polling na Graph API e **insere direto na tabela `leads`** via PostgREST com service role — ignorando totalmente nossa edge function. Por isso o fix de invocar `send-whatsapp-gptmaker` dentro do `webhook-meta-leads` nunca dispara.
 
-## Mudanças
+A regra "fonte com `whatsapp_auto_send=true` envia WhatsApp" precisa morar **no banco**, não em uma edge function específica, porque temos múltiplos caminhos de entrada (webhook-meta-leads, ingest-lead, e agora o externo).
 
-### 1. `supabase/functions/webhook-meta-leads/index.ts`
-- Linha 241: `origem: "Meta Lead Ads"` → `origem: "meta_ads"`.
-- Após insert + CAPI: invocar `send-whatsapp-gptmaker` via `EdgeRuntime.waitUntil(supabase.functions.invoke('send-whatsapp-gptmaker', { body: { lead_id } }).catch(...))` — condicionado a `lead_sources.meta_ads.whatsapp_auto_send=true` (busco a flag uma vez por batch).
-- Console log para facilitar debug futuro.
+## Solução: trigger no banco
 
-### 2. Teste ponta a ponta
-Lead mais recente: **Alessandra de Almeida Lucas** (`ffd1eef9-9d63-420e-bcee-7720bdb7657b`, `+5516981752085`, `whatsapp_sent=false`).
+Mover o disparo para um trigger `AFTER INSERT ON leads`, idêntico em padrão ao já existente `trigger_welcome_email`.
 
-Após deploy do webhook, chamar `send-whatsapp-gptmaker` via `supabase--curl_edge_functions` com `{ lead_id: "ffd1eef9-..." }` e validar:
-- Resposta `{ ok: true, status: "sent" }`
-- Novo registro em `whatsapp_send_log` (`source_slug='meta_ads'`, `status='sent'`)
-- `leads.whatsapp_sent = true`
-- `lead_activities` com `whatsapp_iniciado`
-- (Se possível) confirmação visual no GPT Maker
+### 1. Nova função `trigger_whatsapp_gptmaker()` (SECURITY DEFINER)
 
-Se algum passo falhar, leio logs do edge function e ajusto.
+Filtros (idênticos à lógica atual em `send-whatsapp-gptmaker`, evitando trabalho desnecessário):
+- `NEW.whatsapp_sent IS DISTINCT FROM TRUE`
+- `NEW.telefone` não vazio
+- `NEW.email NOT ILIKE '%@atinaedu.com.br'` e `'%@movimentocircular.io'` (consistência com welcome)
+- `NEW.kanban_stage = 'novo'` e `NEW.status NOT IN ('converted','archived')`
+- `EXISTS (SELECT 1 FROM lead_sources WHERE slug = NEW.origem AND ativo AND whatsapp_auto_send)`
 
-### 3. Não vou alterar
-- `send-whatsapp-gptmaker` (já provado funcionando para `lp_ce`)
-- Painel admin `/admin/integracoes`
-- RLS / schema
+Se passar: `extensions.http` POST para `${SUPABASE_URL}/functions/v1/send-whatsapp-gptmaker` com `Authorization: Bearer <service_role>` (vault) e body `{ "lead_id": NEW.id }`. Erros vão para `RAISE LOG` (não bloqueiam o insert).
 
-## Pergunta pós-teste
-Após o teste passar, quer que eu **dispare WhatsApp para os outros leads Meta Ads recentes** sem disparo (últimas 24h ~5 leads), ou só ativa daqui em diante?
+Idempotência continua sendo responsabilidade da edge function (já tem janela de 24h em `whatsapp_send_log`), então duplo disparo é seguro.
+
+### 2. Trigger `tg_leads_whatsapp_auto`
+
+```sql
+CREATE TRIGGER tg_leads_whatsapp_auto
+AFTER INSERT ON public.leads
+FOR EACH ROW EXECUTE FUNCTION public.trigger_whatsapp_gptmaker();
+```
+
+### 3. Limpeza no webhook
+
+Remover o bloco `7b` (invoke `send-whatsapp-gptmaker`) de `supabase/functions/webhook-meta-leads/index.ts` — vira responsabilidade do trigger e evita risco de double-fire caso o webhook volte a ser usado. Manter o `origem: "meta_ads"` corrigido.
+
+### 4. Backfill do lead Ultragaz
+
+Já disparado manualmente nesta sessão (`whatsapp_sent=true`). Sem ação adicional.
+
+## Teste ponta-a-ponta
+
+1. Aguardar próximo lead `meta_ads` chegar pelo polling externo.
+2. Conferir em `whatsapp_send_log` registro `source_slug='meta_ads'`, `status='sent'` em segundos após o insert.
+3. Conferir `lead_activities` com `whatsapp_iniciado` e `leads.whatsapp_sent=true`.
+
+Se houver impaciência, faço também um INSERT de teste controlado (lead descartável com `@example.com` fora dos filtros de teste) e reverto.
+
+## Fora de escopo
+
+- Investigar/conectar o worker externo: pode ficar para depois; o trigger neutraliza a dependência.
+- `send-whatsapp-gptmaker` (já validado).
+- UI/admin/RLS.
+
+## Pergunta
+
+Quer que eu **também ative essa rede de segurança via trigger para os leads `lp_ce`** (LP Circular Experience), substituindo o invoke que hoje vive no `ingest-lead`? Ou mantenho `lp_ce` no fluxo atual e o trigger só protege o caminho Meta? Recomendo unificar tudo no trigger por consistência, mas pergunto antes de mexer no que funciona.
