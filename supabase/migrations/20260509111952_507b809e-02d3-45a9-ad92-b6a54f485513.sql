@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.trigger_whatsapp_gptmaker() FROM PUBLIC, anon, authenticated;
