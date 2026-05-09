@@ -1,62 +1,37 @@
-## Objetivo
+## Diagnóstico
 
-Transformar o atual `WhatsAppPanel` (que hoje só mostra métricas agregadas) num **painel de controle dedicado por fonte**, onde o admin liga/desliga o disparo via GPT Maker para cada `lead_source` em 1 clique, sem abrir o dialog de edição. Configurações avançadas (channel, agent, mensagem inicial) seguem no botão "Editar fonte".
+**Root cause:** `supabase/functions/webhook-meta-leads/index.ts` insere o lead mas **nunca invoca** `send-whatsapp-gptmaker`. Só o `ingest-lead` (LP) chama. Por isso:
 
-## Onde
+- `lead_sources.meta_ads.whatsapp_auto_send = true` ✅
+- `whatsapp_send_log` com `source_slug='meta_ads'` → **0 registros**
+- 323 leads `meta_ads` sem disparo
+- `lp_ce` funciona normalmente
 
-Topo de `/admin/integracoes`, expandindo o componente `src/components/admin/integrations/WhatsAppPanel.tsx`. Continua usando o mesmo `useLeadSources` que já alimenta a página.
+**Bug secundário:** webhook insere `origem: "Meta Lead Ads"` (linha 241), mas slug é `meta_ads`. Os dados atuais já estão como `meta_ads` (deploy anterior dessincronizado), porém um redeploy "as-is" quebraria também o lookup `WHERE slug = lead.origem` dentro do `send-whatsapp-gptmaker`.
 
-## Layout proposto
+## Mudanças
 
-```text
-┌─ WhatsApp via GPT Maker ─────────── [Configurado] ──┐
-│  Disparo automático por fonte. Idempotência 24h.    │
-│                                                     │
-│  [Enviados 7d: 6]  [Erros 7d: 1]  [Ignorados: 12]   │
-│                                                     │
-│  ── Habilitar por fonte ─────────────────────────── │
-│  Fonte           Status   Canal/Agente   Envios 7d  │
-│  ─────────────────────────────────────────────────  │
-│  LP Circular     [● ON]   default        4 / 0 err  │
-│  Meta Ads CE     [○ OFF]  —              0 / 0 err  │
-│  LP Workshop     [● ON]   ag_xyz         2 / 1 err  │
-│  ...                                                │
-│                                                     │
-│  [Ver últimos envios]                               │
-└─────────────────────────────────────────────────────┘
-```
+### 1. `supabase/functions/webhook-meta-leads/index.ts`
+- Linha 241: `origem: "Meta Lead Ads"` → `origem: "meta_ads"`.
+- Após insert + CAPI: invocar `send-whatsapp-gptmaker` via `EdgeRuntime.waitUntil(supabase.functions.invoke('send-whatsapp-gptmaker', { body: { lead_id } }).catch(...))` — condicionado a `lead_sources.meta_ads.whatsapp_auto_send=true` (busco a flag uma vez por batch).
+- Console log para facilitar debug futuro.
 
-## Funcionalidades
+### 2. Teste ponta a ponta
+Lead mais recente: **Alessandra de Almeida Lucas** (`ffd1eef9-9d63-420e-bcee-7720bdb7657b`, `+5516981752085`, `whatsapp_sent=false`).
 
-1. **Toggle por fonte** (`Switch` shadcn): chama `manage-lead-source/update` com `{ id, whatsapp_auto_send: !current }`. Otimista + revert em caso de erro. Toast de sucesso/erro.
-2. **Aviso de pré-requisito**: se a fonte não tem `whatsapp_initial_message` nem channel/agent customizado, ainda permite ligar (usa defaults globais), mas mostra um pequeno ícone de info ao lado do toggle com tooltip "Usando mensagem e canal padrão".
-3. **Métricas por fonte (7d)**: agrupa `whatsapp_send_log` por `source_slug` para exibir envios e erros por linha. Reaproveita o `metrics` já em `useLeadSources` (que tem `total_7d`/`errors_7d` agregado de leads) — para ser preciso, faz uma query adicional única em `whatsapp_send_log` agrupada por `source_slug` na carga do painel.
-4. **Linha por fonte**: nome + slug, status (ON/OFF), resumo do que está customizado (badge "msg custom", "agente custom", "canal custom"), envios/erros 7d, link "Editar" que abre o `IntegrationFormDialog` da fonte (reusa o estado da página via prop callback `onEditSource`).
-5. **Filtro**: só lista fontes com `ativo = true` (oculta integrações desativadas para reduzir ruído). Toggle "Mostrar inativas" se necessário.
-6. **Modal de logs**: mantém o existente "Ver últimos envios" inalterado.
+Após deploy do webhook, chamar `send-whatsapp-gptmaker` via `supabase--curl_edge_functions` com `{ lead_id: "ffd1eef9-..." }` e validar:
+- Resposta `{ ok: true, status: "sent" }`
+- Novo registro em `whatsapp_send_log` (`source_slug='meta_ads'`, `status='sent'`)
+- `leads.whatsapp_sent = true`
+- `lead_activities` com `whatsapp_iniciado`
+- (Se possível) confirmação visual no GPT Maker
 
-## Mudanças técnicas
+Se algum passo falhar, leio logs do edge function e ajusto.
 
-### `src/pages/admin/Integrations.tsx`
-- Passar `sources` e callback `onEditSource={(s) => { setEditing(s); setFormOpen(true); }}` para `<WhatsAppPanel />`.
-- Sem outras mudanças nos cards inferiores (mantêm o badge "WhatsApp auto" como indicador visual).
+### 3. Não vou alterar
+- `send-whatsapp-gptmaker` (já provado funcionando para `lp_ce`)
+- Painel admin `/admin/integracoes`
+- RLS / schema
 
-### `src/components/admin/integrations/WhatsAppPanel.tsx`
-- Aceitar props `sources: LeadSourceRow[]` e `onEditSource: (s) => void`.
-- Adicionar query agrupada: `select source_slug, status, count(*) ... from whatsapp_send_log where created_at >= 7d group by source_slug, status`. Mapear pra `Record<slug, { sent, errors }>`.
-- Render da tabela de fontes com `Switch` (shadcn) por linha.
-- Função `toggleSource(s)` chamando `supabase.functions.invoke('manage-lead-source/update', { body: { id, whatsapp_auto_send } })` com refresh local + propagação via `onToggled` (que chama `refresh()` da página).
-
-### Backend
-- **Sem mudanças**. A edge function `manage-lead-source/update` já aceita `whatsapp_auto_send`. RLS atual em `lead_sources` (`is_admin`) já protege.
-
-## Fora do escopo
-- Editar mensagem/canal/agente inline (continua no dialog Editar fonte, conforme decidido).
-- Botão "enviar teste" — pode ser um próximo passo se quiser validar antes de ativar.
-- Alertas de erro (já discutido em outro ciclo).
-
-## Validação pós-implementação
-1. Abrir `/admin/integracoes` → painel topo lista todas as fontes ativas com switch refletindo `whatsapp_auto_send`.
-2. Toggle OFF→ON em uma fonte: badge "WhatsApp auto" aparece no card abaixo, e novo lead daquela fonte dispara WhatsApp.
-3. Toggle ON→OFF: novo lead da fonte vai para `whatsapp_send_log` com `status='skipped_disabled'` (ou nem registra, dependendo da lógica em `ingest-lead`).
-4. Métricas por fonte batem com filtro do log agrupado.
+## Pergunta pós-teste
+Após o teste passar, quer que eu **dispare WhatsApp para os outros leads Meta Ads recentes** sem disparo (últimas 24h ~5 leads), ou só ativa daqui em diante?
