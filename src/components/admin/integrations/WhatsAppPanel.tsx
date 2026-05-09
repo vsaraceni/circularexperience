@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { MessageCircle, CheckCircle2, AlertCircle, Eye, RefreshCw } from "lucide-react";
+import { MessageCircle, CheckCircle2, AlertCircle, Eye, RefreshCw, Info, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import type { LeadSourceRow } from "@/hooks/useLeadSources";
 
 interface LogRow {
   id: string;
@@ -24,6 +28,17 @@ interface Stats {
   sent: number;
   errors: number;
   skipped: number;
+}
+
+interface PerSource {
+  sent: number;
+  errors: number;
+}
+
+interface Props {
+  sources: LeadSourceRow[];
+  onEditSource: (s: LeadSourceRow) => void;
+  onChanged: () => void;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -53,12 +68,15 @@ function formatDateTime(iso: string) {
   });
 }
 
-export default function WhatsAppPanel() {
+export default function WhatsAppPanel({ sources, onEditSource, onChanged }: Props) {
   const [stats, setStats] = useState<Stats>({ sent: 0, errors: 0, skipped: 0 });
   const [logs, setLogs] = useState<LogRow[]>([]);
+  const [perSource, setPerSource] = useState<Record<string, PerSource>>({});
   const [logOpen, setLogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (silent) setRefreshing(true);
@@ -74,12 +92,20 @@ export default function WhatsAppPanel() {
     const rows = (data ?? []) as LogRow[];
     setLogs(rows);
     const s: Stats = { sent: 0, errors: 0, skipped: 0 };
+    const ps: Record<string, PerSource> = {};
     for (const r of rows) {
       if (r.status === "sent") s.sent++;
       else if (r.status === "error") s.errors++;
       else s.skipped++;
+      if (r.source_slug) {
+        const cur = ps[r.source_slug] ?? { sent: 0, errors: 0 };
+        if (r.status === "sent") cur.sent++;
+        else if (r.status === "error") cur.errors++;
+        ps[r.source_slug] = cur;
+      }
     }
     setStats(s);
+    setPerSource(ps);
     setLoading(false);
     setRefreshing(false);
   }, []);
@@ -104,6 +130,25 @@ export default function WhatsAppPanel() {
       supabase.removeChannel(channel);
     };
   }, [load]);
+
+  const toggleSource = async (s: LeadSourceRow) => {
+    setTogglingId(s.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("manage-lead-source/update", {
+        body: { id: s.id, whatsapp_auto_send: !s.whatsapp_auto_send },
+      });
+      if (error || data?.error) {
+        toast.error(`Erro ao alterar: ${error?.message ?? data?.error}`);
+        return;
+      }
+      toast.success(s.whatsapp_auto_send ? "WhatsApp desativado nesta fonte" : "WhatsApp ativado nesta fonte");
+      onChanged();
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const visibleSources = sources.filter((s) => showInactive || s.ativo);
 
   return (
     <div className="border rounded-lg p-4 bg-card">
@@ -153,10 +198,86 @@ export default function WhatsAppPanel() {
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground mt-3">
-        Para ligar nas suas fontes, edite cada integração abaixo e ative
-        <span className="font-medium"> "Disparar WhatsApp automático"</span>.
-      </p>
+      <div className="mt-5 border-t pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h4 className="text-sm font-semibold">Habilitar por fonte</h4>
+            <p className="text-xs text-muted-foreground">
+              Liga/desliga o disparo automático. Configurações finas (canal, agente, mensagem) estão em "Editar".
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowInactive((v) => !v)}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            {showInactive ? "Ocultar inativas" : "Mostrar inativas"}
+          </button>
+        </div>
+
+        {visibleSources.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma fonte cadastrada.</p>
+        ) : (
+          <TooltipProvider delayDuration={150}>
+            <div className="border rounded-md divide-y">
+              {visibleSources.map((s) => {
+                const ps = perSource[s.slug];
+                const usingDefaults = !s.whatsapp_initial_message && !s.whatsapp_channel_id && !s.whatsapp_agent_id;
+                return (
+                  <div key={s.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium truncate">{s.nome}</span>
+                        <Badge variant="outline" className="font-mono text-[10px] py-0 h-4">{s.slug}</Badge>
+                        {!s.ativo && <Badge variant="secondary" className="text-[10px] py-0 h-4">inativa</Badge>}
+                        {s.whatsapp_auto_send && s.whatsapp_initial_message && (
+                          <Badge variant="outline" className="text-[10px] py-0 h-4">msg custom</Badge>
+                        )}
+                        {s.whatsapp_auto_send && s.whatsapp_agent_id && (
+                          <Badge variant="outline" className="text-[10px] py-0 h-4">agente custom</Badge>
+                        )}
+                        {s.whatsapp_auto_send && s.whatsapp_channel_id && (
+                          <Badge variant="outline" className="text-[10px] py-0 h-4">canal custom</Badge>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        7d: {ps?.sent ?? 0} enviados
+                        {ps?.errors ? <span className="text-destructive"> · {ps.errors} erros</span> : null}
+                      </div>
+                    </div>
+
+                    {s.whatsapp_auto_send && usingDefaults && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>Usando canal, agente e mensagem padrão</TooltipContent>
+                      </Tooltip>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => onEditSource(s)}
+                      aria-label={`Editar ${s.nome}`}
+                      className="h-8 px-2"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+
+                    <Switch
+                      checked={s.whatsapp_auto_send}
+                      disabled={togglingId === s.id || !s.ativo}
+                      onCheckedChange={() => toggleSource(s)}
+                      aria-label={`WhatsApp automático para ${s.nome}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </TooltipProvider>
+        )}
+      </div>
 
       <Dialog open={logOpen} onOpenChange={setLogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">

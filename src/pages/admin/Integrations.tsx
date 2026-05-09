@@ -103,7 +103,11 @@ export default function Integrations() {
           <div className="text-center py-12 text-muted-foreground">Carregando...</div>
         ) : (
           <div className="space-y-3">
-            <WhatsAppPanel />
+            <WhatsAppPanel
+              sources={sources}
+              onEditSource={(s) => { setEditing(s); setFormOpen(true); }}
+              onChanged={refresh}
+            />
             {sources.length === 0 && (
               <div className="border rounded-lg p-12 text-center">
                 <Plug className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
