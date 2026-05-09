@@ -238,7 +238,7 @@ Deno.serve(async (req) => {
               company,
               cargo,
               fb_lead_id: leadgenId,
-              origem: "Meta Lead Ads",
+              origem: "meta_ads",
               ad_id: leadData.ad_id ?? value.ad_id ?? null,
               adset_id: leadData.adset_id ?? value.adset_id ?? null,
               campaign_id: leadData.campaign_id ?? value.campaign_id ?? null,
@@ -283,6 +283,29 @@ Deno.serve(async (req) => {
               meta_last_event_at: now,
             })
             .eq("id", inserted.id);
+
+          // 7b. Disparo WhatsApp via GPT Maker (não bloqueia resposta)
+          try {
+            const { data: src } = await supabase
+              .from("lead_sources")
+              .select("whatsapp_auto_send")
+              .eq("slug", "meta_ads")
+              .maybeSingle();
+            if (src?.whatsapp_auto_send) {
+              console.log(`[webhook-meta-leads] invoking send-whatsapp-gptmaker for lead ${inserted.id}`);
+              EdgeRuntime.waitUntil(
+                supabase.functions
+                  .invoke("send-whatsapp-gptmaker", {
+                    body: { lead_id: inserted.id },
+                  })
+                  .catch((err) =>
+                    console.error("send-whatsapp-gptmaker invoke failed:", err),
+                  ),
+              );
+            }
+          } catch (err) {
+            console.error("whatsapp dispatch lookup failed:", err);
+          }
 
           results.push({
             leadgen_id: leadgenId,
