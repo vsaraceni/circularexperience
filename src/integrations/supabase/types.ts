@@ -536,6 +536,7 @@ export type Database = {
           custom_fields: Json | null
           email: string
           fb_lead_id: string | null
+          form_id: string | null
           id: string
           ingest_ip: unknown
           ingest_user_agent: string | null
@@ -552,6 +553,7 @@ export type Database = {
           name: string
           origem: string
           proxima_acao: string | null
+          qualificador_tier1: string | null
           source_id: string | null
           source_metadata: Json | null
           stage_updated_at: string | null
@@ -591,6 +593,7 @@ export type Database = {
           custom_fields?: Json | null
           email: string
           fb_lead_id?: string | null
+          form_id?: string | null
           id?: string
           ingest_ip?: unknown
           ingest_user_agent?: string | null
@@ -607,6 +610,7 @@ export type Database = {
           name: string
           origem?: string
           proxima_acao?: string | null
+          qualificador_tier1?: string | null
           source_id?: string | null
           source_metadata?: Json | null
           stage_updated_at?: string | null
@@ -646,6 +650,7 @@ export type Database = {
           custom_fields?: Json | null
           email?: string
           fb_lead_id?: string | null
+          form_id?: string | null
           id?: string
           ingest_ip?: unknown
           ingest_user_agent?: string | null
@@ -662,6 +667,7 @@ export type Database = {
           name?: string
           origem?: string
           proxima_acao?: string | null
+          qualificador_tier1?: string | null
           source_id?: string | null
           source_metadata?: Json | null
           stage_updated_at?: string | null
