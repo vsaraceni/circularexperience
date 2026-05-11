@@ -415,6 +415,58 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         {proposal ? "Editar Proposta" : "Nova Proposta"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {requiresManualOrigin && (
+          <div className="p-4 rounded-lg border space-y-4" style={{ borderColor: 'hsl(var(--color-brand) / 0.3)', background: 'hsl(var(--color-brand) / 0.04)' }}>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" style={{ color: 'hsl(var(--color-brand))' }} />
+              <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--color-brand))' }}>
+                Origem da oportunidade
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Como este lead não veio de um formulário, precisamos dos dados reais do contato para criar o registro no CRM.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>E-mail do contato *</Label>
+                <Input
+                  type="email"
+                  value={manualOrigin.email}
+                  onChange={(e) => setManualOrigin((m) => ({ ...m, email: e.target.value }))}
+                  placeholder="contato@empresa.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input
+                  value={manualOrigin.telefone}
+                  onChange={(e) => setManualOrigin((m) => ({ ...m, telefone: e.target.value }))}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Origem *</Label>
+                <Select value={manualOrigin.origem} onValueChange={(v) => setManualOrigin((m) => ({ ...m, origem: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a origem" /></SelectTrigger>
+                  <SelectContent>
+                    {sources.map((s) => (
+                      <SelectItem key={s.slug} value={s.slug}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Detalhe da origem</Label>
+                <Input
+                  value={manualOrigin.origem_detalhe}
+                  onChange={(e) => setManualOrigin((m) => ({ ...m, origem_detalhe: e.target.value }))}
+                  placeholder="Ex.: Indicação Flávio Ribeiro"
+                />
+              </div>
+            </div>
+          </div>
+        )}
         {products.length > 0 && (
           <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--color-bg-subtle))' }}>
             <div className="space-y-2">
