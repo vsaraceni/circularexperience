@@ -31,6 +31,11 @@ interface MasterOption {
   uploaded_at: string;
 }
 
+interface SourceOption {
+  slug: string;
+  nome: string;
+}
+
 interface RecentProposal {
   id: string;
   title: string;
@@ -199,6 +204,16 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   const [briefingOpen, setBriefingOpen] = useState(true);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [masters, setMasters] = useState<MasterOption[]>([]);
+  const [sources, setSources] = useState<SourceOption[]>([]);
+
+  // Bloco "novo contato": cria lead real quando proposta nasce sem lead vinculado
+  const hasLinkedLead = Boolean(prefill?.lead_id || proposal?.lead_id);
+  const [novoContato, setNovoContato] = useState({
+    contact_email: "",
+    contact_phone: "",
+    origem_slug: "manual_outbound",
+    origem_detalhe: "",
+  });
 
   const [form, setForm] = useState({
     company_name: proposal?.company_name || prefill?.company_name || "",
@@ -228,6 +243,13 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
       const mstrs = (masterData || []) as MasterOption[];
       setProducts(prods);
       setMasters(mstrs);
+
+      const { data: srcData } = await supabase
+        .from("lead_sources")
+        .select("slug, nome")
+        .eq("ativo", true)
+        .order("nome");
+      setSources((srcData || []) as SourceOption[]);
 
       // Smart defaults for new proposals only
       if (!proposal && !form.product_id) {
@@ -345,6 +367,14 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
     if (prefill?.lead_id && !proposal) {
       data.lead_id = prefill.lead_id;
     }
+    if (!hasLinkedLead && !proposal) {
+      data.new_lead = {
+        contact_email: novoContato.contact_email.trim(),
+        contact_phone: novoContato.contact_phone.trim(),
+        origem_slug: novoContato.origem_slug,
+        origem_detalhe: novoContato.origem_detalhe.trim() || null,
+      };
+    }
     onSave(data);
   };
 
@@ -410,6 +440,61 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
             </div>
           </div>
         )}
+        {!hasLinkedLead && !proposal && (
+          <div className="p-4 rounded-lg border space-y-4" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--color-bg-subtle))' }}>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Origem da oportunidade</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Como esse contato chegou? Preencha para criar um lead real no CRM (sem isso o lead entra com dados fantasma).
+              </p>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>E-mail do contato *</Label>
+                <Input
+                  type="email"
+                  value={novoContato.contact_email}
+                  onChange={(e) => setNovoContato(n => ({ ...n, contact_email: e.target.value }))}
+                  placeholder="contato@empresa.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input
+                  value={novoContato.contact_phone}
+                  onChange={(e) => setNovoContato(n => ({ ...n, contact_phone: e.target.value }))}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Origem *</Label>
+                <Select
+                  value={novoContato.origem_slug}
+                  onValueChange={(v) => setNovoContato(n => ({ ...n, origem_slug: v }))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {sources.map(s => (
+                      <SelectItem key={s.slug} value={s.slug}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Detalhe da origem</Label>
+                <Input
+                  value={novoContato.origem_detalhe}
+                  onChange={(e) => setNovoContato(n => ({ ...n, origem_detalhe: e.target.value }))}
+                  placeholder="Ex: Indicação Flávio Ribeiro, Evento Circular Day 2026"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Nome da Empresa *</Label>
