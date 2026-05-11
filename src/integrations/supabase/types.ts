@@ -552,6 +552,7 @@ export type Database = {
           meta_last_event_sent: string | null
           name: string
           origem: string
+          origem_detalhe: string | null
           proxima_acao: string | null
           qualificador_tier1: string | null
           source_id: string | null
@@ -609,6 +610,7 @@ export type Database = {
           meta_last_event_sent?: string | null
           name: string
           origem?: string
+          origem_detalhe?: string | null
           proxima_acao?: string | null
           qualificador_tier1?: string | null
           source_id?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           meta_last_event_sent?: string | null
           name?: string
           origem?: string
+          origem_detalhe?: string | null
           proxima_acao?: string | null
           qualificador_tier1?: string | null
           source_id?: string | null

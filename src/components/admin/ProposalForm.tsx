@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Copy, Search, FileText, ChevronDown, Package } from "lucide-react";
+import { Copy, Search, FileText, ChevronDown, Package, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
@@ -176,7 +176,7 @@ const ImportButton: React.FC<ImportButtonProps> = ({ field, proposals, onSelect 
 
 interface ProposalFormProps {
   proposal?: Proposal | null;
-  onSave: (data: Partial<Proposal> & { lead_id?: string }) => void;
+  onSave: (data: Partial<Proposal> & { lead_id?: string; manual_origin?: ManualOriginInput }) => void;
   onCancel: () => void;
   prefill?: {
     company_name?: string;
@@ -191,6 +191,18 @@ interface ProposalFormProps {
   };
 }
 
+export interface ManualOriginInput {
+  email: string;
+  telefone: string;
+  origem: string;
+  origem_detalhe: string;
+}
+
+interface SourceOption {
+  slug: string;
+  nome: string;
+}
+
 const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel, prefill, authorDefaults }) => {
   const defaultValidity = new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
 
@@ -199,6 +211,17 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   const [briefingOpen, setBriefingOpen] = useState(true);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [masters, setMasters] = useState<MasterOption[]>([]);
+  const [sources, setSources] = useState<SourceOption[]>([]);
+
+  // Quando NÃO há lead vinculado e não estamos editando, exigimos dados reais de origem.
+  const requiresManualOrigin = !proposal && !prefill?.lead_id;
+
+  const [manualOrigin, setManualOrigin] = useState<ManualOriginInput>({
+    email: "",
+    telefone: "",
+    origem: "",
+    origem_detalhe: "",
+  });
 
   const [form, setForm] = useState({
     company_name: proposal?.company_name || prefill?.company_name || "",
@@ -220,14 +243,16 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
   // Fetch products + masters once
   useEffect(() => {
     (async () => {
-      const [{ data: prodData }, { data: masterData }] = await Promise.all([
+      const [{ data: prodData }, { data: masterData }, { data: srcData }] = await Promise.all([
         supabase.from("products").select("id, slug, name, default_title_template, default_scope, default_considerations").eq("is_active", true).order("sort_order"),
         supabase.from("proposal_master_assets").select("id, product_id, version, label, is_active, uploaded_at").order("uploaded_at", { ascending: false }),
+        supabase.from("lead_sources").select("slug, nome").eq("ativo", true).order("nome"),
       ]);
       const prods = (prodData || []) as ProductOption[];
       const mstrs = (masterData || []) as MasterOption[];
       setProducts(prods);
       setMasters(mstrs);
+      setSources(((srcData || []) as SourceOption[]));
 
       // Smart defaults for new proposals only
       if (!proposal && !form.product_id) {
@@ -341,9 +366,22 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (requiresManualOrigin) {
+      if (!manualOrigin.email.trim()) { toast.error("Informe o e-mail do contato."); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(manualOrigin.email.trim())) { toast.error("E-mail inválido."); return; }
+      if (!manualOrigin.origem) { toast.error("Selecione a origem da oportunidade."); return; }
+    }
     const data: any = { ...form };
     if (prefill?.lead_id && !proposal) {
       data.lead_id = prefill.lead_id;
+    }
+    if (requiresManualOrigin) {
+      data.manual_origin = {
+        email: manualOrigin.email.trim(),
+        telefone: manualOrigin.telefone.trim(),
+        origem: manualOrigin.origem,
+        origem_detalhe: manualOrigin.origem_detalhe.trim(),
+      };
     }
     onSave(data);
   };
@@ -377,6 +415,58 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
         {proposal ? "Editar Proposta" : "Nova Proposta"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {requiresManualOrigin && (
+          <div className="p-4 rounded-lg border space-y-4" style={{ borderColor: 'hsl(var(--color-brand) / 0.3)', background: 'hsl(var(--color-brand) / 0.04)' }}>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" style={{ color: 'hsl(var(--color-brand))' }} />
+              <h3 className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--color-brand))' }}>
+                Origem da oportunidade
+              </h3>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Como este lead não veio de um formulário, precisamos dos dados reais do contato para criar o registro no CRM.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>E-mail do contato *</Label>
+                <Input
+                  type="email"
+                  value={manualOrigin.email}
+                  onChange={(e) => setManualOrigin((m) => ({ ...m, email: e.target.value }))}
+                  placeholder="contato@empresa.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone</Label>
+                <Input
+                  value={manualOrigin.telefone}
+                  onChange={(e) => setManualOrigin((m) => ({ ...m, telefone: e.target.value }))}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Origem *</Label>
+                <Select value={manualOrigin.origem} onValueChange={(v) => setManualOrigin((m) => ({ ...m, origem: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a origem" /></SelectTrigger>
+                  <SelectContent>
+                    {sources.map((s) => (
+                      <SelectItem key={s.slug} value={s.slug}>{s.nome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Detalhe da origem</Label>
+                <Input
+                  value={manualOrigin.origem_detalhe}
+                  onChange={(e) => setManualOrigin((m) => ({ ...m, origem_detalhe: e.target.value }))}
+                  placeholder="Ex.: Indicação Flávio Ribeiro"
+                />
+              </div>
+            </div>
+          </div>
+        )}
         {products.length > 0 && (
           <div className="grid md:grid-cols-2 gap-4 p-4 rounded-lg border" style={{ borderColor: 'hsl(var(--color-border))', background: 'hsl(var(--color-bg-subtle))' }}>
             <div className="space-y-2">

@@ -21,6 +21,7 @@ import ProposalForm from "@/components/admin/ProposalForm";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import DailyBriefing from "@/components/admin/DailyBriefing";
 import BulkEmailDialog from "@/components/admin/BulkEmailDialog";
+import { createManualLeadForProposal } from "@/lib/manualLead";
 
 import type { Proposal } from "./Proposals";
 
@@ -183,8 +184,12 @@ const Pipeline = () => {
 
   const handleSaveProposal = async (data: Partial<Proposal> & { lead_id?: string }) => {
     const leadId = data.lead_id;
+    const manualOrigin = (data as any).manual_origin as
+      | { email: string; telefone: string; origem: string; origem_detalhe: string }
+      | undefined;
     const saveData = { ...data };
     delete (saveData as any).lead_id;
+    delete (saveData as any).manual_origin;
 
     const slug = `prop-${crypto.randomUUID().slice(0, 8)}`;
     const insertData: any = { ...saveData, slug, created_by: user!.id };
@@ -196,13 +201,15 @@ const Pipeline = () => {
     }
 
     if (!finalLeadId) {
-      const { data: newLead, error: leadError } = await supabase.from("leads").insert({
-        name: saveData.contact_name || "", email: `manual-${slug}@noemail.com`,
-        company: saveData.company_name || "", cargo: saveData.contact_role || "",
-        origem: "manual", status: "converted", kanban_stage: "proposta",
-        stage_updated_at: new Date().toISOString(), last_activity_at: new Date().toISOString(),
-      }).select("id").single();
-      if (!leadError && newLead) finalLeadId = newLead.id;
+      if (!manualOrigin) { toast.error("Origem da oportunidade é obrigatória."); return; }
+      const created = await createManualLeadForProposal({
+        origin: manualOrigin,
+        contact_name: saveData.contact_name || "",
+        contact_role: saveData.contact_role || "",
+        company_name: saveData.company_name || "",
+      });
+      if ("error" in created) { toast.error("Erro ao criar lead: " + created.error); return; }
+      finalLeadId = created.id;
     }
 
     if (finalLeadId) insertData.lead_id = finalLeadId;
