@@ -8,6 +8,7 @@ import { Plus } from "lucide-react";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import CrmNavbar from "@/components/admin/CrmNavbar";
+import { createLeadFromProposalManual } from "@/lib/createLeadFromProposal";
 
 export interface Proposal {
   id: string;
@@ -77,10 +78,12 @@ const Proposals = () => {
     Promise.all([fetchProposals(), fetchProfile()]).then(() => setLoading(false));
   }, [fetchProfile]);
 
-  const handleSave = async (data: Partial<Proposal> & { lead_id?: string }) => {
+  const handleSave = async (data: Partial<Proposal> & { lead_id?: string; new_lead?: any }) => {
     const leadId = data.lead_id;
+    const newLeadPayload = data.new_lead;
     const saveData = { ...data };
     delete (saveData as any).lead_id;
+    delete (saveData as any).new_lead;
 
     if (editing) {
       const { error } = await supabase.from("proposals").update(saveData).eq("id", editing.id);
@@ -97,13 +100,18 @@ const Proposals = () => {
       }
 
       if (!finalLeadId) {
-        const { data: newLead, error: leadError } = await supabase.from("leads").insert({
-          name: saveData.contact_name || "", email: `manual-${slug}@noemail.com`,
-          company: saveData.company_name || "", cargo: saveData.contact_role || "",
-          origem: "manual", status: "converted", kanban_stage: "proposta",
-          stage_updated_at: new Date().toISOString(), last_activity_at: new Date().toISOString(),
-        }).select("id").single();
-        if (!leadError && newLead) finalLeadId = newLead.id;
+        if (!newLeadPayload?.contact_email || !newLeadPayload?.origem_slug) {
+          toast.error('Preencha email e origem na seção "Origem da oportunidade".');
+          return;
+        }
+        const created = await createLeadFromProposalManual({
+          company_name: saveData.company_name || "",
+          contact_name: saveData.contact_name || "",
+          contact_role: saveData.contact_role || "",
+          new_lead: newLeadPayload,
+        });
+        if (!created) { toast.error("Erro ao criar lead para proposta."); return; }
+        finalLeadId = created.id;
       }
 
       if (finalLeadId) insertData.lead_id = finalLeadId;
