@@ -39,11 +39,11 @@ const SendProposalButton: React.FC<Props> = ({ proposal, onStatusChange }) => {
     // Fetch lead + assigned profile
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
-      .select("id, name, email, company, cargo, assigned_to")
+      .select("id, name, email, work_email, company, cargo, assigned_to")
       .eq("id", proposal.lead_id)
       .single();
 
-    if (leadErr || !lead?.email || lead.email.endsWith("@noemail.com")) {
+    if (leadErr || (!lead?.work_email && (!lead?.email || lead.email.endsWith("@noemail.com")))) {
       toast.error("Esta proposta não tem e-mail válido associado.");
       return;
     }
@@ -65,7 +65,7 @@ const SendProposalButton: React.FC<Props> = ({ proposal, onStatusChange }) => {
     const filledBody = replaceVariables(body, lead, assignedProfile, extra);
     const filledSubject = replaceVariables(subject, lead, assignedProfile, extra);
 
-    const url = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(lead.email)}&su=${encodeURIComponent(filledSubject)}&body=${encodeURIComponent(filledBody)}`;
+    const url = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(lead.work_email || lead.email)}&su=${encodeURIComponent(filledSubject)}&body=${encodeURIComponent(filledBody)}`;
     window.open(url, "_blank");
 
     // Log activity
