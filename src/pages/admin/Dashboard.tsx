@@ -61,12 +61,36 @@ interface Lead {
   closed_at: string | null;
 }
 
+interface Proposal {
+  lead_id: string | null;
+  investment: string | null;
+}
+
 const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
 const isTestEmail = (email: string) =>
   TEST_DOMAINS.some((d) => email.toLowerCase().endsWith(d));
 
+// Mesma regra do PriorityListView: prioriza o investment da proposta
+// (suporta "Nx <valor>") e cai para lead.valor_proposta.
+const resolveLeadValue = (lead: Lead, proposalInvestment?: string): number => {
+  if (proposalInvestment) {
+    let multiplier = 1;
+    let rest = proposalInvestment;
+    const mMatch = proposalInvestment.match(/(\d+)\s*x\s*/i);
+    if (mMatch) {
+      multiplier = parseInt(mMatch[1], 10) || 1;
+      rest = proposalInvestment.slice(mMatch.index! + mMatch[0].length);
+    }
+    const cleaned = rest.replace(/[^\d.,]/g, "").replace(/\./g, "").replace(",", ".");
+    const parsed = (parseFloat(cleaned) || 0) * multiplier;
+    if (parsed > 0) return parsed;
+  }
+  return typeof lead.valor_proposta === "number" ? lead.valor_proposta : 0;
+};
+
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [submissions, setSubmissions] = useState<{ id: string }[]>([]);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,12 +100,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [leadsRes, subsRes, profilesRes] = await Promise.all([
+      const [leadsRes, proposalsRes, subsRes, profilesRes] = await Promise.all([
         supabase.from("leads").select("*").neq("status", "archived"),
+        supabase.from("proposals").select("lead_id, investment"),
         supabase.from("proposal_submissions").select("id"),
         supabase.from("profiles").select("id, full_name"),
       ]);
       if (leadsRes.data) setLeads(leadsRes.data.filter(l => !isTestEmail(l.email)));
+      if (proposalsRes.data) setProposals(proposalsRes.data);
       if (subsRes.data) setSubmissions(subsRes.data);
       if (profilesRes.data) setProfiles(profilesRes.data);
       setLoading(false);
@@ -112,12 +138,17 @@ const Dashboard = () => {
   const lostLeads = filteredLeads.filter((l) => l.kanban_stage === "perdido");
   const conversionRate = filteredLeads.length > 0 ? ((submissions.length / filteredLeads.length) * 100).toFixed(1) : "0";
 
+  const proposalMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    proposals.forEach((p) => {
+      if (p.lead_id && p.investment) m[p.lead_id] = p.investment;
+    });
+    return m;
+  }, [proposals]);
+
   const pipelineTotal = useMemo(() => {
-    return openLeads.reduce((sum, l) => {
-      const val = typeof l.valor_proposta === "number" ? l.valor_proposta : 0;
-      return sum + (isNaN(val) ? 0 : val);
-    }, 0);
-  }, [openLeads]);
+    return openLeads.reduce((sum, l) => sum + resolveLeadValue(l, proposalMap[l.id]), 0);
+  }, [openLeads, proposalMap]);
 
   // Funnel data
   const funnelData = STAGES.map((s, i) => ({
