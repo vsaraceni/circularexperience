@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import ProposalForm from "@/components/admin/ProposalForm";
 import ProposalList from "@/components/admin/ProposalList";
 import CrmNavbar from "@/components/admin/CrmNavbar";
@@ -47,6 +48,7 @@ const Proposals = () => {
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("rascunhos");
+  const [searchTerm, setSearchTerm] = useState("");
   const [authorDefaults, setAuthorDefaults] = useState<AuthorDefaults>({ author_name: "", author_email: "", author_phone: "" });
 
   const fetchProfile = useCallback(async () => {
@@ -148,7 +150,18 @@ const Proposals = () => {
     }
   };
 
-  const proposalsByStatus = (status: string) => proposals.filter((p) => (p.status || "rascunho") === status);
+  const proposalsByStatus = (status: string) => {
+    const termo = searchTerm.trim().toLowerCase();
+    return proposals.filter((p) => {
+      if ((p.status || "rascunho") !== status) return false;
+      if (!termo) return true;
+      const alvo = [p.title, p.company_name, p.contact_name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return alvo.includes(termo);
+    });
+  };
 
   return (
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: 'hsl(var(--color-bg-page))' }}>
@@ -180,6 +193,17 @@ const Proposals = () => {
             >
               <Plus className="h-4 w-4 mr-1.5" /> Nova Proposta
             </Button>
+          </div>
+
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar por nome da proposta, empresa ou contato"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 h-9 rounded-lg"
+            />
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
