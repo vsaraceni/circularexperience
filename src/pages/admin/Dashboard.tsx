@@ -49,21 +49,16 @@ const PIE_COLORS = [
 interface Lead {
   id: string;
   name: string;
+  email: string;
   company: string | null;
   kanban_stage: string;
   status: string;
   origem: string;
   assigned_to: string | null;
   lost_reason: string | null;
+  valor_proposta: number | null;
   created_at: string | null;
   closed_at: string | null;
-}
-
-interface Proposal {
-  id: string;
-  investment: string | null;
-  lead_id: string | null;
-  status: string;
 }
 
 const TEST_DOMAINS = ["@atinaedu.com.br", "@movimentocircular.io"];
@@ -72,7 +67,6 @@ const isTestEmail = (email: string) =>
 
 const Dashboard = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [submissions, setSubmissions] = useState<{ id: string }[]>([]);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,14 +76,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [leadsRes, proposalsRes, subsRes, profilesRes] = await Promise.all([
+      const [leadsRes, subsRes, profilesRes] = await Promise.all([
         supabase.from("leads").select("*").neq("status", "archived"),
-        supabase.from("proposals").select("id, investment, lead_id, status"),
         supabase.from("proposal_submissions").select("id"),
         supabase.from("profiles").select("id, full_name"),
       ]);
       if (leadsRes.data) setLeads(leadsRes.data.filter(l => !isTestEmail(l.email)));
-      if (proposalsRes.data) setProposals(proposalsRes.data);
       if (subsRes.data) setSubmissions(subsRes.data);
       if (profilesRes.data) setProfiles(profilesRes.data);
       setLoading(false);
@@ -114,24 +106,18 @@ const Dashboard = () => {
     return result;
   }, [leads, filterPeriod, filterOwner, filterOrigem]);
 
-  const activeLeads = filteredLeads.filter((l) => l.status !== "lost");
+  const activeLeads = filteredLeads.filter((l) => l.kanban_stage !== "perdido");
   const openLeads = activeLeads.filter((l) => l.kanban_stage !== "fechado");
   const closedLeads = activeLeads.filter((l) => l.kanban_stage === "fechado");
-  const lostLeads = filteredLeads.filter((l) => l.status === "lost");
-  const conversionRate = filteredLeads.length > 0 ? ((closedLeads.length / filteredLeads.length) * 100).toFixed(1) : "0";
+  const lostLeads = filteredLeads.filter((l) => l.kanban_stage === "perdido");
+  const conversionRate = filteredLeads.length > 0 ? ((submissions.length / filteredLeads.length) * 100).toFixed(1) : "0";
 
   const pipelineTotal = useMemo(() => {
-    const activeLeadIds = new Set(openLeads.map((l) => l.id));
-    return proposals
-      .filter((p) => p.lead_id && activeLeadIds.has(p.lead_id))
-      .reduce((sum, p) => {
-        if (!p.investment) return sum;
-        const nums = p.investment.match(/[\d.,]+/g);
-        if (!nums) return sum;
-        const val = parseFloat(nums[0].replace(/\./g, "").replace(",", "."));
-        return sum + (isNaN(val) ? 0 : val);
-      }, 0);
-  }, [openLeads, proposals]);
+    return openLeads.reduce((sum, l) => {
+      const val = typeof l.valor_proposta === "number" ? l.valor_proposta : 0;
+      return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+  }, [openLeads]);
 
   // Funnel data
   const funnelData = STAGES.map((s, i) => ({
