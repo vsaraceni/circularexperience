@@ -11,6 +11,7 @@ const STAGE_LABELS: Record<string, string> = {
   call_agendada: "Call Agendada",
   proposta: "Proposta",
   nutricao: "Nutrição",
+  tratativas: "Tratativas",
   fechado: "Fechado",
   perdido: "Perdido",
 };
@@ -22,6 +23,7 @@ const STAGE_COLORS: Record<string, string> = {
   call_agendada: "#6A1B4D",
   proposta: "#388E3C",
   nutricao: "#E65100",
+  tratativas: "#D84315",
 };
 
 const COLABORADORES_LABELS: Record<string, string> = {

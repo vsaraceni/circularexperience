@@ -33,7 +33,7 @@ interface Props {
   onSubmit: (values: IntegrationFormValues) => Promise<void>;
 }
 
-const STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao"];
+const STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas"];
 
 export default function IntegrationFormDialog({ open, onOpenChange, source, onSubmit }: Props) {
   const editing = !!source;

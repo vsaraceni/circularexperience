@@ -49,6 +49,7 @@ const STAGE_LABELS: Record<string, string> = {
   call_agendada: "Call Agendada",
   proposta: "Proposta",
   nutricao: "Nutrição",
+  tratativas: "Tratativas",
   fechado: "Fechado",
   perdido: "Perdido",
 };
@@ -972,7 +973,7 @@ function BriefingField({ leadId, initialValue, onSaved }: { leadId: string; init
 }
 
 
-const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas", "fechado"];
 
 function AdvanceStageButton({ lead, userId, onDone }: { lead: Lead; userId?: string; onDone?: () => void }) {
   const [loading, setLoading] = useState(false);

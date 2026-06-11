@@ -13,6 +13,7 @@ const STAGES = [
   { key: "call_agendada", label: "Call Agendada" },
   { key: "proposta", label: "Proposta" },
   { key: "nutricao", label: "Nutrição" },
+  { key: "tratativas", label: "Tratativas" },
   { key: "fechado", label: "Fechado" },
 ];
 

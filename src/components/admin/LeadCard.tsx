@@ -38,7 +38,7 @@ const TOOLTIP_MAP: Record<string, string> = {
   close_won: "Fechar lead com sucesso",
 };
 
-const LOST_STAGES = new Set(["boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao"]);
+const LOST_STAGES = new Set(["boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas"]);
 
 function getTierInfo(colaboradores?: string | null) {
   if (!colaboradores || colaboradores === "") return null;

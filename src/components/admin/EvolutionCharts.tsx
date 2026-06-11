@@ -77,7 +77,8 @@ const EvolutionCharts = () => {
     "Contato→Call": s.conv_contato_call,
     "Call→Proposta": s.conv_call_proposta,
     "Proposta→Nutrição": s.conv_proposta_nutricao,
-    "Nutrição→Fechado": s.conv_nutricao_fechado,
+    "Nutrição→Tratativas": (s as any).conv_nutricao_tratativas ?? null,
+    "Tratativas→Fechado": (s as any).conv_tratativas_fechado ?? null,
   }));
 
   const convLines = [
@@ -86,7 +87,8 @@ const EvolutionCharts = () => {
     { key: "Contato→Call", color: "#5F2558" },
     { key: "Call→Proposta", color: "#EB626D" },
     { key: "Proposta→Nutrição", color: "#999999" },
-    { key: "Nutrição→Fechado", color: "#4CAF50" },
+    { key: "Nutrição→Tratativas", color: "#D84315" },
+    { key: "Tratativas→Fechado", color: "#4CAF50" },
   ];
 
   return (

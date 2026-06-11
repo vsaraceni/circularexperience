@@ -30,7 +30,7 @@ export const CHANNEL_CONFIG: Record<string, { label: string; color: string }> = 
 };
 
 export const STAGE_ORDER = [
-  "novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao",
+  "novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas",
 ];
 
 export const STAGE_LABELS: Record<string, string> = {
@@ -40,6 +40,7 @@ export const STAGE_LABELS: Record<string, string> = {
   call_agendada: "Call Agendada",
   proposta: "Proposta",
   nutricao: "Nutrição",
+  tratativas: "Tratativas",
 };
 
 const COMPOUND_PREFIXES = [

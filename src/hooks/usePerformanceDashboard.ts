@@ -13,6 +13,7 @@ const STAGE_THRESHOLDS: Record<string, { warning: number; critical: number }> = 
   call_agendada: { warning: 3, critical: 7 },
   proposta: { warning: 5, critical: 10 },
   nutricao: { warning: 7, critical: 14 },
+  tratativas: { warning: 3, critical: 7 },
 };
 
 const STAGE_LABELS: Record<string, string> = {
@@ -22,6 +23,7 @@ const STAGE_LABELS: Record<string, string> = {
   call_agendada: "Call Agendada",
   proposta: "Proposta",
   nutricao: "Nutrição",
+  tratativas: "Tratativas",
   fechado: "Fechado",
   perdido: "Perdido",
 };

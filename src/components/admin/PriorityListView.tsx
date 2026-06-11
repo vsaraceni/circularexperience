@@ -63,12 +63,12 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 
 const STAGE_LABELS: Record<string, string> = {
   novo: "Novo", boas_vindas: "Welcome", em_contato: "Em Contato",
-  call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição",
+  call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição", tratativas: "Tratativas",
 };
 
 const STAGE_COLORS: Record<string, string> = {
   novo: "#9E9E9E", boas_vindas: "#1976D2", em_contato: "#1976D2",
-  call_agendada: "#6A1B4D", proposta: "#388E3C", nutricao: "#E65100",
+  call_agendada: "#6A1B4D", proposta: "#388E3C", nutricao: "#E65100", tratativas: "#D84315",
 };
 
 const URGENCY_COLORS: Record<UrgencyLevel, string> = {

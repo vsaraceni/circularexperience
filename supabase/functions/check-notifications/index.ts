@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       call_agendada: { criticalD: 10 },
       proposta: { criticalD: 4 },
       nutricao: { criticalD: 10 },
+      tratativas: { criticalD: 7 },
     };
 
     function getUrgencyLevel(stage: string, stageUpdatedAt: string | null, lastActivityAt: string | null): string {
