@@ -20,6 +20,7 @@ const STAGES: KanbanStage[] = [
   { id: "call_agendada", label: "Call Agendada", color: "hsl(307, 44%, 26%)" },
   { id: "proposta", label: "Proposta", color: "hsl(122, 39%, 39%)" },
   { id: "nutricao", label: "Nutrição", color: "hsl(27, 91%, 48%)" },
+  { id: "tratativas", label: "Tratativas", color: "hsl(14, 88%, 45%)" },
   { id: "fechado", label: "Fechado", color: "hsl(122, 48%, 34%)" },
 ];
 
@@ -632,6 +633,7 @@ const STAGE_LABELS: Record<string, string> = {
   call_agendada: "Call Agendada",
   proposta: "Proposta",
   nutricao: "Nutrição",
+  tratativas: "Tratativas",
   fechado: "Fechado",
   perdido: "Perdido",
 };

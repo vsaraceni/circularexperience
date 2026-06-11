@@ -74,9 +74,9 @@ export interface CampaignKPI {
   pct: number; // progress toward goal (0-100+)
 }
 
-const ACTIVE_STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+const ACTIVE_STAGES = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas", "fechado"];
 
-const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+const STAGE_ORDER = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas", "fechado"];
 
 function maxReachedStage(lead: DashboardLead): string {
   if (lead.kanban_stage === "perdido") return lead.lost_at_stage || "boas_vindas";
@@ -90,9 +90,9 @@ function hasReachedAtLeast(lead: DashboardLead, stage: string): boolean {
 }
 
 const ADVANCED_STAGES: Record<string, string[]> = {
-  em_contato: ["em_contato", "call_agendada", "proposta", "nutricao", "fechado"],
-  call_agendada: ["call_agendada", "proposta", "nutricao", "fechado"],
-  proposta: ["proposta", "nutricao", "fechado"],
+  em_contato: ["em_contato", "call_agendada", "proposta", "nutricao", "tratativas", "fechado"],
+  call_agendada: ["call_agendada", "proposta", "nutricao", "tratativas", "fechado"],
+  proposta: ["proposta", "nutricao", "tratativas", "fechado"],
 };
 
 function parseInvestment(text: string | null): number {
@@ -335,10 +335,10 @@ export function useStrategicDashboard() {
 
   // Conversion funnel — uses maxReachedStage so lost leads count at the stage they reached
   const funnelData = useMemo(() => {
-    const stageOrder = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "fechado"];
+    const stageOrder = ["novo", "boas_vindas", "em_contato", "call_agendada", "proposta", "nutricao", "tratativas", "fechado"];
     const stageLabels: Record<string, string> = {
       novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato",
-      call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado",
+      call_agendada: "Call", proposta: "Proposta", nutricao: "Nutrição", tratativas: "Tratativas", fechado: "Fechado",
     };
     // Use campaign leads (including lost) when campaign is active
     const funnelLeads = activeCampaign ? campaignLeads : [...activeLeads, ...lostLeads];
@@ -366,7 +366,7 @@ export function useStrategicDashboard() {
     if (bvIncomplete.length > 0) actions.push({ priority: 3, icon: "📋", text: `${bvIncomplete.length} protocolo(s) BV incompleto(s)` });
     const callsNoBriefing = (pipelineCounts["call_agendada"] || []).filter((l) => !l.briefing_notes);
     if (callsNoBriefing.length > 0) actions.push({ priority: 4, icon: "📝", text: `${callsNoBriefing.length} call(s) sem briefing preenchido` });
-    const staleLeads = activeLeads.filter((l) => ["proposta", "nutricao"].includes(l.kanban_stage) && l.last_activity_at && differenceInDays(now, new Date(l.last_activity_at)) > 3);
+    const staleLeads = activeLeads.filter((l) => ["proposta", "nutricao", "tratativas"].includes(l.kanban_stage) && l.last_activity_at && differenceInDays(now, new Date(l.last_activity_at)) > 3);
     if (staleLeads.length > 0) actions.push({ priority: 5, icon: "💤", text: `${staleLeads.length} lead(s) parado(s) há mais de 3 dias` });
     return actions.sort((a, b) => a.priority - b.priority);
   }, [activeLeads, pipelineCounts, followUps]);

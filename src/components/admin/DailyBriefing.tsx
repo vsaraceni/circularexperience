@@ -20,6 +20,7 @@ const STAGE_LABELS: Record<string, string> = {
   call_agendada: "Call Agendada",
   proposta: "Proposta",
   nutricao: "Nutrição",
+  tratativas: "Tratativas",
 };
 
 export default function DailyBriefing({ userId }: DailyBriefingProps) {

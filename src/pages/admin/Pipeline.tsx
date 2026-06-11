@@ -265,7 +265,7 @@ const Pipeline = () => {
 
   const handleExportCSV = () => {
     const headers = ["Empresa", "Nome", "Email", "Telefone", "Cargo", "Etapa", "Origem", "Porte", "Responsável", "Valor Proposta", "Criado em"];
-    const stageLabels: Record<string, string> = { novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato", call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição", fechado: "Fechado", perdido: "Perdido" };
+    const stageLabels: Record<string, string> = { novo: "Novo", boas_vindas: "Boas-Vindas", em_contato: "Em Contato", call_agendada: "Call Agendada", proposta: "Proposta", nutricao: "Nutrição", tratativas: "Tratativas", fechado: "Fechado", perdido: "Perdido" };
     const profileMap: Record<string, string> = {};
     profiles.forEach(p => { profileMap[p.id] = p.full_name || ""; });
     const rows = filteredLeads.map(l => [
@@ -307,6 +307,7 @@ const Pipeline = () => {
     { id: "call_agendada", label: "Call Agendada" },
     { id: "proposta", label: "Proposta" },
     { id: "nutricao", label: "Nutrição" },
+    { id: "tratativas", label: "Tratativas" },
   ];
 
   const toggleStageFilter = (stageId: string) => {

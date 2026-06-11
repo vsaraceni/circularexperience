@@ -27,6 +27,7 @@ export const SLA_CONFIG: Record<string, { warningH?: number; criticalH?: number;
   call_agendada: { warningD: 5, criticalD: 10 },
   proposta: { warningD: 2, criticalD: 4 },
   nutricao: { warningD: 5, criticalD: 10 },
+  tratativas: { warningD: 3, criticalD: 7 },
 };
 
 /**
