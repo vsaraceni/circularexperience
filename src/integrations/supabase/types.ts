@@ -52,7 +52,9 @@ export type Database = {
           conv_contato_call: number | null
           conv_novo_bv: number | null
           conv_nutricao_fechado: number | null
+          conv_nutricao_tratativas: number | null
           conv_proposta_nutricao: number | null
+          conv_tratativas_fechado: number | null
           created_at: string
           id: string
           leads_boas_vindas: number
@@ -64,6 +66,7 @@ export type Database = {
           leads_nutricao: number
           leads_perdido: number
           leads_proposta: number
+          leads_tratativas: number
           pct_agendamentos: number
           pct_em_contato: number
           pct_propostas: number
@@ -78,7 +81,9 @@ export type Database = {
           conv_contato_call?: number | null
           conv_novo_bv?: number | null
           conv_nutricao_fechado?: number | null
+          conv_nutricao_tratativas?: number | null
           conv_proposta_nutricao?: number | null
+          conv_tratativas_fechado?: number | null
           created_at?: string
           id?: string
           leads_boas_vindas?: number
@@ -90,6 +95,7 @@ export type Database = {
           leads_nutricao?: number
           leads_perdido?: number
           leads_proposta?: number
+          leads_tratativas?: number
           pct_agendamentos?: number
           pct_em_contato?: number
           pct_propostas?: number
@@ -104,7 +110,9 @@ export type Database = {
           conv_contato_call?: number | null
           conv_novo_bv?: number | null
           conv_nutricao_fechado?: number | null
+          conv_nutricao_tratativas?: number | null
           conv_proposta_nutricao?: number | null
+          conv_tratativas_fechado?: number | null
           created_at?: string
           id?: string
           leads_boas_vindas?: number
@@ -116,6 +124,7 @@ export type Database = {
           leads_nutricao?: number
           leads_perdido?: number
           leads_proposta?: number
+          leads_tratativas?: number
           pct_agendamentos?: number
           pct_em_contato?: number
           pct_propostas?: number
