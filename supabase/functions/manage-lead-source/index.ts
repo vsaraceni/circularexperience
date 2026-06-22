@@ -5,7 +5,7 @@
 // Auth: valida JWT manualmente e exige role=admin via has_role().
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.94.0";
-import { hashSync } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
+import { genSaltSync, hashSync } from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       if (!nome) return jsonResp({ error: "nome é obrigatório" }, 400);
 
       const { key, prefix } = generateApiKey(slug);
-      const hash = hashSync(key, 10);
+      const hash = hashSync(key, genSaltSync(10));
 
       const insertRow = {
         slug,
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       }
 
       const { key, prefix } = generateApiKey(current.slug);
-      const hash = hashSync(key, 10);
+      const hash = hashSync(key, genSaltSync(10));
       const expiresAt = new Date(Date.now() + GRACE_HOURS * 60 * 60 * 1000).toISOString();
 
       const { error: updateErr } = await admin
