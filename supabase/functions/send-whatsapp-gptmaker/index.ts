@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
   const gptmakerToken = Deno.env.get("GPTMAKER_TOKEN");
   const defaultChannelId = Deno.env.get("GPTMAKER_CHANNEL_ID");
   const defaultAgentId = Deno.env.get("GPTMAKER_AGENT_ID");
+  const defaultTriagemAgentId = Deno.env.get("GPTMAKER_TRIAGEM_AGENT_ID");
   const envInitialMessage = Deno.env.get("GPTMAKER_INITIAL_MESSAGE") ?? null;
   const FALLBACK_INITIAL_MESSAGE =
     "Oi {{primeiro_nome}}! 👋 Vi seu interesse em {{produto}}. Posso te contar mais? 😊";
@@ -108,17 +109,19 @@ Deno.serve(async (req) => {
   // 2. Buscar source para canal específico e produto_label
   let channelId = defaultChannelId;
   let agentId: string | null = defaultAgentId ?? null;
+  let triagemAgentId: string | null = defaultTriagemAgentId ?? null;
   let produtoLabel: string | null = null;
   let sourceNome: string | null = null;
   let sourceInitialMessage: string | null = null;
   if (lead.origem) {
     const { data: src } = await supabase
       .from("lead_sources")
-      .select("whatsapp_channel_id, whatsapp_agent_id, produto_label, nome, whatsapp_initial_message")
+      .select("whatsapp_channel_id, whatsapp_agent_id, whatsapp_triagem_agent_id, produto_label, nome, whatsapp_initial_message")
       .eq("slug", lead.origem)
       .maybeSingle();
     if (src?.whatsapp_channel_id) channelId = src.whatsapp_channel_id;
     if (src?.whatsapp_agent_id) agentId = src.whatsapp_agent_id;
+    if (src?.whatsapp_triagem_agent_id) triagemAgentId = src.whatsapp_triagem_agent_id;
     produtoLabel = src?.produto_label ?? null;
     sourceNome = src?.nome ?? null;
     sourceInitialMessage = src?.whatsapp_initial_message ?? null;
@@ -193,6 +196,50 @@ Deno.serve(async (req) => {
     .replace(/\{\{\s*campanha\s*\}\}/gi, (campanha ?? "").toString())
     .trim();
 
+  // 5b. Injetar contexto no agente de triagem (best-effort, não-fatal).
+  // O agente de triagem deve estar treinado para ler a tag [PRODUTO: ...]
+  // e transferir para o agente do produto via transfer-rules.
+  let triagemContextResult: unknown = null;
+  if (triagemAgentId && agentId) {
+    const tagPrompt =
+      `[ROTEAMENTO CRM] PRODUTO: ${produto ?? "indefinido"} | ` +
+      `CAMPANHA: ${campanha ?? "—"} | FONTE: ${lead.origem ?? "—"} | ` +
+      `EMPRESA: ${lead.company ?? "—"} | AGENT_TARGET_ID: ${agentId}. ` +
+      `Transfira este atendimento para o agente do produto correspondente.`;
+    try {
+      const ctxUrl = `https://api.gptmaker.ai/v2/agent/${triagemAgentId}/add-message`;
+      const ctxResp = await fetch(ctxUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${gptmakerToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contextId: phone,
+          role: "user",
+          prompt: tagPrompt,
+        }),
+      });
+      let ctxJson: unknown = null;
+      try {
+        ctxJson = await ctxResp.json();
+      } catch {
+        ctxJson = { raw: await ctxResp.text().catch(() => null) };
+      }
+      triagemContextResult = { status: ctxResp.status, ok: ctxResp.ok, body: ctxJson };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      triagemContextResult = { error: `add-message failed: ${msg}` };
+    }
+  } else {
+    triagemContextResult = {
+      skipped: true,
+      reason: !triagemAgentId
+        ? "GPTMAKER_TRIAGEM_AGENT_ID não configurado"
+        : "whatsapp_agent_id (alvo) não definido na fonte",
+    };
+  }
+
   // 6. Iniciar conversa via canal — payload estritamente conforme docs oficiais:
   // https://developer.gptmaker.ai/api-reference/channels/start-conversation
   // Body suportado: { phone, message }. Campos extras (name, metadata, agentId,
@@ -254,6 +301,8 @@ Deno.serve(async (req) => {
     status: "sent",
     gptmaker_response: {
       start_conversation: respJson,
+      triagem_add_message: triagemContextResult,
+      triagem_agent_id: triagemAgentId,
       agent_id: agentId,
       channel_id: channelId,
       request_body: { phone, message: messageBody },
@@ -264,7 +313,7 @@ Deno.serve(async (req) => {
     lead_id: leadId,
     activity_type: "whatsapp_iniciado",
     content: `WhatsApp iniciado via GPT Maker para ${phone}${produto ? ` (${produto}${campanha ? ` / ${campanha}` : ""})` : ""}`,
-    metadata: { phone, channel_id: channelId, agent_id: agentId, produto, campanha, message_preview: messageBody.slice(0, 120) },
+    metadata: { phone, channel_id: channelId, agent_id: agentId, triagem_agent_id: triagemAgentId, produto, campanha, message_preview: messageBody.slice(0, 120) },
   });
 
   await supabase
