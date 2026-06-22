@@ -244,12 +244,11 @@ Deno.serve(async (req) => {
               console.warn(`Meta campaign_id ${campaignId} sem mapeamento — usando fallback meta_ads`);
               try {
                 await supabase.from("lead_ingest_log").insert({
-                  source: "meta_ads",
-                  status: "warning",
-                  message: "unmapped_meta_campaign",
-                  payload: { campaign_id: campaignId, leadgen_id: leadgenId },
+                  source_slug: "meta_ads",
+                  status: "unmapped_meta_campaign",
+                  error: `campaign_id ${campaignId} sem mapeamento`,
                 });
-              } catch (_e) { /* tabela pode ter shape diferente; ignora */ }
+              } catch (_e) { /* best-effort */ }
             }
           }
 
