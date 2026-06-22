@@ -1,0 +1,1 @@
+DELETE FROM whatsapp_send_log WHERE lead_id = 'fc922c5f-caf7-4570-91fb-9811d36a4057';
