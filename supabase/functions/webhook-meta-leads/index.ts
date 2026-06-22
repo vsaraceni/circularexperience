@@ -225,6 +225,33 @@ Deno.serve(async (req) => {
 
           // 4. Insere lead no Supabase
           const now = new Date().toISOString();
+          const campaignId = (leadData.campaign_id ?? value.campaign_id ?? null) as string | null;
+
+          // Resolve origem/product via mapeamento de campanha Meta
+          let resolvedOrigem = "meta_ads";
+          let resolvedProductId: string | null = null;
+          if (campaignId) {
+            const { data: mapped } = await supabase
+              .from("meta_campaign_product_map")
+              .select("product_id, lead_sources:lead_source_id(slug, product_id, ativo)")
+              .eq("campaign_id", campaignId)
+              .maybeSingle();
+            const src = (mapped as any)?.lead_sources;
+            if (src && src.ativo) {
+              resolvedOrigem = src.slug;
+              resolvedProductId = (mapped as any).product_id ?? src.product_id ?? null;
+            } else {
+              console.warn(`Meta campaign_id ${campaignId} sem mapeamento — usando fallback meta_ads`);
+              try {
+                await supabase.from("lead_ingest_log").insert({
+                  source_slug: "meta_ads",
+                  status: "unmapped_meta_campaign",
+                  error: `campaign_id ${campaignId} sem mapeamento`,
+                });
+              } catch (_e) { /* best-effort */ }
+            }
+          }
+
           const { data: inserted, error: insertError } = await supabase
             .from("leads")
             .insert({
@@ -238,10 +265,11 @@ Deno.serve(async (req) => {
               company,
               cargo,
               fb_lead_id: leadgenId,
-              origem: "meta_ads",
+              origem: resolvedOrigem,
+              product_id: resolvedProductId,
               ad_id: leadData.ad_id ?? value.ad_id ?? null,
               adset_id: leadData.adset_id ?? value.adset_id ?? null,
-              campaign_id: leadData.campaign_id ?? value.campaign_id ?? null,
+              campaign_id: campaignId,
               last_activity_at: now,
               stage_updated_at: now,
             })

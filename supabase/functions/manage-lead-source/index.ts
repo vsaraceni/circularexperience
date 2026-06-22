@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
         produto_label: body.produto_label ?? null,
         whatsapp_agent_id: body.whatsapp_agent_id ?? null,
         whatsapp_initial_message: body.whatsapp_initial_message ?? null,
+        product_id: body.product_id ?? null,
         created_by: userId,
       };
 
@@ -202,6 +203,7 @@ Deno.serve(async (req) => {
         "capi_habilitado", "capi_action_source", "custom_field_schema", "notas",
         "whatsapp_auto_send", "whatsapp_channel_id",
         "produto_label", "whatsapp_agent_id", "whatsapp_initial_message",
+        "product_id",
       ];
       for (const f of fields) {
         if (body[f] !== undefined) allowed[f] = body[f];

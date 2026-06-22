@@ -443,6 +443,7 @@ export type Database = {
           previous_api_key_expires_at: string | null
           previous_api_key_hash: string | null
           previous_api_key_prefix: string | null
+          product_id: string | null
           produto_label: string | null
           rate_limit_per_min: number
           slug: string
@@ -471,6 +472,7 @@ export type Database = {
           previous_api_key_expires_at?: string | null
           previous_api_key_hash?: string | null
           previous_api_key_prefix?: string | null
+          product_id?: string | null
           produto_label?: string | null
           rate_limit_per_min?: number
           slug: string
@@ -499,6 +501,7 @@ export type Database = {
           previous_api_key_expires_at?: string | null
           previous_api_key_hash?: string | null
           previous_api_key_prefix?: string | null
+          product_id?: string | null
           produto_label?: string | null
           rate_limit_per_min?: number
           slug?: string
@@ -521,6 +524,13 @@ export type Database = {
             columns: ["default_assignee"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_sources_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -562,6 +572,7 @@ export type Database = {
           name: string
           origem: string
           origem_detalhe: string | null
+          product_id: string | null
           proxima_acao: string | null
           qualificador_tier1: string | null
           source_id: string | null
@@ -620,6 +631,7 @@ export type Database = {
           name: string
           origem?: string
           origem_detalhe?: string | null
+          product_id?: string | null
           proxima_acao?: string | null
           qualificador_tier1?: string | null
           source_id?: string | null
@@ -678,6 +690,7 @@ export type Database = {
           name?: string
           origem?: string
           origem_detalhe?: string | null
+          product_id?: string | null
           proxima_acao?: string | null
           qualificador_tier1?: string | null
           source_id?: string | null
@@ -706,6 +719,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]
@@ -753,6 +773,51 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "message_templates_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_campaign_product_map: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string | null
+          label: string | null
+          lead_source_id: string
+          product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by?: string | null
+          label?: string | null
+          lead_source_id: string
+          product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string | null
+          label?: string | null
+          lead_source_id?: string
+          product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_campaign_product_map_lead_source_id_fkey"
+            columns: ["lead_source_id"]
+            isOneToOne: false
+            referencedRelation: "lead_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meta_campaign_product_map_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"

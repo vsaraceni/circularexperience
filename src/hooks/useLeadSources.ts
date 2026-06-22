@@ -24,6 +24,7 @@ export interface LeadSourceRow {
   produto_label: string | null;
   whatsapp_agent_id: string | null;
   whatsapp_initial_message: string | null;
+  product_id: string | null;
 }
 
 export interface SourceMetrics {
@@ -42,7 +43,7 @@ export function useLeadSources() {
     const { data, error } = await supabase
       .from("lead_sources")
       .select(
-        "id, slug, nome, api_key_prefix, ativo, cors_origins, rate_limit_per_min, default_stage, default_assignee, email_notificar, capi_habilitado, capi_action_source, custom_field_schema, notas, created_at, previous_api_key_prefix, previous_api_key_expires_at, whatsapp_auto_send, whatsapp_channel_id, produto_label, whatsapp_agent_id, whatsapp_initial_message",
+        "id, slug, nome, api_key_prefix, ativo, cors_origins, rate_limit_per_min, default_stage, default_assignee, email_notificar, capi_habilitado, capi_action_source, custom_field_schema, notas, created_at, previous_api_key_prefix, previous_api_key_expires_at, whatsapp_auto_send, whatsapp_channel_id, produto_label, whatsapp_agent_id, whatsapp_initial_message, product_id",
       )
       .order("created_at", { ascending: false });
 
