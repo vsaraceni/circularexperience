@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ export interface IntegrationFormValues {
   produto_label: string | null;
   whatsapp_agent_id: string | null;
   whatsapp_initial_message: string | null;
+  product_id: string | null;
 }
 
 interface Props {
@@ -53,12 +55,16 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [whatsappAgentId, setWhatsappAgentId] = useState("");
   const [produtoLabel, setProdutoLabel] = useState("");
   const [whatsappInitialMessage, setWhatsappInitialMessage] = useState("");
+  const [productId, setProductId] = useState<string>("");
+  const [products, setProducts] = useState<Array<{ id: string; name: string }>>([]);
   const [schemaText, setSchemaText] = useState("{}");
   const [notas, setNotas] = useState("");
   const [schemaError, setSchemaError] = useState("");
 
   useEffect(() => {
     if (!open) return;
+    supabase.from("products").select("id, name").eq("is_active", true).order("sort_order")
+      .then(({ data }) => setProducts((data ?? []) as Array<{ id: string; name: string }>));
     setSlug(source?.slug ?? "");
     setNome(source?.nome ?? "");
     setCorsOrigins(source?.cors_origins ?? []);
@@ -71,6 +77,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setWhatsappAgentId(source?.whatsapp_agent_id ?? "");
     setProdutoLabel(source?.produto_label ?? "");
     setWhatsappInitialMessage(source?.whatsapp_initial_message ?? "");
+    setProductId(source?.product_id ?? "");
     setSchemaText(JSON.stringify(source?.custom_field_schema ?? {}, null, 2));
     setNotas(source?.notas ?? "");
     setCorsInput("");
@@ -120,6 +127,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         whatsapp_agent_id: whatsappAgentId.trim() || null,
         produto_label: produtoLabel.trim() || null,
         whatsapp_initial_message: whatsappInitialMessage.trim() || null,
+        product_id: productId || null,
       });
     } finally {
       setSubmitting(false);
@@ -153,13 +161,21 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
 
           <div className="space-y-1.5">
             <Label>Produto / contexto humano</Label>
+            <select
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm mb-2"
+            >
+              <option value="">— Sem produto vinculado —</option>
+              {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
             <Input
               value={produtoLabel}
               onChange={(e) => setProdutoLabel(e.target.value)}
               placeholder="Ex: Circular Experience — workshop/imersão de economia circular"
             />
             <p className="text-xs text-muted-foreground">
-              Texto que vai pro agente do WhatsApp como contexto. Se vazio, usa o nome da fonte. A campanha específica vem do <code className="text-[10px]">utm_campaign</code> ou de <code className="text-[10px]">custom_fields.campanha_label</code> do anúncio.
+              <strong>Produto</strong> liga essa fonte ao catálogo (filtros, dashboards). <strong>Texto livre</strong> é o que vai pro agente do WhatsApp como contexto — se vazio, usa o nome do produto/fonte.
             </p>
           </div>
 
