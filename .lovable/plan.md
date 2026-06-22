@@ -1,98 +1,100 @@
-
 ## Objetivo
 
-Inserir uma nova etapa **Tratativas** no pipeline, posicionada **entre Nutrição e Fechado**. É uma etapa "quente" tipo: proposta já apresentada/discutida, lead em negociação final (revisão de contrato, alinhamento de escopo, ajuste de valor, aguardando aprovação interna do cliente).
+Hoje todo lead vindo de Meta Lead Ads entra no CRM com `origem = "meta_ads"` (uma única fonte com `produto_label` fixo). Isso impede distinguir entre Circular Experience e o novo Conexão Circular — tanto no CRM quanto na mensagem inicial do GPT Maker, onde a variável `{{produto}}` sai sempre igual.
 
-Slug técnico: `tratativas`. Label: `Tratativas`. Cor sugerida: vermelho-âmbar `hsl(14, 88%, 45%)` (entre laranja de Nutrição e verde de Fechado — sinaliza urgência de conversão).
+A proposta é tratar **cada produto como uma fonte Meta Ads própria**, decidida pelo `campaign_id` que o webhook do Meta já recebe. Nada na operação atual de CE precisa mudar de comportamento — só ganha um "irmão" para o segundo produto.
 
-## Ordem nova do pipeline
+## O que já temos (não precisa refazer)
 
+- `lead_sources` com `slug`, `produto_label`, `whatsapp_channel_id`, `whatsapp_agent_id`, `whatsapp_initial_message`, `default_assignee`, `whatsapp_auto_send`, `default_stage`.
+- `leads.origem`, `leads.campaign_id`, `leads.ad_id`, `leads.utm_campaign`.
+- Trigger `trigger_whatsapp_gptmaker` que dispara `send-whatsapp-gptmaker` quando `origem` aponta para uma `lead_sources` ativa com `whatsapp_auto_send = true`.
+- Edge function `send-whatsapp-gptmaker` que já usa `produto_label` e substitui `{{produto}}`, `{{campanha}}`, `{{primeiro_nome}}` etc. na mensagem.
+- Webhook `webhook-meta-leads` que já lê `campaign_id`, `adset_id`, `ad_id` e `form_id` do Meta.
+- Tabela `products` com Circular Experience, Circular Day, Circular Week (Conexão Circular ainda não está cadastrado).
+
+## O que falta
+
+1. **Não existe vínculo entre `lead_sources` e `products`** — `produto_label` é texto livre, fácil de digitar errado e impossível de filtrar por produto nos dashboards.
+2. **Não existe mapeamento `campaign_id → produto/fonte`**: o webhook não sabe qual produto a campanha do Meta representa, então cai sempre em `meta_ads`.
+3. **Sem `product_id` no lead**, dashboards (Estratégico, Performance) não conseguem segmentar por produto.
+
+## Plano
+
+### 1. Schema (migração)
+
+- Adicionar coluna `product_id uuid REFERENCES public.products(id)` em `lead_sources` (nullable). Indica que aquela fonte pertence a um produto específico.
+- Adicionar coluna `product_id uuid REFERENCES public.products(id)` em `leads` (nullable, com índice). Preenchido no momento da ingestão a partir da fonte resolvida.
+- Criar tabela `public.meta_campaign_product_map`:
+  - `campaign_id text PRIMARY KEY` (id da campanha no Meta)
+  - `lead_source_id uuid NOT NULL REFERENCES public.lead_sources(id)`
+  - `product_id uuid REFERENCES public.products(id)`
+  - `label text` (nome amigável para o admin)
+  - `created_at`, `updated_at`
+  - GRANTs + RLS: leitura/escrita só para `admin` via `has_role`; `service_role` total (usado pelo webhook).
+- Inserir Conexão Circular em `products` se ainda não existir.
+
+### 2. Lead sources por produto
+
+Criar (via UI Integrações, ou seed) duas fontes Meta:
+
+- `meta_ads_circular_experience` — `produto_label = "Circular Experience"`, `product_id` = id do CE, `whatsapp_initial_message` específica do CE, `whatsapp_agent_id`/`channel_id` herdados do que já roda hoje.
+- `meta_ads_conexao_circular` — `produto_label = "Conexão Circular"`, `product_id` do novo produto, mensagem inicial e agente próprios (mesmo agente serve, se o admin quiser — é configurável).
+
+A fonte legada `meta_ads` continua existindo para não quebrar leads históricos, mas vira **fallback** (sem `product_id`). Novas campanhas devem estar no mapeamento.
+
+### 3. Webhook `webhook-meta-leads`
+
+No momento da inserção do lead:
+
+1. Ler `campaign_id` do evento.
+2. Consultar `meta_campaign_product_map` por `campaign_id`.
+3. Se encontrar: usar o `slug` da `lead_sources` referenciada como `leads.origem` e gravar `leads.product_id` correspondente.
+4. Se **não** encontrar: cair em `origem = "meta_ads"` (comportamento atual) e logar em `lead_ingest_log` um alerta `unmapped_meta_campaign` com o `campaign_id`, para o admin cadastrar depois.
+
+Isso preserva 100% do fluxo atual de CE assim que o `campaign_id` dele estiver mapeado para `meta_ads_circular_experience`.
+
+### 4. Trigger e edge function de WhatsApp
+
+Nenhuma mudança de lógica: o trigger já casa `leads.origem` com `lead_sources.slug` e respeita `whatsapp_auto_send`. A função `send-whatsapp-gptmaker` já lê `produto_label` e `whatsapp_initial_message` da fonte. Como cada produto agora terá fonte própria, a variável `{{produto}}` e a mensagem inicial sairão corretas automaticamente — o agente do GPT Maker recebe "Circular Experience" ou "Conexão Circular" sem código novo.
+
+Pequeno ajuste opcional na função: incluir `product_id` no `metadata` da atividade `whatsapp_iniciado` para rastreio.
+
+### 5. Painel de Integrações (admin)
+
+Adicionar, dentro da página de Integrações já existente:
+
+- Na edição de cada `lead_source`: campo "Produto" (select de `products`) que grava `product_id`.
+- Nova aba "Campanhas Meta": CRUD da tabela `meta_campaign_product_map` (campaign_id + fonte Meta + label). Mostrar, ao lado, lista dos `campaign_id` recentes vistos em `leads` que ainda não estão mapeados, com botão "mapear".
+
+### 6. Dashboards e filtros
+
+- No filtro global do Kanban/Toolbar e nos dashboards Estratégico e Performance, adicionar filtro por **Produto** (usa `leads.product_id`, com fallback para `lead_sources.product_id` via join quando `product_id` do lead estiver nulo em registros antigos).
+- Backfill simples: `UPDATE leads SET product_id = ls.product_id FROM lead_sources ls WHERE leads.origem = ls.slug AND leads.product_id IS NULL` rodando uma vez após a migração.
+
+### 7. Validação
+
+- Testar webhook com payload simulando `campaign_id` mapeado e não-mapeado.
+- Inserir lead manual com `origem = meta_ads_conexao_circular` e confirmar: (a) `product_id` preenchido, (b) trigger dispara, (c) mensagem WhatsApp chega com `{{produto}} = "Conexão Circular"`, (d) atividade `whatsapp_iniciado` registrada.
+- Conferir que leads históricos com `origem = meta_ads` continuam funcionando.
+
+## Detalhes técnicos resumidos
+
+```text
+products ──┐
+           │ product_id
+lead_sources ──┐ slug, produto_label, whatsapp_*
+               │
+meta_campaign_product_map (campaign_id → lead_source_id, product_id)
+               │
+webhook-meta-leads ──► resolve(campaign_id) ──► leads.origem = source.slug
+                                               leads.product_id = source.product_id
+                                               │
+                                  trigger_whatsapp_gptmaker (já existe)
+                                               │
+                                  send-whatsapp-gptmaker (já usa produto_label)
+                                               │
+                                  GPT Maker recebe mensagem com {{produto}} correto
 ```
-novo → boas_vindas → em_contato → call_agendada → proposta → nutricao → tratativas → fechado
-                                                                                    ↘ perdido
-```
 
-## Avaliação de impacto (auditoria já feita no código)
-
-### 1. Frontend — listas de stages, labels, cores
-
-Arquivos que enumeram stages e precisam incluir `tratativas`:
-
-- `src/components/admin/KanbanBoard.tsx` — coluna nova entre nutrição e fechado; `STAGE_LABELS`.
-- `src/components/admin/LeadDrawer.tsx` — `STAGE_ORDER` (botão "Avançar"), `STAGE_LABELS`, condicionais de exibição (`nutricao` em linhas 877/883).
-- `src/components/admin/LeadCard.tsx` — `LOST_STAGES` (permitir perder em tratativas), switches de cor/ícone (87/104).
-- `src/components/admin/PriorityListView.tsx` — `STAGE_LABELS`, `STAGE_COLORS`, `STAGE_ICONS`.
-- `src/components/admin/PriorityCard.tsx` — `STAGE_LABELS`, `STAGE_COLORS`.
-- `src/components/admin/DailyBriefing.tsx`, `DigestReportDialog.tsx` — labels e categorização.
-- `src/components/admin/EvolutionCharts.tsx` — adicionar linhas de conversão `Nutrição→Tratativas` e `Tratativas→Fechado` (substitui `Nutrição→Fechado`).
-- `src/components/admin/integrations/IntegrationFormDialog.tsx` — array `STAGES` para `default_stage` (incluir).
-- `src/components/admin/messageTemplates.ts` — adicionar `tratativas` em `STAGE_KEYS` e label.
-- `src/pages/admin/Pipeline.tsx`, `src/pages/admin/Dashboard.tsx` — listas/labels.
-- `src/hooks/useStrategicDashboard.ts` — `ACTIVE_STAGES`, `STAGE_ORDER`, mapa `maxReachedStage`, lógica de stale leads (incluir `tratativas` junto com `proposta`/`nutricao`).
-- `src/hooks/usePerformanceDashboard.ts` — `STAGE_THRESHOLDS`, `STAGE_LABELS`.
-
-### 2. SLAs e notificações
-
-- `src/components/admin/UrgencyBadge.tsx`: adicionar `tratativas: { warningD: 3, criticalD: 7 }` (negociação ativa, ciclo curto).
-- `supabase/functions/check-notifications/index.ts`: adicionar `tratativas: { criticalD: 7 }`.
-- `src/hooks/usePerformanceDashboard.ts`: `tratativas: { warning: 3, critical: 7 }`.
-- `src/components/admin/DigestReportDialog.tsx`: idem.
-
-### 3. KPIs / Snapshot diário (banco)
-
-A função `public.generate_daily_snapshot` e a tabela `daily_snapshots` referenciam `leads_nutricao` e `conv_nutricao_fechado`. Mudanças:
-
-**Tabela `daily_snapshots`** — adicionar:
-- `leads_tratativas integer NOT NULL DEFAULT 0`
-- `conv_nutricao_tratativas numeric(5,2)`
-- `conv_tratativas_fechado numeric(5,2)`
-
-**Manter** `conv_nutricao_fechado` por compatibilidade histórica (passa a refletir `nutricao → fechado` direto, que vai cair a ~0 com o tempo).
-
-**Função `generate_daily_snapshot`** — recriar com:
-- Contagem `kanban_stage = 'tratativas'`.
-- Funil "reached proposta/nutrição/fechado" incluir `tratativas` como estágio superior.
-- Cálculo novo de `conv_nutricao_tratativas` e `conv_tratativas_fechado`.
-- `pipeline_value` continua excluindo só `perdido` e `fechado` (tratativas conta no pipeline ✔).
-
-### 4. Lead lifecycle e regras
-
-- `kanban_stage` é `text` livre (não enum) — não precisa de migração de enum.
-- Trigger `notify_stage_change` hoje só notifica em `proposta`. Sugestão: adicionar bloco análogo para `tratativas` (notificar admin: "Lead em Tratativas: …"). Opcional.
-- Trigger `trigger_welcome_email` e `trigger_whatsapp_gptmaker` só agem em `novo` — não afetadas.
-- Lógica de "lost_at_stage" já é livre, vai funcionar com tratativas automaticamente.
-- `closed_at` continua sendo setado só ao entrar em `fechado` — botão "Avançar" do LeadDrawer respeita `STAGE_ORDER`, então tratativas vira o passo obrigatório antes de fechar.
-
-### 5. Dados existentes
-
-Leads atualmente em `nutricao` **permanecem em nutrição** — não migra automaticamente. SDR decide caso a caso quando movê-los para tratativas. (Confirmar com você antes de aplicar; alternativa é migrar leads `nutricao` com `valor_proposta IS NOT NULL` há mais de N dias para tratativas — sugiro **não** fazer.)
-
-### 6. Snapshots históricos
-
-Os snapshots passados continuam consistentes (todos `leads_tratativas = 0`). O backfill de `generate_daily_snapshot` para datas passadas pode ser re-executado se desejar reconstituir tratativas a partir do histórico de `lead_activities` — não obrigatório.
-
-## Plano de implementação
-
-### Etapa 1 — Migração SQL
-1. `ALTER TABLE daily_snapshots ADD COLUMN leads_tratativas integer NOT NULL DEFAULT 0, ADD COLUMN conv_nutricao_tratativas numeric(5,2), ADD COLUMN conv_tratativas_fechado numeric(5,2);`
-2. `CREATE OR REPLACE FUNCTION public.generate_daily_snapshot` — versão atualizada cobrindo tratativas.
-3. (Opcional) Estender `notify_stage_change` para também notificar em `tratativas`.
-
-### Etapa 2 — Frontend
-- Inserir `tratativas` em todas as listas/maps/colors/labels/SLAs listadas acima.
-- `KanbanBoard`: coluna nova com cor `hsl(14, 88%, 45%)` entre nutrição e fechado.
-- `EvolutionCharts`: trocar linha única `Nutrição→Fechado` por duas linhas (`Nutrição→Tratativas`, `Tratativas→Fechado`); manter série legacy opcional.
-
-### Etapa 3 — Edge function
-- `check-notifications/index.ts`: incluir SLA de tratativas.
-
-### Etapa 4 — Verificação
-- Build limpo, tipos regenerados, abrir `/admin/pipeline` e ver a coluna nova, mover um lead nutrição→tratativas→fechado, conferir Dashboard Estratégico.
-
-## Decisões que assumi (corrija se necessário)
-
-1. **SLA tratativas**: warning 3 dias / crítico 7 dias.
-2. **Não migrar** leads atuais de nutrição para tratativas (SDR move manualmente).
-3. **Não regenerar** snapshots históricos.
-4. **Notificar admin** quando lead entra em tratativas (igual ao gatilho de proposta).
-5. Cor: vermelho-âmbar `hsl(14, 88%, 45%)`.
+Itens novos a criar: 1 migração, 1 tabela de mapeamento, ajustes no `webhook-meta-leads`, telas de admin em Integrações, filtro de produto nos dashboards, backfill. Itens **não** alterados em lógica: trigger de WhatsApp, edge function `send-whatsapp-gptmaker`, fluxos de CAPI e enrich.
