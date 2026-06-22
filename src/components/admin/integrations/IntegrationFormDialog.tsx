@@ -24,6 +24,7 @@ export interface IntegrationFormValues {
   whatsapp_channel_id: string | null;
   produto_label: string | null;
   whatsapp_agent_id: string | null;
+  whatsapp_triagem_agent_id: string | null;
   whatsapp_initial_message: string | null;
   product_id: string | null;
 }
@@ -53,6 +54,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
   const [whatsappAuto, setWhatsappAuto] = useState(false);
   const [whatsappChannelId, setWhatsappChannelId] = useState("");
   const [whatsappAgentId, setWhatsappAgentId] = useState("");
+  const [whatsappTriagemAgentId, setWhatsappTriagemAgentId] = useState("");
   const [produtoLabel, setProdutoLabel] = useState("");
   const [whatsappInitialMessage, setWhatsappInitialMessage] = useState("");
   const [productId, setProductId] = useState<string>("");
@@ -75,6 +77,10 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
     setWhatsappAuto(source?.whatsapp_auto_send ?? false);
     setWhatsappChannelId(source?.whatsapp_channel_id ?? "");
     setWhatsappAgentId(source?.whatsapp_agent_id ?? "");
+    setWhatsappTriagemAgentId(
+      (source as unknown as { whatsapp_triagem_agent_id?: string | null })
+        ?.whatsapp_triagem_agent_id ?? "",
+    );
     setProdutoLabel(source?.produto_label ?? "");
     setWhatsappInitialMessage(source?.whatsapp_initial_message ?? "");
     setProductId(source?.product_id ?? "");
@@ -125,6 +131,7 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
         whatsapp_auto_send: whatsappAuto,
         whatsapp_channel_id: whatsappChannelId.trim() || null,
         whatsapp_agent_id: whatsappAgentId.trim() || null,
+        whatsapp_triagem_agent_id: whatsappTriagemAgentId.trim() || null,
         produto_label: produtoLabel.trim() || null,
         whatsapp_initial_message: whatsappInitialMessage.trim() || null,
         product_id: productId || null,
@@ -266,24 +273,39 @@ export default function IntegrationFormDialog({ open, onOpenChange, source, onSu
             {whatsappAuto && (
               <div className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Channel ID específico (opcional)</Label>
+                  <Label className="text-xs">WhatsApp Channel ID (opcional, override)</Label>
                   <Input
                     value={whatsappChannelId}
                     onChange={(e) => setWhatsappChannelId(e.target.value)}
-                    placeholder="Deixe vazio para usar o canal padrão"
-                    className="text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Agent ID do GPT Maker (opcional)</Label>
-                  <Input
-                    value={whatsappAgentId}
-                    onChange={(e) => setWhatsappAgentId(e.target.value)}
-                    placeholder="Deixe vazio para usar o agente padrão"
+                    placeholder="Deixe vazio para usar o canal padrão (env GPTMAKER_CHANNEL_ID)"
                     className="text-sm"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Se preenchido, o briefing do lead viaja em <code>metadata</code> para este agente — sem virar mensagem visível e sem criar thread duplicada.
+                    Normalmente vazio. Só preencha se esta fonte tiver um número de WhatsApp dedicado (canal próprio na GPT Maker).
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Agente-alvo no GPT Maker (transferência)</Label>
+                  <Input
+                    value={whatsappAgentId}
+                    onChange={(e) => setWhatsappAgentId(e.target.value)}
+                    placeholder="ID do agente que vai assumir após a triagem"
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    ID do agente do <strong>produto</strong> (ex.: Conexão Circular, Circular Experience). O Agente de Triagem recebe a tag de roteamento e transfere para este ID via transfer-rule configurada na GPT Maker.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Agente de Triagem (opcional, override)</Label>
+                  <Input
+                    value={whatsappTriagemAgentId}
+                    onChange={(e) => setWhatsappTriagemAgentId(e.target.value)}
+                    placeholder="Deixe vazio para usar o triagem padrão (env GPTMAKER_TRIAGEM_AGENT_ID)"
+                    className="text-sm"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Quase sempre vazio. O agente de triagem está vinculado ao canal único e dispara as transfer-rules para o agente do produto.
                   </p>
                 </div>
                 <div className="space-y-1.5">
