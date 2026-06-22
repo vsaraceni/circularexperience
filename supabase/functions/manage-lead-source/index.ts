@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
       }
 
       const { key, prefix } = generateApiKey(current.slug);
-      const hash = hashSync(key, 10);
+      const hash = hashSync(key, genSaltSync(10));
       const expiresAt = new Date(Date.now() + GRACE_HOURS * 60 * 60 * 1000).toISOString();
 
       const { error: updateErr } = await admin
