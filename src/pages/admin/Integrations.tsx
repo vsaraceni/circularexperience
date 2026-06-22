@@ -11,6 +11,7 @@ import IntegrationKeyDialog from "@/components/admin/integrations/IntegrationKey
 import IntegrationGuideDialog from "@/components/admin/integrations/IntegrationGuideDialog";
 import RotateKeyDialog from "@/components/admin/integrations/RotateKeyDialog";
 import WhatsAppPanel from "@/components/admin/integrations/WhatsAppPanel";
+import MetaCampaignMapPanel from "@/components/admin/integrations/MetaCampaignMapPanel";
 
 function formatRelative(iso: string | null) {
   if (!iso) return "—";
@@ -108,6 +109,7 @@ export default function Integrations() {
               onEditSource={(s) => { setEditing(s); setFormOpen(true); }}
               onChanged={refresh}
             />
+            <MetaCampaignMapPanel sources={sources} />
             {sources.length === 0 && (
               <div className="border rounded-lg p-12 text-center">
                 <Plug className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
