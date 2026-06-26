@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
   // 1. Buscar lead
   const { data: lead, error: leadErr } = await supabase
     .from("leads")
-    .select("id, name, telefone, origem, company, utm_campaign, utm_source, utm_medium, custom_fields")
+    .select("id, name, telefone, origem, company, utm_campaign, utm_source, utm_medium, custom_fields, campaign_id, product_id")
     .eq("id", leadId)
     .maybeSingle();
 
@@ -105,17 +105,45 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 2. Buscar source para canal específico e produto_label
+  // 2. Defense-in-depth: resolver fonte específica via campaign_id se houver mapeamento.
+  // Se o lead chegou como meta_ads genérico mas tem campaign_id mapeado, usamos a fonte
+  // específica (slug/produto/agente/mensagem) e atualizamos o lead para refletir isso.
+  let effectiveOrigem: string | null = lead.origem ?? null;
+  let effectiveProductId: string | null = (lead as { product_id?: string | null }).product_id ?? null;
+
+  if (lead.campaign_id) {
+    const { data: mapped } = await supabase
+      .from("meta_campaign_product_map")
+      .select("product_id, lead_sources:lead_source_id(slug, product_id, ativo)")
+      .eq("campaign_id", lead.campaign_id)
+      .maybeSingle();
+    const mappedSrc = (mapped as { lead_sources?: { slug: string; product_id: string | null; ativo: boolean } | null } | null)?.lead_sources ?? null;
+    if (mappedSrc?.ativo && mappedSrc.slug) {
+      const shouldOverride = !effectiveOrigem || effectiveOrigem === "meta_ads" || effectiveOrigem !== mappedSrc.slug;
+      if (shouldOverride) {
+        effectiveOrigem = mappedSrc.slug;
+        effectiveProductId = effectiveProductId ?? (mapped as { product_id?: string | null }).product_id ?? mappedSrc.product_id ?? null;
+        // Persistir correção no lead para auditoria e fluxos futuros
+        await supabase
+          .from("leads")
+          .update({ origem: effectiveOrigem, product_id: effectiveProductId })
+          .eq("id", leadId);
+        console.log(`[whatsapp] lead ${leadId} re-routed via campaign ${lead.campaign_id} → ${effectiveOrigem}`);
+      }
+    }
+  }
+
+  // 2b. Buscar source efetiva para canal/agente/template/produto
   let channelId = defaultChannelId;
   let agentId: string | null = defaultAgentId ?? null;
   let produtoLabel: string | null = null;
   let sourceNome: string | null = null;
   let sourceInitialMessage: string | null = null;
-  if (lead.origem) {
+  if (effectiveOrigem) {
     const { data: src } = await supabase
       .from("lead_sources")
       .select("whatsapp_channel_id, whatsapp_agent_id, produto_label, nome, whatsapp_initial_message")
-      .eq("slug", lead.origem)
+      .eq("slug", effectiveOrigem)
       .maybeSingle();
     if (src?.whatsapp_channel_id) channelId = src.whatsapp_channel_id;
     if (src?.whatsapp_agent_id) agentId = src.whatsapp_agent_id;
@@ -129,7 +157,7 @@ Deno.serve(async (req) => {
   if (!phone) {
     await supabase.from("whatsapp_send_log").insert({
       lead_id: leadId,
-      source_slug: lead.origem,
+      source_slug: effectiveOrigem,
       phone: lead.telefone ?? null,
       status: "skipped_no_phone",
       error: "telefone ausente ou inválido",
@@ -154,7 +182,7 @@ Deno.serve(async (req) => {
   if (prev) {
     await supabase.from("whatsapp_send_log").insert({
       lead_id: leadId,
-      source_slug: lead.origem,
+      source_slug: effectiveOrigem,
       phone,
       status: "skipped_duplicate",
       error: `já enviado em ${prev.created_at}`,
@@ -222,7 +250,7 @@ Deno.serve(async (req) => {
     const msg = err instanceof Error ? err.message : String(err);
     await supabase.from("whatsapp_send_log").insert({
       lead_id: leadId,
-      source_slug: lead.origem,
+      source_slug: effectiveOrigem,
       phone,
       status: "error",
       error: `network: ${msg}`,
@@ -234,7 +262,7 @@ Deno.serve(async (req) => {
     const errMsg = `gptmaker ${response.status}`;
     await supabase.from("whatsapp_send_log").insert({
       lead_id: leadId,
-      source_slug: lead.origem,
+      source_slug: effectiveOrigem,
       phone,
       status: "error",
       error: errMsg,
@@ -249,7 +277,7 @@ Deno.serve(async (req) => {
   // 6. Sucesso → log + activity + flag no lead
   await supabase.from("whatsapp_send_log").insert({
     lead_id: leadId,
-    source_slug: lead.origem,
+    source_slug: effectiveOrigem,
     phone,
     status: "sent",
     gptmaker_response: {
