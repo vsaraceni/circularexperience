@@ -120,12 +120,21 @@ export default function MetaCampaignMapPanel({ sources }: Props) {
           {rows.map((r) => {
             const src = sources.find((s) => s.id === r.lead_source_id);
             const prod = products.find((p) => p.id === r.product_id);
+            const isGenericFallback = src?.slug === "meta_ads";
             return (
-              <div key={r.campaign_id} className="flex items-center justify-between text-sm border rounded-md px-3 py-2">
+              <div
+                key={r.campaign_id}
+                className={`flex items-center justify-between text-sm border rounded-md px-3 py-2 ${isGenericFallback ? "border-amber-400 bg-amber-50" : ""}`}
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <code className="text-xs">{r.campaign_id}</code>
                     {r.label && <span className="text-xs text-muted-foreground">— {r.label}</span>}
+                    {isGenericFallback && (
+                      <Badge className="bg-amber-200 text-amber-900 hover:bg-amber-200 gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Fonte genérica — leads não terão agente/produto específico
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-0.5">
                     Fonte: <Badge variant="outline" className="font-mono text-[10px]">{src?.slug ?? "?"}</Badge>
