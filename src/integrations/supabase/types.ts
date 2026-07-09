@@ -923,6 +923,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           badge_initials: string | null
           cargo: string | null
           created_at: string | null
@@ -931,9 +934,13 @@ export type Database = {
           id: string
           last_briefing_seen: string | null
           phone: string | null
+          rejection_reason: string | null
           role_label: string | null
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           badge_initials?: string | null
           cargo?: string | null
           created_at?: string | null
@@ -942,9 +949,13 @@ export type Database = {
           id: string
           last_briefing_seen?: string | null
           phone?: string | null
+          rejection_reason?: string | null
           role_label?: string | null
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           badge_initials?: string | null
           cargo?: string | null
           created_at?: string | null
@@ -953,6 +964,7 @@ export type Database = {
           id?: string
           last_briefing_seen?: string | null
           phone?: string | null
+          rejection_reason?: string | null
           role_label?: string | null
         }
         Relationships: []
@@ -1345,6 +1357,14 @@ export type Database = {
       }
     }
     Functions: {
+      approve_user: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _role_label?: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1414,6 +1434,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      reject_user: {
+        Args: { _reason?: string; _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
