@@ -22,6 +22,7 @@ const TYPE_ICONS: Record<string, string> = {
   follow_up_due: "📅",
   sla_breach: "🔴",
   proposal_expiring: "📄",
+  new_user_pending: "👤",
 };
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead }) => {
