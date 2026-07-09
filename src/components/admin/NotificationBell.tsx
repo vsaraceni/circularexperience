@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllRead, useNotificationRealtime } from "@/hooks/useNotifications";
+import { useNavigate } from "react-router-dom";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -27,6 +28,7 @@ const TYPE_ICONS: Record<string, string> = {
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead }) => {
   const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
   const { data: notifications = [] } = useNotifications(userId);
   useNotificationRealtime(userId);
   const unreadCount = useUnreadCount(userId);
@@ -37,6 +39,11 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ userId, onOpenLead 
   const handleClick = (n: typeof notifications[0]) => {
     if (!n.read) {
       markRead.mutate({ id: n.id, userId });
+    }
+    if (n.type === "new_user_pending") {
+      navigate("/admin/usuarios");
+      setOpen(false);
+      return;
     }
     if (n.lead_id && onOpenLead) {
       onOpenLead(n.lead_id);
