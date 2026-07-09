@@ -24,14 +24,14 @@ const Login = () => {
   const [mode, setMode] = useState<Mode>("magic");
   const isSignUp = mode === "signup";
   const isMagic = mode === "magic";
-  const { signIn, signUp, user, hasRole, loading: authLoading } = useAuth();
+  const { signIn, signUp, signOut, user, hasRole, approvalStatus, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!authLoading && user && hasRole) {
+    if (!authLoading && user && hasRole && approvalStatus === "approved") {
       navigate("/admin/pipeline", { replace: true });
     }
-  }, [authLoading, user, hasRole, navigate]);
+  }, [authLoading, user, hasRole, approvalStatus, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +55,9 @@ const Login = () => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success("Conta criada! Verifique seu email para confirmar o cadastro.");
+          toast.success(
+            "Cadastro enviado! Aguarde a liberação de um administrador para acessar o CRM.",
+          );
         }
       } else {
         const { error } = await signIn(email, password);
@@ -63,7 +65,6 @@ const Login = () => {
           toast.error(error.message);
         } else {
           toast.success("Login realizado com sucesso!");
-          navigate("/admin/pipeline");
         }
       }
     } catch (error) {
