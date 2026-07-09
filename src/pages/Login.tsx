@@ -116,6 +116,25 @@ const Login = () => {
     : "Entrar";
 
   return (
+    user && !authLoading && (approvalStatus === "pending" || approvalStatus === "rejected" || (approvalStatus === "approved" && !hasRole)) ? (
+      <div className="min-h-screen flex items-center justify-center bg-background px-6">
+        <div className="w-full max-w-md space-y-6 text-center">
+          <LogoImage src={logo} alt="Movimento Circular" className="h-10 mx-auto" />
+          <div className="rounded-lg border border-border bg-card p-8 space-y-4">
+            <h1 className="text-2xl font-bold text-foreground">
+              {approvalStatus === "rejected" ? "Acesso não autorizado" : "Cadastro em análise"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {approvalStatus === "rejected"
+                ? "Seu acesso ao CRM foi negado por um administrador. Entre em contato caso ache que isto é um engano."
+                : "Seu cadastro foi recebido e está aguardando aprovação de um administrador. Você receberá acesso assim que for liberado."}
+            </p>
+            <p className="text-xs text-muted-foreground">Logado como <strong>{user.email}</strong></p>
+            <Button variant="outline" className="w-full" onClick={() => signOut()}>Sair</Button>
+          </div>
+        </div>
+      </div>
+    ) : (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       {/* Left — form */}
       <div className="flex items-center justify-center px-6 py-10 lg:px-12">
@@ -275,6 +294,7 @@ const Login = () => {
         </div>
       </div>
     </div>
+    )
   );
 };
 
