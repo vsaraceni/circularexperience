@@ -13,6 +13,7 @@ import PerformanceDashboard from "./pages/admin/PerformanceDashboard";
 import Pipeline from "./pages/admin/Pipeline";
 import Products from "./pages/admin/Products";
 import Integrations from "./pages/admin/Integrations";
+import UsersAdmin from "./pages/admin/Users";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -87,6 +88,14 @@ const App = () => (
             element={
               <ProtectedRoute requireAdmin>
                 <Integrations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <ProtectedRoute requireAdmin>
+                <UsersAdmin />
               </ProtectedRoute>
             }
           />

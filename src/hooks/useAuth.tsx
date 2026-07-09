@@ -7,6 +7,9 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasRole, setHasRole] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<
+    "pending" | "approved" | "rejected" | null
+  >(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,15 +17,25 @@ export function useAuth() {
     let initialResolved = false;
 
     const checkRole = async (userId: string) => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
+      const [{ data: roleData, error: roleError }, { data: profileData }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("approval_status")
+          .eq("id", userId)
+          .maybeSingle(),
+      ]);
 
       if (!isMounted) return;
-      setHasRole(!error && !!data);
-      setIsAdmin(!error && data?.role === "admin");
+      setHasRole(!roleError && !!roleData);
+      setIsAdmin(!roleError && roleData?.role === "admin");
+      setApprovalStatus(
+        ((profileData as any)?.approval_status as
+          | "pending"
+          | "approved"
+          | "rejected"
+          | undefined) ?? null,
+      );
       setLoading(false);
     };
 
@@ -46,6 +59,7 @@ export function useAuth() {
         // before the persisted session is restored.
         setIsAdmin(false);
         setHasRole(false);
+        setApprovalStatus(null);
         setLoading(false);
       }
     });
@@ -62,6 +76,7 @@ export function useAuth() {
       } else {
         setIsAdmin(false);
         setHasRole(false);
+        setApprovalStatus(null);
         setLoading(false);
       }
     });
@@ -91,5 +106,5 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, session, isAdmin, hasRole, loading, signIn, signUp, signOut };
+  return { user, session, isAdmin, hasRole, approvalStatus, loading, signIn, signUp, signOut };
 }
