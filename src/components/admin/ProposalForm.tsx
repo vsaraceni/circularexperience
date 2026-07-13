@@ -246,7 +246,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
       const [{ data: prodData }, { data: masterData }, { data: srcData }] = await Promise.all([
         supabase.from("products").select("id, slug, name, default_title_template, default_scope, default_considerations").eq("is_active", true).order("sort_order"),
         supabase.from("proposal_master_assets").select("id, product_id, version, label, is_active, uploaded_at").order("uploaded_at", { ascending: false }),
-        supabase.from("lead_sources").select("slug, nome").eq("ativo", true).order("nome"),
+        supabase.rpc("list_active_lead_sources" as any),
       ]);
       const prods = (prodData || []) as ProductOption[];
       const mstrs = (masterData || []) as MasterOption[];
