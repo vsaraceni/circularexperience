@@ -1286,24 +1286,6 @@ export type Database = {
       }
     }
     Views: {
-      lead_sources_public: {
-        Row: {
-          ativo: boolean | null
-          nome: string | null
-          slug: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          nome?: string | null
-          slug?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          nome?: string | null
-          slug?: string | null
-        }
-        Relationships: []
-      }
       vw_proposals_leads: {
         Row: {
           assigned_to: string | null
@@ -1435,6 +1417,13 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { uid: string }; Returns: boolean }
+      list_active_lead_sources: {
+        Args: never
+        Returns: {
+          nome: string
+          slug: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
