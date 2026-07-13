@@ -1417,6 +1417,13 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { uid: string }; Returns: boolean }
+      list_active_lead_sources: {
+        Args: never
+        Returns: {
+          nome: string
+          slug: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
