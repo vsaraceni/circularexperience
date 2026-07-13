@@ -1286,6 +1286,24 @@ export type Database = {
       }
     }
     Views: {
+      lead_sources_public: {
+        Row: {
+          ativo: boolean | null
+          nome: string | null
+          slug: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          nome?: string | null
+          slug?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          nome?: string | null
+          slug?: string | null
+        }
+        Relationships: []
+      }
       vw_proposals_leads: {
         Row: {
           assigned_to: string | null
