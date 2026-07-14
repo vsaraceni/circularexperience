@@ -1,0 +1,1 @@
+CREATE POLICY "Users can read masters" ON public.proposal_master_assets FOR SELECT USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'user'::app_role));
