@@ -84,6 +84,7 @@ const LeadList: React.FC<LeadListProps> = ({ leads, onGenerateProposal, onLeadUp
           sender_name: authorDefaults?.author_name || "",
           sender_email: authorDefaults?.author_email || "",
           sender_phone: authorDefaults?.author_phone || "",
+          sender_user_id: (await supabase.auth.getUser()).data.user?.id,
         },
       });
 
