@@ -133,11 +133,9 @@ export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
                   <ProfileEditor userId={user.id} onProfileUpdated={fetchProfile} />
                 </div>
               )}
-              {isAdmin && (
-                <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
-                  <EmailTemplateEditor />
-                </div>
-              )}
+              <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
+                <EmailTemplateEditor />
+              </div>
               {isAdmin && (
                 <div className="[&>button]:w-full [&>button]:justify-start [&>button]:gap-2 [&>button]:rounded-lg [&>button]:px-2 [&>button]:py-1.5 [&>button]:text-sm [&>button]:font-normal">
                   <DigestReportDialog />
