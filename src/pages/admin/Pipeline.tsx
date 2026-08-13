@@ -236,6 +236,7 @@ const Pipeline = () => {
           lead_id: lead.id, name: lead.name, email: lead.email, company: lead.company,
           cargo: lead.cargo, sender_name: authorDefaults.author_name,
           sender_email: authorDefaults.author_email, sender_phone: authorDefaults.author_phone,
+          sender_user_id: user!.id,
         },
       });
       if (error) throw error;
