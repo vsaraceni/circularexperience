@@ -118,12 +118,36 @@ interface UrgencyBadgeProps {
   hasPendingFollowUp?: boolean;
 }
 
-export const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; icon: React.ReactNode; label: string }> = {
-  normal:    { bg: "#E8F5E9", color: "#2E7D32", icon: <CheckCircle2 className="h-3 w-3" />,   label: "No prazo" },
-  scheduled: { bg: "#EDE7F6", color: "#5E35B1", icon: <CalendarClock className="h-3 w-3" />, label: "Agendado" },
-  today:     { bg: "#FFF3E0", color: "#E65100", icon: <AlarmClock className="h-3 w-3" />,    label: "Hoje" },
-  warning:   { bg: "#FFFDE7", color: "#F9A825", icon: <AlertTriangle className="h-3 w-3" />, label: "Atenção" },
-  critical:  { bg: "#FDEDED", color: "#D32F2F", icon: <AlertCircle className="h-3 w-3" />,   label: "Vencido" },
+export const LEVEL_STYLES: Record<UrgencyLevel, { bg: string; color: string; border: string; solid: string; icon: React.ReactNode; label: string }> = {
+  normal:    { bg: "hsl(var(--status-ontime) / 0.08)",    color: "hsl(var(--status-ontime))",    border: "hsl(var(--status-ontime) / 0.28)",    solid: "hsl(var(--status-ontime))",    icon: <CheckCircle2 className="h-3 w-3" />,   label: "No prazo" },
+  scheduled: { bg: "hsl(var(--status-scheduled) / 0.08)", color: "hsl(var(--status-scheduled))", border: "hsl(var(--status-scheduled) / 0.28)", solid: "hsl(var(--status-scheduled))", icon: <CalendarClock className="h-3 w-3" />, label: "Agendado" },
+  today:     { bg: "hsl(var(--status-today) / 0.09)",     color: "hsl(var(--status-today))",     border: "hsl(var(--status-today) / 0.30)",     solid: "hsl(var(--status-today))",     icon: <AlarmClock className="h-3 w-3" />,    label: "Hoje" },
+  warning:   { bg: "hsl(var(--status-warning) / 0.12)",   color: "hsl(45 96% 34%)",              border: "hsl(var(--status-warning) / 0.35)",   solid: "hsl(var(--status-warning))",   icon: <AlertTriangle className="h-3 w-3" />, label: "Atenção" },
+  critical:  { bg: "hsl(var(--status-critical) / 0.08)",  color: "hsl(var(--status-critical))",  border: "hsl(var(--status-critical) / 0.28)",  solid: "hsl(var(--status-critical))",  icon: <AlertCircle className="h-3 w-3" />,   label: "Vencido" },
+};
+
+/**
+ * Marcador de estado — losango sólido com halo suave.
+ * Substitui a antiga barra lateral colorida.
+ */
+export const StatusMarker: React.FC<{ level: UrgencyLevel; title?: string; className?: string }> = ({ level, title, className }) => {
+  const s = LEVEL_STYLES[level];
+  return (
+    <span
+      role="img"
+      aria-label={title || s.label}
+      title={title || s.label}
+      className={`inline-block shrink-0 ${className || ""}`}
+      style={{
+        width: 7,
+        height: 7,
+        background: s.solid,
+        borderRadius: 2,
+        transform: "rotate(45deg)",
+        boxShadow: `0 0 0 3px ${s.bg}`,
+      }}
+    />
+  );
 };
 
 /** Format the badge text given the urgency level + context. */
@@ -162,17 +186,18 @@ const UrgencyBadge: React.FC<UrgencyBadgeProps> = ({ stage, stageUpdatedAt, last
 
   const level = getUrgencyLevel(stage, stageUpdatedAt, lastActivityAt, fu);
   const text = formatBadgeText(level, stage, stageUpdatedAt, lastActivityAt, fu);
-  if (!text) return null;
   const styles = LEVEL_STYLES[level];
+  const label = level === "critical" ? "Atrasado" : styles.label;
 
   return (
     <span
-      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-xl whitespace-nowrap"
-      style={{ background: styles.bg, color: styles.color }}
-      title={`${styles.label} · ${text}`}
+      className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.04em] px-1.5 py-[3px] rounded-[5px] whitespace-nowrap"
+      style={{ background: styles.bg, color: styles.color, border: `1px solid ${styles.border}` }}
+      title={text ? `${styles.label} · ${text}` : styles.label}
     >
       {styles.icon}
-      {text}
+      {label}
+      {text && <span className="opacity-70 font-medium normal-case tracking-normal">· {text}</span>}
     </span>
   );
 };
