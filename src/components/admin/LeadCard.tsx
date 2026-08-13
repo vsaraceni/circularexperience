@@ -279,7 +279,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
 
       {/* Actions */}
       {actions.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5 flex-wrap pt-1.5 mt-0.5 border-t" style={{ borderColor: 'hsl(var(--color-border) / 0.35)' }}>
           {actions.map((a) => (
             <Tooltip key={a.action}>
               <TooltipTrigger asChild>
