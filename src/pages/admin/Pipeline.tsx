@@ -53,6 +53,7 @@ const Pipeline = () => {
 
   // Proposal form state (for generating proposal from kanban)
   const [showForm, setShowForm] = useState(false);
+  const [showNewLead, setShowNewLead] = useState(false);
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
 
   const followUpsByLead = useMemo(() => {
@@ -337,6 +338,14 @@ const Pipeline = () => {
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: 'hsl(var(--color-bg-page))' }}>
       <CrmNavbar currentModule="pipeline" />
       {user && <DailyBriefing userId={user.id} />}
+      {user && (
+        <NewLeadDialog
+          open={showNewLead}
+          onOpenChange={setShowNewLead}
+          userId={user.id}
+          onCreated={() => fetchLeads()}
+        />
+      )}
 
       {showLost ? (
         <main className="flex-1 overflow-auto px-6 py-5">
