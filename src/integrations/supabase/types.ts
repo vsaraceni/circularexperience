@@ -1198,6 +1198,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_email_overrides: {
+        Row: {
+          body_html: string | null
+          created_at: string
+          id: string
+          subject: string | null
+          template_slug: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body_html?: string | null
+          created_at?: string
+          id?: string
+          subject?: string | null
+          template_slug: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body_html?: string | null
+          created_at?: string
+          id?: string
+          subject?: string | null
+          template_slug?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1377,6 +1407,14 @@ export type Database = {
       generate_daily_snapshot: {
         Args: { target_date?: string }
         Returns: undefined
+      }
+      get_email_template_base: {
+        Args: { p_slug: string }
+        Returns: {
+          body_html: string
+          from_name: string
+          subject: string
+        }[]
       }
       get_proposal_by_slug: {
         Args: { p_slug: string }

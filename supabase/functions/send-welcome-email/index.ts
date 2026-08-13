@@ -17,6 +17,8 @@ interface WelcomeData {
   sender_name?: string;
   sender_email?: string;
   sender_phone?: string;
+  /** Quando presente, usa a versão pessoal do e-mail desse usuário (se existir). */
+  sender_user_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -80,6 +82,24 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Personalização individual: só no envio manual, quando o remetente é conhecido.
+    let subjectSource = template.subject;
+    let bodySource = template.body_html;
+    if (data.sender_user_id) {
+      const { data: ownTemplate, error: ownError } = await supabaseAdmin
+        .from("user_email_overrides")
+        .select("subject, body_html")
+        .eq("user_id", data.sender_user_id)
+        .eq("template_slug", "lead-welcome")
+        .maybeSingle();
+      if (ownError) {
+        console.warn("Failed to load user email override, falling back to team default", ownError);
+      } else if (ownTemplate) {
+        subjectSource = ownTemplate.subject || subjectSource;
+        bodySource = ownTemplate.body_html || bodySource;
+      }
+    }
+
     const firstName = data.name.split(" ")[0];
 
     const replacePlaceholders = (text: string) =>
@@ -93,8 +113,8 @@ const handler = async (req: Request): Promise<Response> => {
         .replace(/\{\{sender_email\}\}/g, senderEmail)
         .replace(/\{\{sender_phone\}\}/g, senderPhone);
 
-    const subject = replacePlaceholders(template.subject);
-    const body = replacePlaceholders(template.body_html);
+    const subject = replacePlaceholders(subjectSource);
+    const body = replacePlaceholders(bodySource);
     const fromName = replacePlaceholders(template.from_name);
     const fromEmail = replacePlaceholders(template.from_email);
     const fromField = `${fromName} <${fromEmail}>`;

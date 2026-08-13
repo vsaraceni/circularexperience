@@ -16,6 +16,8 @@ import {
 import { Mail, Eye, Send, Clock, BarChart3, Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
+import MyWelcomeEmail from "./MyWelcomeEmail";
+import { useAuth } from "@/hooks/useAuth";
 
 const VARIABLES_LEAD = [
   { key: "{{name}}", label: "Primeiro nome" },
@@ -66,6 +68,7 @@ const TRANSACTIONAL_META: Record<string, { icon: React.ReactNode; trigger: strin
 };
 
 const EmailTemplateEditor = () => {
+  const { user, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -132,11 +135,11 @@ const EmailTemplateEditor = () => {
   };
 
   useEffect(() => {
-    if (open) {
+    if (open && isAdmin) {
       fetchTemplate();
       fetchTransactionalPreviews();
     }
-  }, [open]);
+  }, [open, isAdmin]);
 
   const handleSave = async () => {
     if (!templateId) return;
@@ -239,13 +242,21 @@ const EmailTemplateEditor = () => {
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="welcome" className="w-full">
-          <TabsList className="w-full grid grid-cols-4 mb-4">
-            <TabsTrigger value="welcome" className="text-xs">Boas-Vindas</TabsTrigger>
-            <TabsTrigger value="daily-digest" className="text-xs">Missões do Dia</TabsTrigger>
-            <TabsTrigger value="call-scheduled-alert" className="text-xs">Alerta Proposta</TabsTrigger>
-            <TabsTrigger value="daily-performance" className="text-xs">Performance</TabsTrigger>
+        <Tabs defaultValue="mine" className="w-full">
+          <TabsList className={`w-full grid ${isAdmin ? "grid-cols-5" : "grid-cols-1"} mb-4`}>
+            <TabsTrigger value="mine" className="text-xs">Meu E-mail</TabsTrigger>
+            {isAdmin && <TabsTrigger value="welcome" className="text-xs">Padrão da Equipe</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="daily-digest" className="text-xs">Missões do Dia</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="call-scheduled-alert" className="text-xs">Alerta Proposta</TabsTrigger>}
+            {isAdmin && <TabsTrigger value="daily-performance" className="text-xs">Performance</TabsTrigger>}
           </TabsList>
+
+          <TabsContent value="mine">
+            {open && <MyWelcomeEmail userId={user?.id} />}
+          </TabsContent>
+
+          {isAdmin && (
+          <>
 
           {/* Welcome email - editable */}
           <TabsContent value="welcome">
@@ -437,6 +448,8 @@ const EmailTemplateEditor = () => {
               </TabsContent>
             );
           })}
+          </>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>

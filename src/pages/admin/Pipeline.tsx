@@ -21,6 +21,7 @@ import ProposalForm from "@/components/admin/ProposalForm";
 import CrmNavbar from "@/components/admin/CrmNavbar";
 import DailyBriefing from "@/components/admin/DailyBriefing";
 import BulkEmailDialog from "@/components/admin/BulkEmailDialog";
+import NewLeadDialog from "@/components/admin/NewLeadDialog";
 import { createManualLeadForProposal } from "@/lib/manualLead";
 
 import type { Proposal } from "./Proposals";
@@ -52,6 +53,7 @@ const Pipeline = () => {
 
   // Proposal form state (for generating proposal from kanban)
   const [showForm, setShowForm] = useState(false);
+  const [showNewLead, setShowNewLead] = useState(false);
   const [prefill, setPrefill] = useState<{ company_name?: string; contact_name?: string; contact_role?: string; lead_id?: string } | undefined>();
 
   const followUpsByLead = useMemo(() => {
@@ -236,6 +238,7 @@ const Pipeline = () => {
           lead_id: lead.id, name: lead.name, email: lead.email, company: lead.company,
           cargo: lead.cargo, sender_name: authorDefaults.author_name,
           sender_email: authorDefaults.author_email, sender_phone: authorDefaults.author_phone,
+          sender_user_id: user!.id,
         },
       });
       if (error) throw error;
@@ -335,6 +338,14 @@ const Pipeline = () => {
     <div className="h-screen overflow-hidden flex flex-col" style={{ background: 'hsl(var(--color-bg-page))' }}>
       <CrmNavbar currentModule="pipeline" />
       {user && <DailyBriefing userId={user.id} />}
+      {user && (
+        <NewLeadDialog
+          open={showNewLead}
+          onOpenChange={setShowNewLead}
+          userId={user.id}
+          onCreated={() => fetchLeads()}
+        />
+      )}
 
       {showLost ? (
         <main className="flex-1 overflow-auto px-6 py-5">
@@ -586,6 +597,15 @@ const Pipeline = () => {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 rounded-lg font-medium text-[10px]"
+              onClick={() => setShowNewLead(true)}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> <span className="hidden md:inline">Novo Lead</span><span className="md:hidden">+</span>
+            </Button>
 
             <Button
               size="sm"
