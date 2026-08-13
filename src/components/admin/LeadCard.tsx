@@ -126,16 +126,23 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
   const nextAction = getNextActionLabel(lead, hasProposal);
   const actions = getStageActions(lead, hasProposal);
 
-  const borderLeftColor = urgencyLevel === "critical" ? '#D32F2F' : urgencyLevel === "warning" ? '#F4A736' : '#66BB6A';
   const noSlaStages = new Set(["fechado", "perdido"]);
-  const showBorder = !noSlaStages.has(lead.kanban_stage);
+  const showStatus = !noSlaStages.has(lead.kanban_stage);
+  const levelStyle = LEVEL_STYLES[urgencyLevel];
+
+  // Follow-up atrasado/hoje já é absorvido pelo token único de status.
+  const followUpNote = followUpStatus?.hasOverdue
+    ? "Follow-up atrasado"
+    : followUpStatus?.hasToday
+      ? "Follow-up hoje"
+      : null;
 
   const style: React.CSSProperties = {
     opacity: isDragging ? 0.3 : 1,
     boxShadow: isDragging ? 'var(--shadow-card-drag)' : 'var(--shadow-card-rest)',
     transform: isDragging ? 'rotate(2deg)' : undefined,
-    borderLeft: showBorder ? `3px solid ${borderLeftColor}` : undefined,
-    background: isCritical ? '#FFFAFA' : 'white',
+    border: `1px solid ${showStatus && isCritical ? levelStyle.border : 'hsl(var(--color-border) / 0.7)'}`,
+    background: showStatus && isCritical ? levelStyle.bg : 'white',
   };
 
   return (
@@ -144,7 +151,7 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
       style={style}
       {...attributes}
       {...listeners}
-      className="rounded-[10px] p-3 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-[0_4px_12px_rgba(0,0,0,0.14)] relative group"
+      className="rounded-xl p-3.5 cursor-grab active:cursor-grabbing transition-shadow hover:shadow-[var(--shadow-card-hover)] relative group"
       onClick={(e) => {
         if (!(e.target as HTMLElement).closest("button")) {
           onOpenDrawer(lead);
@@ -172,53 +179,57 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
         </Tooltip>
       )}
 
-      {/* Row 1: Company + Urgency Badge */}
-      <div className="flex items-start justify-between gap-1 mb-1.5">
-        <h4 className="font-semibold text-[14px] truncate flex items-center gap-1" style={{ color: 'hsl(var(--color-text-primary))' }}>
-          {tierInfo ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: tierInfo.color }} aria-hidden="true" />
-              </TooltipTrigger>
-              <TooltipContent>{tierInfo.label} — {tierInfo.desc}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
-          )}
+      {/* Linha 1: nome da empresa em linha exclusiva */}
+      <div className="flex items-center gap-2 mb-1.5 pr-5">
+        {showStatus && (
+          <StatusMarker
+            level={urgencyLevel}
+            title={`${levelStyle.label}${followUpNote ? ` · ${followUpNote}` : ""}`}
+            className="ml-0.5 mr-0.5"
+          />
+        )}
+        {tierInfo ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: tierInfo.color }} aria-hidden="true" />
+            </TooltipTrigger>
+            <TooltipContent>{tierInfo.label} — {tierInfo.desc}</TooltipContent>
+          </Tooltip>
+        ) : (
+          <Building2 className="h-3.5 w-3.5 shrink-0" style={{ color: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
+        )}
+        <h4
+          className="font-display font-semibold text-[14px] leading-tight truncate min-w-0"
+          style={{ color: 'hsl(var(--color-text-primary))' }}
+          title={lead.company || "Sem empresa"}
+        >
           {lead.company || "Sem empresa"}
         </h4>
-        <div className="flex items-center gap-1 shrink-0">
+      </div>
+
+      {/* Linha 2: meta-status (token único + calor) */}
+      {(showStatus || (lead.lead_heat != null && lead.lead_heat > 0)) && (
+        <div className="flex items-center gap-1.5 flex-wrap mb-2">
+          {showStatus && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <UrgencyBadge
+                    stage={lead.kanban_stage}
+                    stageUpdatedAt={lead.stage_updated_at || null}
+                    lastActivityAt={lead.last_activity_at || null}
+                    nextFollowUp={nextFollowUp ?? null}
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{followUpNote || levelStyle.label}</TooltipContent>
+            </Tooltip>
+          )}
           {lead.lead_heat != null && lead.lead_heat > 0 && (
             <HeatDots value={lead.lead_heat} size="sm" />
           )}
-          <UrgencyBadge
-            stage={lead.kanban_stage}
-            stageUpdatedAt={lead.stage_updated_at || null}
-            lastActivityAt={lead.last_activity_at || null}
-            nextFollowUp={nextFollowUp ?? null}
-          />
-          {followUpStatus?.hasOverdue && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#FDEDED', color: '#D32F2F' }}>
-                  <CalendarClock className="h-3 w-3" /> Atrasado
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Follow-up atrasado</TooltipContent>
-            </Tooltip>
-          )}
-          {followUpStatus?.hasToday && !followUpStatus?.hasOverdue && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: '#FFFDE7', color: '#F9A825' }}>
-                  <CalendarClock className="h-3 w-3" /> Hoje
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Follow-up agendado para hoje</TooltipContent>
-            </Tooltip>
-          )}
         </div>
-      </div>
+      )}
 
       {lead.kanban_stage === "fechado" && lead.closed_at && (
         <p className="text-[10px] mb-1 flex items-center gap-1" style={{ color: 'hsl(var(--color-text-muted))' }}>
@@ -251,15 +262,16 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead, profiles = [], hasProposal = 
       </div>
 
       {/* Divider */}
-      <div className="border-t mb-2" style={{ borderColor: '#F0F0F0' }} />
+      <div className="border-t mb-2" style={{ borderColor: 'hsl(var(--color-border) / 0.5)' }} />
 
       {/* Next action pill */}
       {nextAction && (
         <div className="mb-2">
           <span
-            className="inline-block text-[11px] font-medium px-2.5 py-0.5 rounded-full"
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md"
             style={{ background: 'hsl(var(--color-bg-subtle))', color: 'hsl(var(--color-text-secondary))' }}
           >
+            <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: 'hsl(var(--color-text-muted))' }} aria-hidden="true" />
             {nextAction}
           </span>
         </div>
