@@ -81,6 +81,13 @@
     --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.14);
     --shadow-card-drag: 0 8px 24px rgba(0,0,0,0.18);
 
+    /* Estado / SLA do lead (selo de estado) */
+    --status-ontime: 122 39% 41%;
+    --status-scheduled: 262 52% 47%;
+    --status-today: 27 100% 45%;
+    --status-warning: 45 96% 45%;
+    --status-critical: 0 65% 51%;
+
     /* Gradients — using brand roxo #5F2558 */
     --gradient-primary: linear-gradient(135deg, hsl(307 44% 26%) 0%, hsl(307 44% 18%) 100%);
     --gradient-secondary: linear-gradient(135deg, hsl(186 61% 47%) 0%, hsl(186 61% 37%) 100%);

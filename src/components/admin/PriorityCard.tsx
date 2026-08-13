@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Building2, User, Briefcase, Target, DollarSign } from "lucide-react";
-import UrgencyBadge from "./UrgencyBadge";
+import UrgencyBadge, { getUrgencyLevel, StatusMarker, LEVEL_STYLES } from "./UrgencyBadge";
 import HeatDots from "./HeatDots";
 import type { Lead } from "./LeadList";
 
@@ -46,20 +46,22 @@ interface PriorityCardProps {
 const PriorityCard: React.FC<PriorityCardProps> = ({ lead, nextFollowUp, onClick }) => {
   const stageColor = STAGE_COLORS[lead.kanban_stage] || "#9E9E9E";
   const porteLabel = lead.colaboradores ? COLABORADORES_LABELS[lead.colaboradores] || lead.colaboradores.replace(/_/g, " ") : null;
+  const urgencyLevel = getUrgencyLevel(lead.kanban_stage, lead.stage_updated_at || null, lead.last_activity_at || null, nextFollowUp ?? null);
+  const showStatus = lead.kanban_stage !== "fechado" && lead.kanban_stage !== "perdido";
+  const levelStyle = LEVEL_STYLES[urgencyLevel];
 
   return (
     <button
       onClick={() => onClick(lead)}
       className="w-full text-left rounded-xl border p-3 flex items-center gap-3 transition-all hover:shadow-md group"
       style={{
-        borderColor: 'hsl(var(--color-border))',
-        background: 'hsl(var(--background))',
-        borderLeftWidth: 4,
-        borderLeftColor: stageColor,
+        borderColor: showStatus && urgencyLevel === "critical" ? levelStyle.border : 'hsl(var(--color-border))',
+        background: showStatus && urgencyLevel === "critical" ? levelStyle.bg : 'hsl(var(--background))',
       }}
     >
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
+          {showStatus && <StatusMarker level={urgencyLevel} title={levelStyle.label} />}
           <h4 className="font-semibold text-sm truncate" style={{ color: 'hsl(var(--color-text-primary))' }}>
             {lead.company || "Sem empresa"}
           </h4>
