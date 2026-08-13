@@ -448,6 +448,8 @@ const EmailTemplateEditor = () => {
               </TabsContent>
             );
           })}
+          </>
+          )}
         </Tabs>
       </DialogContent>
     </Dialog>
