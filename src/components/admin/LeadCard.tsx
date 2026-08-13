@@ -3,11 +3,11 @@ import HeatDots from "./HeatDots";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle, X, MessageSquare, Calendar, CalendarClock } from "lucide-react";
+import { Building2, User, FileText, Send, Linkedin, Copy, CalendarPlus, CheckCircle, X, MessageSquare, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import UrgencyBadge, { getUrgencyLevel } from "./UrgencyBadge";
+import UrgencyBadge, { getUrgencyLevel, StatusMarker, LEVEL_STYLES } from "./UrgencyBadge";
 import type { Lead } from "./LeadList";
 
 interface Profile {
