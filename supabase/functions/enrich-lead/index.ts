@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
-      .select("email, company, cargo, colaboradores, company_description, company_website, suggested_tier, tier_confirmed")
+      .select("email, company, cargo, colaboradores, company_description, company_website, suggested_tier, tier_confirmed, organization_id")
       .eq("id", lead_id)
       .single();
 
@@ -180,6 +180,18 @@ Deno.serve(async (req) => {
         ? ({ suggested_tier: tierResult.suggested_tier, reasoning: tierResult.reasoning } as any)
         : null,
     });
+
+    // Encadeia enriquecimento da organização vinculada (não bloqueia resposta)
+    const orgId = (lead as any).organization_id as string | null;
+    if (orgId) {
+      try {
+        await supabase.functions.invoke("enrich-organization", {
+          body: { organization_id: orgId },
+        });
+      } catch (e) {
+        console.error("enrich-organization invoke failed:", e);
+      }
+    }
 
     return new Response(
       JSON.stringify({
