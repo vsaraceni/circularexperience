@@ -18,6 +18,10 @@ interface ProposalListProps {
   onStatusChange?: (id: string, status: string) => void;
   showStatusActions?: boolean;
   statusFilter?: string;
+  meta?: Record<
+    string,
+    { productName?: string | null; productColor?: string | null; sentAt?: string | null; authorName?: string | null }
+  >;
 }
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -27,6 +31,9 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   perdida: { label: "Perdida", variant: "destructive" },
 };
 
+const fmt = (value?: string | null) =>
+  value ? new Date(value.length <= 10 ? `${value}T12:00:00` : value).toLocaleDateString("pt-BR") : "—";
+
 const ProposalList: React.FC<ProposalListProps> = ({
   proposals,
   onEdit,
@@ -34,6 +41,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
   onStatusChange,
   showStatusActions = true,
   statusFilter,
+  meta = {},
 }) => {
   if (proposals.length === 0) {
     const emptyMessages: Record<string, string> = {
@@ -54,6 +62,9 @@ const ProposalList: React.FC<ProposalListProps> = ({
       {proposals.map((p) => {
         const status = (p as any).status || "rascunho";
         const config = statusConfig[status] || statusConfig.rascunho;
+        const info = meta[p.id] || {};
+        const expirada =
+          !!p.valid_until && new Date(`${p.valid_until}T23:59:59`).getTime() < Date.now();
 
         return (
           <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
@@ -63,12 +74,46 @@ const ProposalList: React.FC<ProposalListProps> = ({
                 <Badge variant={config.variant} className="text-xs flex-shrink-0">
                   {config.label}
                 </Badge>
+                {info.productName && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs flex-shrink-0"
+                    style={
+                      info.productColor
+                        ? { borderColor: info.productColor, color: info.productColor }
+                        : undefined
+                    }
+                  >
+                    {info.productName}
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground truncate">{p.company_name} — {p.contact_name}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {p.event_date && `Evento: ${new Date(p.event_date).toLocaleDateString("pt-BR")}`}
-                {p.valid_until && ` • Válida até: ${new Date(p.valid_until).toLocaleDateString("pt-BR")}`}
-              </p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1">
+                <span>Criada em: {fmt(p.created_at)}</span>
+                <span aria-hidden>•</span>
+                <span>Enviada em: {fmt(info.sentAt)}</span>
+                {info.authorName && (
+                  <>
+                    <span aria-hidden>•</span>
+                    <span>Por: {info.authorName}</span>
+                  </>
+                )}
+                {p.event_date && (
+                  <>
+                    <span aria-hidden>•</span>
+                    <span>Evento: {fmt(p.event_date)}</span>
+                  </>
+                )}
+                {p.valid_until && (
+                  <>
+                    <span aria-hidden>•</span>
+                    <span className={expirada ? "text-destructive font-medium" : undefined}>
+                      Válida até: {fmt(p.valid_until)}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
               {/* 1. Editar */}
