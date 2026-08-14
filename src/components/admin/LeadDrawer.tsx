@@ -141,6 +141,22 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const completeFollowUp = useCompleteFollowUp();
 
   // Fetch last proposal submission date for this lead
+  // Histórico de propostas da organização do lead (fallback: propostas do próprio lead)
+  const { data: orgProposals = [] } = useQuery({
+    queryKey: ["lead_org_proposals", lead?.id, (lead as any)?.organization_id],
+    queryFn: async () => {
+      const orgId = (lead as any)?.organization_id as string | undefined;
+      let query = supabase
+        .from("proposals")
+        .select("id, title, slug, status, investment, created_at, contact_name")
+        .order("created_at", { ascending: false });
+      query = orgId ? query.eq("organization_id", orgId) : query.eq("lead_id", lead!.id);
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !!lead?.id,
+  });
+
   const { data: lastSubmissionDate } = useQuery({
     queryKey: ["last_submission_date", lead?.id],
     queryFn: async () => {
