@@ -70,7 +70,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
           <div key={p.id} className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-foreground truncate">{p.title}</h3>
+                <h3 className="font-semibold text-foreground truncate">{p.company_name}</h3>
                 <Badge variant={config.variant} className="text-xs flex-shrink-0">
                   {config.label}
                 </Badge>
@@ -88,7 +88,7 @@ const ProposalList: React.FC<ProposalListProps> = ({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground truncate">{p.company_name} — {p.contact_name}</p>
+              <p className="text-sm text-muted-foreground truncate">{p.title} — {p.contact_name}</p>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1">
                 <span>Criada em: {fmt(p.created_at)}</span>
                 <span aria-hidden>•</span>
