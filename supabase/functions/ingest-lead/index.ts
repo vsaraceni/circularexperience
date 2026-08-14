@@ -374,14 +374,7 @@ Deno.serve(async (req) => {
     );
   }
 
-  // 10c. Enriquecimento automático (não bloqueia resposta)
-  EdgeRuntime.waitUntil(
-    supabase.functions
-      .invoke("enrich-lead", {
-        body: { lead_id: leadId },
-      })
-      .catch((err) => console.error("enrich-lead invoke failed:", err)),
-  );
+  // 10c. Enriquecimento automático: agora feito pelo trigger tg_leads_enrich_auto
 
   // 11. Log final
   await writeLog(supabase, {
