@@ -144,7 +144,7 @@ const OrganizationDrawer: React.FC<Props> = ({ org, open, onOpenChange }) => {
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Badge variant="outline" className="text-[10px]">{p.status}</Badge>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(`/apresentacao/${p.slug}`, "_blank")}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => window.open(`/apresentacao-print/${p.slug}`, "_blank")}>
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
                   </div>
