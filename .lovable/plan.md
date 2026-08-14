@@ -139,6 +139,43 @@ O trigger novo roda **antes** dos AFTER triggers de WhatsApp e e-mail, então o 
 
 Enriquecimento: o `enrich-lead` hoje grava site e descrição no lead. Passa a gravar também na organização, quando o campo lá estiver vazio — a inteligência acumula na entidade durável em vez de se perder por lead.
 
+## Enriquecimento da organização (Firecrawl + IA) — detalhamento
+
+O cadastro da organização não nasce vazio: ele é preenchido em três camadas, da mais confiável para a mais inferida.
+
+**Camada 1 — o que o lead já traz no formulário (confiança alta)**
+
+| Campo do lead | Vai para a organização |
+|---|---|
+| `company` | nome |
+| `colaboradores` (faixa declarada) | faixa de funcionários + porte derivado |
+| `company_website` | site |
+| domínio do e-mail corporativo | domínio canônico (se não for genérico) |
+| `origem` / `product_id` | primeiro contato e interesse inicial |
+
+Derivação de porte a partir da faixa declarada: até 10 = micro; 11-100 = pequena; 101-500 = média; 501-5000 = grande; acima de 5000 = enterprise. Fica editável — declaração do lead é palpite, não verdade.
+
+**Camada 2 — Firecrawl + IA (já instalado, hoje só alimenta o lead)**
+
+O `enrich-lead` já busca o site oficial pelo nome da empresa, faz scrape do domínio corporativo, gera descrição com IA e sugere tier com sinais estruturados (`is_multinational`, `is_global_brand`, faturamento e headcount globais estimados). Hoje tudo isso morre dentro da linha do lead.
+
+Passa a gravar também na organização: site, descrição, setor, e — a partir dos sinais de tier já produzidos — faixa de faturamento e faixa de funcionários globais, além de marcar `multinacional`. O tier deixa de ser um atributo do lead e passa a ser **atributo da organização**, o que é o correto: a Ultragaz é Tier 1 independentemente de qual pessoa preencheu o formulário. O lead continua exibindo o tier, lendo da organização.
+
+**Camada 3 — quando enriquecer**
+
+```text
+Lead novo chega
+   -> resolve organizacao
+   -> organizacao ja enriquecida nos ultimos 180 dias?  SIM -> nao faz nada (economiza credito)
+                                                        NAO -> enfileira enrich por ORGANIZACAO
+```
+
+Isso corrige um desperdício atual: hoje cada novo lead da mesma empresa dispara um enriquecimento novo. Passando a chave para a organização, a segunda pessoa da Ultragaz aproveita o enriquecimento da primeira — menos chamadas de Firecrawl e de IA, e dado consistente entre leads.
+
+A função `enrich-lead` é mantida (nada quebra) e ganha um modo "por organização": aceita `organization_id`, grava na organização e propaga para os leads vinculados que ainda estiverem sem descrição. Campos editados manualmente por um usuário ficam marcados e o enriquecimento nunca os sobrescreve.
+
+**Backfill**: ao criar as organizações, os melhores valores já existentes entre os leads do grupo são consolidados — site mais recente não vazio, descrição mais longa, maior tier sugerido, maior faixa de colaboradores. As ~487 organizações nascem, em boa parte, já enriquecidas, sem nenhuma chamada externa.
+
 ## Fluxo 2 — Lead manual (botão "Novo Lead" no Pipeline)
 
 O diálogo atual já detecta duplicidade por e-mail. Evolui para busca em duas etapas:
