@@ -11,6 +11,7 @@ import Templates from "./pages/admin/Templates";
 import StrategicDashboard from "./pages/admin/StrategicDashboard";
 import PerformanceDashboard from "./pages/admin/PerformanceDashboard";
 import Pipeline from "./pages/admin/Pipeline";
+import Base from "./pages/admin/Base";
 import Products from "./pages/admin/Products";
 import Integrations from "./pages/admin/Integrations";
 import UsersAdmin from "./pages/admin/Users";
@@ -48,6 +49,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/base"
+            element={
+              <ProtectedRoute>
+                <Base />
               </ProtectedRoute>
             }
           />
