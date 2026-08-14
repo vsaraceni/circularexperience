@@ -4,7 +4,7 @@
 // Autenticado por API key cadastrada em `lead_sources` (bcrypt).
 //
 // POST https://<proj>.supabase.co/functions/v1/ingest-lead
-// Header: x-mc-api-key: <chave da source>
+// Header: x-api-key (ou x-mc-api-key): <chave da source>
 // Body:   ver _shared/ingest-types.ts (ingestPayloadSchema)
 //
 // Retorna { ok, status, lead_id?, error? }.
@@ -35,7 +35,7 @@ declare const EdgeRuntime: { waitUntil: (p: Promise<unknown>) => void };
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-mc-api-key",
+    "authorization, x-client-info, apikey, content-type, x-mc-api-key, x-api-key",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -93,7 +93,12 @@ Deno.serve(async (req) => {
 
   const ip = pickClientIp(req);
   const ua = pickUserAgent(req);
-  const apiKey = req.headers.get("x-mc-api-key");
+  const apiKey =
+    req.headers.get("x-api-key") ??
+    req.headers.get("x-mc-api-key") ??
+    (req.headers.get("authorization")?.toLowerCase().startsWith("bearer ")
+      ? req.headers.get("authorization")!.slice(7).trim()
+      : null);
 
   let rawBody: string;
   try {
