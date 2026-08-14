@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_leads_resolve_org_contact() FROM PUBLIC, anon, authenticated;
