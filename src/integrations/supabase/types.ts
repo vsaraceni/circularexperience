@@ -44,6 +44,101 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          area: string | null
+          cargo: string | null
+          cidade: string | null
+          consent_marketing: boolean
+          created_at: string
+          created_by: string | null
+          decisor: boolean
+          email: string | null
+          email_corporativo: string | null
+          emails_enviados: number
+          id: string
+          idioma: string | null
+          linkedin_url: string | null
+          nivel_hierarquico: string | null
+          nome: string
+          organization_id: string | null
+          origem_primeira: string | null
+          owner_id: string | null
+          status: string
+          tags: string[]
+          telefone: string | null
+          uf: string | null
+          ultimo_contato_em: string | null
+          unsubscribed_at: string | null
+          updated_at: string
+          whatsapp_enviados: number
+        }
+        Insert: {
+          area?: string | null
+          cargo?: string | null
+          cidade?: string | null
+          consent_marketing?: boolean
+          created_at?: string
+          created_by?: string | null
+          decisor?: boolean
+          email?: string | null
+          email_corporativo?: string | null
+          emails_enviados?: number
+          id?: string
+          idioma?: string | null
+          linkedin_url?: string | null
+          nivel_hierarquico?: string | null
+          nome: string
+          organization_id?: string | null
+          origem_primeira?: string | null
+          owner_id?: string | null
+          status?: string
+          tags?: string[]
+          telefone?: string | null
+          uf?: string | null
+          ultimo_contato_em?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          whatsapp_enviados?: number
+        }
+        Update: {
+          area?: string | null
+          cargo?: string | null
+          cidade?: string | null
+          consent_marketing?: boolean
+          created_at?: string
+          created_by?: string | null
+          decisor?: boolean
+          email?: string | null
+          email_corporativo?: string | null
+          emails_enviados?: number
+          id?: string
+          idioma?: string | null
+          linkedin_url?: string | null
+          nivel_hierarquico?: string | null
+          nome?: string
+          organization_id?: string | null
+          origem_primeira?: string | null
+          owner_id?: string | null
+          status?: string
+          tags?: string[]
+          telefone?: string | null
+          uf?: string | null
+          ultimo_contato_em?: string | null
+          unsubscribed_at?: string | null
+          updated_at?: string
+          whatsapp_enviados?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_snapshots: {
         Row: {
           acoes_sdr_dia: number
@@ -554,6 +649,7 @@ export type Database = {
           company_description: string | null
           company_website: string | null
           consent_marketing: boolean | null
+          contact_id: string | null
           created_at: string | null
           custom_fields: Json | null
           email: string
@@ -573,6 +669,7 @@ export type Database = {
           meta_last_event_at: string | null
           meta_last_event_sent: string | null
           name: string
+          organization_id: string | null
           origem: string
           origem_detalhe: string | null
           product_id: string | null
@@ -613,6 +710,7 @@ export type Database = {
           company_description?: string | null
           company_website?: string | null
           consent_marketing?: boolean | null
+          contact_id?: string | null
           created_at?: string | null
           custom_fields?: Json | null
           email: string
@@ -632,6 +730,7 @@ export type Database = {
           meta_last_event_at?: string | null
           meta_last_event_sent?: string | null
           name: string
+          organization_id?: string | null
           origem?: string
           origem_detalhe?: string | null
           product_id?: string | null
@@ -672,6 +771,7 @@ export type Database = {
           company_description?: string | null
           company_website?: string | null
           consent_marketing?: boolean | null
+          contact_id?: string | null
           created_at?: string | null
           custom_fields?: Json | null
           email?: string
@@ -691,6 +791,7 @@ export type Database = {
           meta_last_event_at?: string | null
           meta_last_event_sent?: string | null
           name?: string
+          organization_id?: string | null
           origem?: string
           origem_detalhe?: string | null
           product_id?: string | null
@@ -722,6 +823,20 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -875,6 +990,120 @@ export type Database = {
             referencedColumns: ["lead_id"]
           },
         ]
+      }
+      organizations: {
+        Row: {
+          bloqueado_para_campanhas: boolean
+          cidade: string | null
+          cnpj: string | null
+          consent_marketing: boolean
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          domain: string | null
+          enriched_at: string | null
+          faixa_faturamento: string | null
+          faixa_funcionarios: string | null
+          id: string
+          is_multinational: boolean
+          legal_name: string | null
+          linkedin_url: string | null
+          logo_url: string | null
+          manual_fields: string[]
+          maturidade_esg: number | null
+          name: string
+          name_normalized: string | null
+          owner_id: string | null
+          pais: string | null
+          porte: string | null
+          primeiro_contato_em: string | null
+          segmento: string | null
+          setor: string | null
+          status_relacionamento: string
+          tags: string[]
+          temas_interesse: string[]
+          tier: number | null
+          tier_reasoning: string | null
+          uf: string | null
+          ultima_interacao_em: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          bloqueado_para_campanhas?: boolean
+          cidade?: string | null
+          cnpj?: string | null
+          consent_marketing?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          domain?: string | null
+          enriched_at?: string | null
+          faixa_faturamento?: string | null
+          faixa_funcionarios?: string | null
+          id?: string
+          is_multinational?: boolean
+          legal_name?: string | null
+          linkedin_url?: string | null
+          logo_url?: string | null
+          manual_fields?: string[]
+          maturidade_esg?: number | null
+          name: string
+          name_normalized?: string | null
+          owner_id?: string | null
+          pais?: string | null
+          porte?: string | null
+          primeiro_contato_em?: string | null
+          segmento?: string | null
+          setor?: string | null
+          status_relacionamento?: string
+          tags?: string[]
+          temas_interesse?: string[]
+          tier?: number | null
+          tier_reasoning?: string | null
+          uf?: string | null
+          ultima_interacao_em?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          bloqueado_para_campanhas?: boolean
+          cidade?: string | null
+          cnpj?: string | null
+          consent_marketing?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          domain?: string | null
+          enriched_at?: string | null
+          faixa_faturamento?: string | null
+          faixa_funcionarios?: string | null
+          id?: string
+          is_multinational?: boolean
+          legal_name?: string | null
+          linkedin_url?: string | null
+          logo_url?: string | null
+          manual_fields?: string[]
+          maturidade_esg?: number | null
+          name?: string
+          name_normalized?: string | null
+          owner_id?: string | null
+          pais?: string | null
+          porte?: string | null
+          primeiro_contato_em?: string | null
+          segmento?: string | null
+          setor?: string | null
+          status_relacionamento?: string
+          tags?: string[]
+          temas_interesse?: string[]
+          tier?: number | null
+          tier_reasoning?: string | null
+          uf?: string | null
+          ultima_interacao_em?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       products: {
         Row: {
@@ -1056,6 +1285,7 @@ export type Database = {
           author_phone: string | null
           company_name: string
           considerations: string | null
+          contact_id: string | null
           contact_name: string
           contact_role: string | null
           created_at: string | null
@@ -1065,6 +1295,7 @@ export type Database = {
           investment: string | null
           lead_id: string | null
           master_asset_id: string | null
+          organization_id: string | null
           product_id: string | null
           scope: string | null
           slug: string
@@ -1078,6 +1309,7 @@ export type Database = {
           author_phone?: string | null
           company_name: string
           considerations?: string | null
+          contact_id?: string | null
           contact_name: string
           contact_role?: string | null
           created_at?: string | null
@@ -1087,6 +1319,7 @@ export type Database = {
           investment?: string | null
           lead_id?: string | null
           master_asset_id?: string | null
+          organization_id?: string | null
           product_id?: string | null
           scope?: string | null
           slug: string
@@ -1100,6 +1333,7 @@ export type Database = {
           author_phone?: string | null
           company_name?: string
           considerations?: string | null
+          contact_id?: string | null
           contact_name?: string
           contact_role?: string | null
           created_at?: string | null
@@ -1109,6 +1343,7 @@ export type Database = {
           investment?: string | null
           lead_id?: string | null
           master_asset_id?: string | null
+          organization_id?: string | null
           product_id?: string | null
           scope?: string | null
           slug?: string
@@ -1117,6 +1352,13 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "proposals_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "proposals_lead_id_fkey"
             columns: ["lead_id"]
@@ -1136,6 +1378,13 @@ export type Database = {
             columns: ["master_asset_id"]
             isOneToOne: false
             referencedRelation: "proposal_master_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -1424,6 +1673,7 @@ export type Database = {
           author_phone: string | null
           company_name: string
           considerations: string | null
+          contact_id: string | null
           contact_name: string
           contact_role: string | null
           created_at: string | null
@@ -1433,6 +1683,7 @@ export type Database = {
           investment: string | null
           lead_id: string | null
           master_asset_id: string | null
+          organization_id: string | null
           product_id: string | null
           scope: string | null
           slug: string
@@ -1455,6 +1706,8 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { uid: string }; Returns: boolean }
+      is_crm_member: { Args: { _uid: string }; Returns: boolean }
+      is_generic_email_domain: { Args: { d: string }; Returns: boolean }
       list_active_lead_sources: {
         Args: never
         Returns: {
@@ -1471,7 +1724,9 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_org_name: { Args: { input: string }; Returns: string }
       normalize_phone_e164: { Args: { input: string }; Returns: string }
+      porte_from_colaboradores: { Args: { faixa: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -1484,6 +1739,20 @@ export type Database = {
         Args: { _reason?: string; _user_id: string }
         Returns: undefined
       }
+      resolve_org_contact: {
+        Args: {
+          _colaboradores: string
+          _company: string
+          _descricao: string
+          _email: string
+          _origem: string
+          _telefone: string
+          _tier: number
+          _website: string
+        }
+        Returns: Record<string, unknown>
+      }
+      unaccent_safe: { Args: { input: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"

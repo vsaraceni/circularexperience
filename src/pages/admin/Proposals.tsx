@@ -98,10 +98,6 @@ const Proposals = () => {
       const insertData: any = { ...saveData, slug, created_by: user!.id };
 
       let finalLeadId = leadId;
-      if (finalLeadId) {
-        const { data: existingProp } = await supabase.from("proposals").select("id").eq("lead_id", finalLeadId).maybeSingle();
-        if (existingProp) { toast.error("Este lead já possui uma proposta."); return; }
-      }
 
       if (!finalLeadId) {
         if (!manualOrigin) { toast.error("Origem da oportunidade é obrigatória."); return; }
@@ -115,7 +111,17 @@ const Proposals = () => {
         finalLeadId = created.id;
       }
 
-      if (finalLeadId) insertData.lead_id = finalLeadId;
+      if (finalLeadId) {
+        insertData.lead_id = finalLeadId;
+        // Vincula a proposta à organização/contato já resolvidos no lead
+        const { data: leadRow } = await supabase
+          .from("leads")
+          .select("organization_id, contact_id")
+          .eq("id", finalLeadId)
+          .maybeSingle();
+        if (leadRow?.organization_id) insertData.organization_id = leadRow.organization_id;
+        if (leadRow?.contact_id) insertData.contact_id = leadRow.contact_id;
+      }
 
       const { error } = await supabase.from("proposals").insert(insertData);
       if (error) { toast.error("Erro ao criar proposta"); return; }

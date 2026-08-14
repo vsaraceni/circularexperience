@@ -141,6 +141,22 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const completeFollowUp = useCompleteFollowUp();
 
   // Fetch last proposal submission date for this lead
+  // Histórico de propostas da organização do lead (fallback: propostas do próprio lead)
+  const { data: orgProposals = [] } = useQuery({
+    queryKey: ["lead_org_proposals", lead?.id, (lead as any)?.organization_id],
+    queryFn: async () => {
+      const orgId = (lead as any)?.organization_id as string | undefined;
+      let query = supabase
+        .from("proposals")
+        .select("id, title, slug, status, investment, created_at, contact_name")
+        .order("created_at", { ascending: false });
+      query = orgId ? query.eq("organization_id", orgId) : query.eq("lead_id", lead!.id);
+      const { data } = await query;
+      return data || [];
+    },
+    enabled: !!lead?.id,
+  });
+
   const { data: lastSubmissionDate } = useQuery({
     queryKey: ["last_submission_date", lead?.id],
     queryFn: async () => {
@@ -600,6 +616,40 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                 </AccordionItem>
 
                 {/* Block: Briefing (all active stages) */}
+                <AccordionItem value="propostas">
+                  <AccordionTrigger className="text-sm font-semibold hover:no-underline">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Propostas
+                      <Badge variant="secondary" className="text-[10px] h-4 px-1.5 ml-1">{orgProposals.length}</Badge>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {orgProposals.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">Nenhuma proposta para esta organização.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {orgProposals.map((p: any) => (
+                          <div key={p.id} className="border rounded-lg p-2.5 flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{p.title}</p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {p.contact_name} · {format(new Date(p.created_at), "dd/MM/yyyy", { locale: ptBR })} · {p.investment || "—"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Badge variant="outline" className="text-[10px]">{p.status}</Badge>
+                              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => window.open(`/apresentacao-print/${p.slug}`, "_blank")}>
+                                Abrir
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+
                 {lead.kanban_stage !== "perdido" && lead.kanban_stage !== "fechado" && (
                   <AccordionItem value="briefing">
                     <AccordionTrigger className="text-sm font-semibold hover:no-underline">
