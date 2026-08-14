@@ -301,3 +301,76 @@ Mantém o padrão já vigente no projeto: navegação por teclado completa, alvo
 4. Seletor de cliente no formulário de proposta + N propostas por lead.
 5. Segmentos e campanhas.
 6. Merge de duplicatas.
+
+---
+
+# Revisão final — segurança, padrão visual e auditoria
+
+## Auditoria de segurança do que já existe (executada agora)
+
+O linter do banco retorna hoje 8 avisos, todos da mesma família: funções `SECURITY DEFINER` executáveis por usuários anônimos (1) ou por qualquer usuário autenticado (7). Isso é o padrão herdado das ondas anteriores de hardening — cada nova função criada volta a aparecer aqui se não for tratada. Nenhum aviso de tabela sem RLS.
+
+Consequência direta para este projeto: as funções novas (`resolve_org_contact`, busca de organizações/contatos, agregados de proposta) **não podem** nascer com `EXECUTE` aberto. Regra que passa a valer nas migrações desta entrega:
+
+```text
+Para cada funcao nova:
+  REVOKE EXECUTE ... FROM PUBLIC, anon
+  GRANT  EXECUTE ... TO authenticated   (apenas se o app realmente chamar via RPC)
+Funcoes usadas so por trigger: nenhum GRANT (o trigger executa como dono)
+```
+
+`resolve_org_contact` é usada apenas pelo trigger — não recebe nenhum GRANT, ou seja, não fica exposta na API.
+
+## Segurança do novo modelo
+
+**Dados pessoais.** Contatos concentram nome, e-mail corporativo, telefone e cargo de ~530 pessoas reais. Hoje isso está espalhado em `leads`; consolidado fica mais valioso e mais sensível. Por isso:
+
+- Leitura restrita a usuários com `approval_status = 'approved'` — a mesma porta que já governa o CRM hoje. Um usuário pendente ou rejeitado não lê a base, mesmo autenticado.
+- Escrita: admin, ou o usuário dono do registro (`owner_id`). Exclusão: somente admin.
+- Nenhuma política com `USING (true)`. Nenhum GRANT para `anon` em `organizations` ou `contacts` — a base nunca é pública.
+- GRANTs explícitos na mesma migração da criação da tabela, conforme o padrão do projeto.
+
+**Exportação e campanha.** Exportar contatos é uma operação sensível: fica restrita a admin e registra quem exportou, quantos registros e com qual filtro. Sem isso, uma base de 530 contatos sai do CRM sem rastro.
+
+**Compliance.** Consentimento e descadastro passam a viver no contato e são verificados no envio em massa, junto com a lista de supressão já existente. Contato descadastrado nunca entra em segmento de campanha, mesmo que o filtro o alcance.
+
+**Enriquecimento.** As chamadas de Firecrawl e IA continuam exclusivamente em edge function com service role — nenhuma chave sai para o browser. O modo "por organização" valida que quem pediu o enriquecimento é usuário aprovado.
+
+**Trigger.** `SECURITY DEFINER` com `search_path` fixo, sem HTTP, sem SQL dinâmico, envolvido em bloco de exceção. Não pode nem vazar contexto nem impedir a entrada de um lead.
+
+**Auditoria pós-implementação.** Ao final de cada fase que toca o banco: rodar o linter, conferir que nenhuma função nova apareceu na lista, e revisar as políticas das tabelas novas uma a uma.
+
+## Padrão visual — reaproveitar, não inventar
+
+Nada de biblioteca nova nem de linguagem visual paralela. Tudo sai dos componentes e tokens que o CRM já usa:
+
+| Elemento novo | Componente já existente que será reaproveitado |
+|---|---|
+| Navegação "Base" | mesmo padrão da barra superior do CRM (desktop) e do menu hamburger (mobile) |
+| Busca + filtros | popover de filtros e chips já usados na toolbar do Pipeline |
+| Lista de organizações/contatos | mesma estrutura visual da lista de leads e de propostas |
+| Detalhe da organização | mesma composição de cartões do drawer de lead |
+| Indicadores de tier/porte | ícones de tier e HeatDots já existentes |
+| Formulários e diálogos | mesmos diálogos e campos usados em Novo Lead e Proposta |
+| Cores | somente tokens semânticos; roxo #5F2558 como primária, turquesa/vermelho/laranja nos estados |
+
+Regras mantidas: nenhuma cor fixa em componente, foco visível de 2px na cor da marca, alvo mínimo de 44px, transições de 0,15s, teclado operável ponta a ponta.
+
+## Como fica organizado na interface
+
+O menu não cresce em dois itens: entra **"Base"** como um único módulo, com abas *Organizações* e *Contatos*. O histórico de propostas aparece dentro de superfícies que já existem (drawer do lead e formulário de proposta), então o time não precisa aprender tela nova para ganhar o benefício principal.
+
+Ordem de exposição na interface, para o time absorver sem ruído:
+
+1. Bloco de propostas anteriores dentro do drawer do lead (nenhuma tela nova).
+2. Módulo "Base" no menu.
+3. Seletor de cliente no formulário de proposta.
+4. Ações de campanha na Base.
+
+## Checklist de aceite antes de considerar cada fase pronta
+
+- Linter sem avisos novos; funções novas sem EXECUTE aberto.
+- RLS testada com um usuário comum, um usuário pendente e um admin.
+- Kanban, To-Do, dashboards, e-mails, WhatsApp e Meta CAPI funcionando exatamente como antes.
+- Backfill conferido por amostragem: organização certa, contato certo, propostas ligadas.
+- Nenhuma cor fora dos tokens e navegação por teclado completa nas telas novas.
