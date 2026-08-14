@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mail, Eye, Send, Clock, BarChart3, Save, RotateCcw } from "lucide-react";
+import { Mail, Eye, Send, Clock, BarChart3, Save, RotateCcw, Star } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 import MyWelcomeEmail from "./MyWelcomeEmail";
@@ -67,6 +68,15 @@ const TRANSACTIONAL_META: Record<string, { icon: React.ReactNode; trigger: strin
   },
 };
 
+const TIER_ALERT = "lead-tier-alert";
+const DEFAULT_TIER_RECIPIENTS = "vinicius@movimentocircular.io, jessica@atinaedu.com.br";
+
+TRANSACTIONAL_META[TIER_ALERT] = {
+  icon: <Star className="h-4 w-4" />,
+  trigger: "Automático — quando um lead Tier 1 ou 2 é enriquecido no CRM",
+  recipient: "Destinatários configurados abaixo",
+};
+
 const EmailTemplateEditor = () => {
   const { user, isAdmin } = useAuth();
   const [open, setOpen] = useState(false);
@@ -85,6 +95,9 @@ const EmailTemplateEditor = () => {
   // Override form state per template
   const [overrideForms, setOverrideForms] = useState<Record<string, Record<string, string>>>({});
   const [savingOverride, setSavingOverride] = useState<string | null>(null);
+  const [tierEnabled, setTierEnabled] = useState(true);
+  const [tierRecipients, setTierRecipients] = useState(DEFAULT_TIER_RECIPIENTS);
+  const [tierTiers, setTierTiers] = useState<number[]>([1, 2]);
 
   const fetchTemplate = async () => {
     setLoading(true);
@@ -127,6 +140,15 @@ const EmailTemplateEditor = () => {
           }
         }
         setOverrideForms(forms);
+        const tierPreview = data.templates.find((t: TransactionalPreview) => t.templateName === TIER_ALERT);
+        const cfg = (tierPreview?.currentOverrides ?? {}) as Record<string, any>;
+        setTierEnabled(cfg.enabled !== false);
+        setTierRecipients(
+          Array.isArray(cfg.recipients) && cfg.recipients.length > 0
+            ? cfg.recipients.join(", ")
+            : DEFAULT_TIER_RECIPIENTS,
+        );
+        setTierTiers(Array.isArray(cfg.tiers) && cfg.tiers.length > 0 ? cfg.tiers.map(Number) : [1, 2]);
       }
     } catch (err) {
       console.error("Failed to load transactional previews", err);
@@ -176,11 +198,21 @@ const EmailTemplateEditor = () => {
       }
     }
 
+    const payload: Record<string, unknown> = { ...overrides };
+    if (templateName === TIER_ALERT) {
+      payload.enabled = tierEnabled;
+      payload.recipients = tierRecipients
+        .split(/[,;\n]/)
+        .map((r) => r.trim())
+        .filter((r) => r.includes("@"));
+      payload.tiers = tierTiers.length > 0 ? tierTiers : [1, 2];
+    }
+
     const { error } = await supabase
       .from("email_template_overrides" as any)
       .upsert({
         template_name: templateName,
-        overrides,
+        overrides: payload,
         updated_at: new Date().toISOString(),
       } as any, { onConflict: "template_name" });
 
@@ -243,12 +275,13 @@ const EmailTemplateEditor = () => {
         </DialogHeader>
 
         <Tabs defaultValue="mine" className="w-full">
-          <TabsList className={`w-full grid ${isAdmin ? "grid-cols-5" : "grid-cols-1"} mb-4`}>
+          <TabsList className={`w-full grid ${isAdmin ? "grid-cols-6" : "grid-cols-1"} mb-4`}>
             <TabsTrigger value="mine" className="text-xs">Meu E-mail</TabsTrigger>
             {isAdmin && <TabsTrigger value="welcome" className="text-xs">Padrão da Equipe</TabsTrigger>}
             {isAdmin && <TabsTrigger value="daily-digest" className="text-xs">Missões do Dia</TabsTrigger>}
             {isAdmin && <TabsTrigger value="call-scheduled-alert" className="text-xs">Alerta Proposta</TabsTrigger>}
             {isAdmin && <TabsTrigger value="daily-performance" className="text-xs">Performance</TabsTrigger>}
+            {isAdmin && <TabsTrigger value={TIER_ALERT} className="text-xs">Alerta Tier 1/2</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="mine">
@@ -337,7 +370,7 @@ const EmailTemplateEditor = () => {
           </TabsContent>
 
           {/* Transactional email tabs with editable fields */}
-          {["daily-digest", "call-scheduled-alert", "daily-performance"].map((templateName) => {
+          {["daily-digest", "call-scheduled-alert", "daily-performance", TIER_ALERT].map((templateName) => {
             const preview = transactionalPreviews.find((p) => p.templateName === templateName);
             const meta = TRANSACTIONAL_META[templateName];
             const fields = preview?.editableFields;
@@ -369,6 +402,61 @@ const EmailTemplateEditor = () => {
                         </div>
                       )}
                     </div>
+
+                    {templateName === TIER_ALERT && (
+                      <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <Label className="text-sm font-semibold">Enviar alerta automático</Label>
+                            <p className="text-xs text-muted-foreground">
+                              Dispara assim que o enriquecimento classifica o lead nos tiers selecionados.
+                            </p>
+                          </div>
+                          <Switch checked={tierEnabled} onCheckedChange={setTierEnabled} />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Destinatários (separados por vírgula)</Label>
+                          <Textarea
+                            value={tierRecipients}
+                            onChange={(e) => setTierRecipients(e.target.value)}
+                            placeholder={DEFAULT_TIER_RECIPIENTS}
+                            className="text-sm min-h-[60px]"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Tiers que disparam o alerta</Label>
+                          <div className="flex gap-2">
+                            {[1, 2, 3].map((t) => (
+                              <Button
+                                key={t}
+                                type="button"
+                                size="sm"
+                                variant={tierTiers.includes(t) ? "default" : "outline"}
+                                onClick={() =>
+                                  setTierTiers((prev) =>
+                                    prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t].sort(),
+                                  )
+                                }
+                              >
+                                Tier {t}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={() => handleSaveOverride(TIER_ALERT)}
+                          disabled={savingOverride === TIER_ALERT}
+                          size="sm"
+                          className="w-full"
+                        >
+                          <Save className="h-4 w-4 mr-1" />
+                          {savingOverride === TIER_ALERT ? "Salvando..." : "Salvar configuração"}
+                        </Button>
+                      </div>
+                    )}
 
                     {/* Editable fields */}
                     {fields && Object.keys(fields).length > 0 && (
