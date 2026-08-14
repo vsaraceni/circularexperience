@@ -1,0 +1,2 @@
+insert into public.lead_sources (slug, nome, api_key_prefix, api_key_hash, ativo, rate_limit_per_min, cors_origins, default_stage)
+values ('teste_ingest_tmp','Teste Ingest Temporario','pk_tsttm','$2b$10$pShpy.wOHNAHDEvkhL1Xh.Nbajz/yVCOzLN14QWZ8tUdb2xpERGVm', true, 30, '{}', 'novo');
