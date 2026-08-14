@@ -381,3 +381,87 @@ ${input.siteSnippet ? `Trecho do site oficial:\n${input.siteSnippet}` : ""}`;
     return null;
   }
 }
+
+const DEFAULT_TIER_ALERT_RECIPIENTS = [
+  "vinicius@movimentocircular.io",
+  "jessica@atinaedu.com.br",
+];
+
+async function sendTierAlert(
+  supabase: any,
+  leadId: string,
+  tier: number,
+  tierReasoning: string,
+  description: string,
+  website: string,
+) {
+  const { data: cfg } = await supabase
+    .from("email_template_overrides")
+    .select("overrides")
+    .eq("template_name", "lead-tier-alert")
+    .maybeSingle();
+
+  const overrides = (cfg?.overrides ?? {}) as Record<string, any>;
+  if (overrides.enabled === false) {
+    console.log("tier alert disabled by config");
+    return;
+  }
+
+  const recipients: string[] = Array.isArray(overrides.recipients) && overrides.recipients.length > 0
+    ? overrides.recipients.filter((r: unknown) => typeof r === "string" && r.includes("@"))
+    : DEFAULT_TIER_ALERT_RECIPIENTS;
+
+  const tiers: number[] = Array.isArray(overrides.tiers) && overrides.tiers.length > 0
+    ? overrides.tiers.map(Number)
+    : [1, 2];
+  if (!tiers.includes(tier)) return;
+
+  const { data: full } = await supabase
+    .from("leads")
+    .select(
+      "id, name, email, cargo, telefone, company, origem, origem_detalhe, organization_id, product_id, products(name), organizations(setor, segmento, porte, faixa_funcionarios, faixa_faturamento, cidade, uf, website, descricao, temas_interesse)",
+    )
+    .eq("id", leadId)
+    .single();
+
+  if (!full) return;
+  const org = (full as any).organizations ?? {};
+
+  const templateData = {
+    lead_id: full.id,
+    lead_name: full.name ?? "",
+    lead_email: full.email ?? "",
+    lead_cargo: full.cargo ?? "",
+    lead_telefone: full.telefone ?? "",
+    lead_company: full.company ?? "",
+    lead_origem: [full.origem, (full as any).origem_detalhe].filter(Boolean).join(" · "),
+    produto: (full as any).products?.name ?? "",
+    tier,
+    tier_reasoning: tierReasoning ?? "",
+    company_website: org.website || website || "",
+    company_description: org.descricao || description || "",
+    org_setor: org.setor ?? "",
+    org_segmento: org.segmento ?? "",
+    org_porte: org.porte ?? "",
+    org_funcionarios: org.faixa_funcionarios ?? "",
+    org_faturamento: org.faixa_faturamento ?? "",
+    org_cidade: org.cidade ?? "",
+    org_uf: org.uf ?? "",
+    org_temas: org.temas_interesse ?? [],
+  };
+
+  for (const recipientEmail of recipients) {
+    try {
+      await supabase.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: "lead-tier-alert",
+          recipientEmail,
+          idempotencyKey: `lead-tier-alert-${leadId}-${recipientEmail}`,
+          templateData,
+        },
+      });
+    } catch (e) {
+      console.error("send tier alert failed for", recipientEmail, e);
+    }
+  }
+}
