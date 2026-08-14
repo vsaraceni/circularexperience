@@ -193,6 +193,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Alerta interno para leads Tier 1 e 2
+    if (tierResult && (tierResult.suggested_tier === 1 || tierResult.suggested_tier === 2)) {
+      try {
+        await sendTierAlert(supabase, lead_id, tierResult.suggested_tier, tierResult.reasoning, description, website);
+      } catch (e) {
+        console.error("tier alert failed:", e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
