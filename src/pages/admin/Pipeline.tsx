@@ -52,6 +52,14 @@ const Pipeline = () => {
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
 
+  // Estado inicial: filtra pelos leads do próprio usuário (ele pode trocar depois)
+  useEffect(() => {
+    if (!user || ownerDefaultApplied.current) return;
+    ownerDefaultApplied.current = true;
+    setFilterOwner(user.id);
+  }, [user]);
+
+
   // Proposal form state (for generating proposal from kanban)
   const [showForm, setShowForm] = useState(false);
   const [showNewLead, setShowNewLead] = useState(false);
