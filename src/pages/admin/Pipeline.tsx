@@ -44,6 +44,7 @@ const Pipeline = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("all");
   const [filterOwner, setFilterOwner] = useState("all");
+  const ownerDefaultApplied = useRef(false);
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterStages, setFilterStages] = useState<string[]>([]);
