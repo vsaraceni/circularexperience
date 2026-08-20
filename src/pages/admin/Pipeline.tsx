@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -44,12 +44,21 @@ const Pipeline = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterOrigem, setFilterOrigem] = useState("all");
   const [filterOwner, setFilterOwner] = useState("all");
+  const ownerDefaultApplied = useRef(false);
   const [filterPeriod, setFilterPeriod] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterStages, setFilterStages] = useState<string[]>([]);
   const [filterTier, setFilterTier] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const { data: allPendingFollowUps = [] } = useAllPendingFollowUps();
+
+  // Estado inicial: filtra pelos leads do próprio usuário (ele pode trocar depois)
+  useEffect(() => {
+    if (!user || ownerDefaultApplied.current) return;
+    ownerDefaultApplied.current = true;
+    setFilterOwner(user.id);
+  }, [user]);
+
 
   // Proposal form state (for generating proposal from kanban)
   const [showForm, setShowForm] = useState(false);
