@@ -689,7 +689,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-                        {isAdmin && (
+                        {canManageTemplates && (
                           <Button
                             variant="ghost"
                             size="sm"
