@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -182,14 +183,24 @@ export default function UsersAdmin() {
           </>
         )}
         {u.approval_status === "approved" && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-destructive"
-            onClick={() => setReject({ user: u, reason: "" })}
-          >
-            Revogar acesso
-          </Button>
+          <>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground whitespace-nowrap">
+              <Switch
+                checked={templateManagers.includes(u.id)}
+                onCheckedChange={(v) => toggleTemplateManager(u.id, v)}
+                aria-label={`Permitir que ${u.full_name || u.email} gerencie templates`}
+              />
+              Gerenciar templates
+            </label>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-destructive"
+              onClick={() => setReject({ user: u, reason: "" })}
+            >
+              Revogar acesso
+            </Button>
+          </>
         )}
         {u.approval_status === "rejected" && (
           <Button
