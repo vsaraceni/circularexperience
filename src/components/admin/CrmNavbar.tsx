@@ -157,6 +157,11 @@ export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
                   <Plug className="h-4 w-4" aria-hidden="true" /> Integrações
                 </DropdownMenuItem>
               )}
+              {hasPermission("manage_templates") && (
+                <DropdownMenuItem onClick={() => navigate("/admin/templates")} className="gap-2 cursor-pointer rounded-lg">
+                  <FileText className="h-4 w-4" aria-hidden="true" /> Templates de Mensagem
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">
                 <ExternalLink className="h-4 w-4" aria-hidden="true" /> Ir para o Site
               </DropdownMenuItem>
