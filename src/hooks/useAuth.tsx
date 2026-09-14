@@ -115,5 +115,22 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, session, isAdmin, hasRole, approvalStatus, loading, signIn, signUp, signOut };
+  const hasPermission = useCallback(
+    (permission: string) => isAdmin || permissions.includes(permission),
+    [isAdmin, permissions],
+  );
+
+  return {
+    user,
+    session,
+    isAdmin,
+    hasRole,
+    permissions,
+    hasPermission,
+    approvalStatus,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  };
 }
