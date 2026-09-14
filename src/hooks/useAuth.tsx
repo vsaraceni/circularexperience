@@ -66,6 +66,7 @@ export function useAuth() {
         // before the persisted session is restored.
         setIsAdmin(false);
         setHasRole(false);
+        setPermissions([]);
         setApprovalStatus(null);
         setLoading(false);
       }
@@ -83,6 +84,7 @@ export function useAuth() {
       } else {
         setIsAdmin(false);
         setHasRole(false);
+        setPermissions([]);
         setApprovalStatus(null);
         setLoading(false);
       }
