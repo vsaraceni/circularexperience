@@ -45,24 +45,52 @@ export default function UsersAdmin() {
   const [approve, setApprove] = useState<ApproveState>(null);
   const [reject, setReject] = useState<RejectState>(null);
   const [busy, setBusy] = useState(false);
+  const [templateManagers, setTemplateManagers] = useState<string[]>([]);
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, email, full_name, cargo, role_label, approval_status, created_at, approved_at, rejection_reason")
-      .order("created_at", { ascending: false });
+    const [{ data, error }, { data: perms }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, email, full_name, cargo, role_label, approval_status, created_at, approved_at, rejection_reason")
+        .order("created_at", { ascending: false }),
+      (supabase as any)
+        .from("user_permissions")
+        .select("user_id, permission")
+        .eq("permission", "manage_templates"),
+    ]);
     if (error) {
       toast.error("Falha ao carregar usuários");
     } else {
       setRows((data as any) ?? []);
     }
+    setTemplateManagers(((perms as { user_id: string }[] | null) ?? []).map((p) => p.user_id));
     setLoading(false);
   };
 
   useEffect(() => {
     load();
   }, []);
+
+  const toggleTemplateManager = async (userId: string, enabled: boolean) => {
+    if (enabled) {
+      const { error } = await (supabase as any)
+        .from("user_permissions")
+        .insert({ user_id: userId, permission: "manage_templates" });
+      if (error) { toast.error("Falha ao conceder permissão"); return; }
+      setTemplateManagers((prev) => [...prev, userId]);
+      toast.success("Permissão concedida");
+    } else {
+      const { error } = await (supabase as any)
+        .from("user_permissions")
+        .delete()
+        .eq("user_id", userId)
+        .eq("permission", "manage_templates");
+      if (error) { toast.error("Falha ao remover permissão"); return; }
+      setTemplateManagers((prev) => prev.filter((id) => id !== userId));
+      toast.success("Permissão removida");
+    }
+  };
 
   const groups = useMemo(() => {
     return {
