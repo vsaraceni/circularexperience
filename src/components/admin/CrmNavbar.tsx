@@ -34,7 +34,7 @@ interface CrmNavbarProps {
 }
 
 export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
