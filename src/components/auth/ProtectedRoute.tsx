@@ -4,10 +4,11 @@ import { useAuth } from "@/hooks/useAuth";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requirePermission?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
-  const { user, isAdmin, hasRole, approvalStatus, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false, requirePermission }) => {
+  const { user, isAdmin, hasRole, approvalStatus, loading, hasPermission } = useAuth();
 
   if (loading) {
     return (
@@ -26,6 +27,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
   }
 
   if (requireAdmin && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requirePermission && !hasPermission(requirePermission)) {
     return <Navigate to="/" replace />;
   }
 

@@ -63,7 +63,7 @@ const App = () => (
           <Route
             path="/admin/templates"
             element={
-              <ProtectedRoute requireAdmin>
+              <ProtectedRoute requirePermission="manage_templates">
                 <Templates />
               </ProtectedRoute>
             }
