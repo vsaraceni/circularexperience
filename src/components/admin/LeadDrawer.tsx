@@ -107,6 +107,8 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const [followUpNote, setFollowUpNote] = useState("");
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const canManageTemplates = hasPermission("manage_templates");
 
   // Sync defaultTab when drawer opens with a specific tab
   useEffect(() => {
