@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -107,6 +108,8 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
   const [followUpNote, setFollowUpNote] = useState("");
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const canManageTemplates = hasPermission("manage_templates");
 
   // Sync defaultTab when drawer opens with a specific tab
   useEffect(() => {
@@ -686,7 +689,7 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-                        {isAdmin && (
+                        {canManageTemplates && (
                           <Button
                             variant="ghost"
                             size="sm"

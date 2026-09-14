@@ -34,7 +34,7 @@ interface CrmNavbarProps {
 }
 
 export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
@@ -155,6 +155,11 @@ export default function CrmNavbar({ currentModule, children }: CrmNavbarProps) {
               {isAdmin && (
                 <DropdownMenuItem onClick={() => navigate("/admin/integracoes")} className="gap-2 cursor-pointer rounded-lg">
                   <Plug className="h-4 w-4" aria-hidden="true" /> Integrações
+                </DropdownMenuItem>
+              )}
+              {hasPermission("manage_templates") && (
+                <DropdownMenuItem onClick={() => navigate("/admin/templates")} className="gap-2 cursor-pointer rounded-lg">
+                  <FileText className="h-4 w-4" aria-hidden="true" /> Templates de Mensagem
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => navigate("/")} className="gap-2 cursor-pointer rounded-lg">

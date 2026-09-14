@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -7,6 +7,7 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [hasRole, setHasRole] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [approvalStatus, setApprovalStatus] = useState<
     "pending" | "approved" | "rejected" | null
   >(null);
@@ -17,18 +18,24 @@ export function useAuth() {
     let initialResolved = false;
 
     const checkRole = async (userId: string) => {
-      const [{ data: roleData, error: roleError }, { data: profileData }] = await Promise.all([
-        supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
-        supabase
-          .from("profiles")
-          .select("approval_status")
-          .eq("id", userId)
-          .maybeSingle(),
-      ]);
+      const [{ data: roleData, error: roleError }, { data: profileData }, { data: permData }] =
+        await Promise.all([
+          supabase.from("user_roles").select("role").eq("user_id", userId).maybeSingle(),
+          supabase
+            .from("profiles")
+            .select("approval_status")
+            .eq("id", userId)
+            .maybeSingle(),
+          (supabase as any)
+            .from("user_permissions")
+            .select("permission")
+            .eq("user_id", userId),
+        ]);
 
       if (!isMounted) return;
       setHasRole(!roleError && !!roleData);
       setIsAdmin(!roleError && roleData?.role === "admin");
+      setPermissions(((permData as { permission: string }[] | null) ?? []).map((p) => p.permission));
       setApprovalStatus(
         ((profileData as any)?.approval_status as
           | "pending"
@@ -59,6 +66,7 @@ export function useAuth() {
         // before the persisted session is restored.
         setIsAdmin(false);
         setHasRole(false);
+        setPermissions([]);
         setApprovalStatus(null);
         setLoading(false);
       }
@@ -76,6 +84,7 @@ export function useAuth() {
       } else {
         setIsAdmin(false);
         setHasRole(false);
+        setPermissions([]);
         setApprovalStatus(null);
         setLoading(false);
       }
@@ -106,5 +115,22 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, session, isAdmin, hasRole, approvalStatus, loading, signIn, signUp, signOut };
+  const hasPermission = useCallback(
+    (permission: string) => isAdmin || permissions.includes(permission),
+    [isAdmin, permissions],
+  );
+
+  return {
+    user,
+    session,
+    isAdmin,
+    hasRole,
+    permissions,
+    hasPermission,
+    approvalStatus,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+  };
 }
