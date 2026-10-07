@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791401790234,
+      "tag": "0000_open_templates_read_to_crm_members",
+      "breakpoints": true
+    }
+  ]
+}
