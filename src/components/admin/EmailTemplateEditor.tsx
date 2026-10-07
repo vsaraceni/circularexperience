@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mail, Eye, Send, Clock, BarChart3, Save, RotateCcw, Star } from "lucide-react";
+import { Mail, Eye, Send, Clock, BarChart3, Save, RotateCcw, Star, Lock } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "./RichTextEditor";
 import MyWelcomeEmail from "./MyWelcomeEmail";
@@ -29,9 +29,9 @@ const VARIABLES_LEAD = [
 ];
 
 const VARIABLES_SIGNATURE = [
-  { key: "{{sender_name}}", label: "Nome do admin" },
-  { key: "{{sender_email}}", label: "Email do admin" },
-  { key: "{{sender_phone}}", label: "Telefone do admin" },
+  { key: "{{sender_name}}", label: "Nome do remetente" },
+  { key: "{{sender_email}}", label: "Email do remetente" },
+  { key: "{{sender_phone}}", label: "Telefone do remetente" },
 ];
 
 interface EditableField {
@@ -77,8 +77,26 @@ TRANSACTIONAL_META[TIER_ALERT] = {
   recipient: "Destinatários configurados abaixo",
 };
 
+const TRANSACTIONAL_TABS = ["daily-digest", "call-scheduled-alert", "daily-performance", TIER_ALERT];
+
+/** Small banner shown on global tabs for users who can only consult. */
+const ReadOnlyNotice = () => (
+  <div
+    role="status"
+    className="rounded-lg border p-3 flex items-start gap-2"
+    style={{ background: "hsl(var(--color-bg-subtle))", borderColor: "hsl(var(--color-border))" }}
+  >
+    <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+    <p className="text-xs text-muted-foreground">
+      Visualizando o modelo padrão corporativo do Movimento Circular. Alterações nos textos globais são feitas por
+      gestores de templates.
+    </p>
+  </div>
+);
+
 const EmailTemplateEditor = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const canEdit = hasPermission("manage_templates");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -92,6 +110,7 @@ const EmailTemplateEditor = () => {
   });
   const [transactionalPreviews, setTransactionalPreviews] = useState<TransactionalPreview[]>([]);
   const [loadingPreviews, setLoadingPreviews] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   // Override form state per template
   const [overrideForms, setOverrideForms] = useState<Record<string, Record<string, string>>>({});
   const [savingOverride, setSavingOverride] = useState<string | null>(null);
@@ -105,7 +124,7 @@ const EmailTemplateEditor = () => {
       .from("email_templates" as any)
       .select("id, from_name, from_email, reply_to, subject, body_html")
       .eq("slug", "lead-welcome")
-      .single();
+      .maybeSingle();
 
     if (data) {
       const d = data as any;
@@ -123,11 +142,13 @@ const EmailTemplateEditor = () => {
 
   const fetchTransactionalPreviews = async () => {
     setLoadingPreviews(true);
+    setPreviewError(null);
     try {
       const { data, error } = await supabase.functions.invoke("preview-transactional-email", {
         method: "POST",
       });
-      if (!error && data?.templates) {
+      if (error) throw error;
+      if (data?.templates) {
         setTransactionalPreviews(data.templates);
         // Initialize override forms from currentOverrides
         const forms: Record<string, Record<string, string>> = {};
@@ -152,19 +173,20 @@ const EmailTemplateEditor = () => {
       }
     } catch (err) {
       console.error("Failed to load transactional previews", err);
+      setPreviewError("Não foi possível carregar as prévias agora. Tente novamente em instantes.");
     }
     setLoadingPreviews(false);
   };
 
   useEffect(() => {
-    if (open && isAdmin) {
+    if (open) {
       fetchTemplate();
       fetchTransactionalPreviews();
     }
-  }, [open, isAdmin]);
+  }, [open]);
 
   const handleSave = async () => {
-    if (!templateId) return;
+    if (!templateId || !canEdit) return;
     setSaving(true);
     const { error } = await supabase
       .from("email_templates" as any)
@@ -188,6 +210,7 @@ const EmailTemplateEditor = () => {
   };
 
   const handleSaveOverride = async (templateName: string) => {
+    if (!canEdit) return;
     setSavingOverride(templateName);
     const formData = overrideForms[templateName] || {};
     // Only save non-empty values
@@ -228,6 +251,7 @@ const EmailTemplateEditor = () => {
   };
 
   const handleResetOverride = async (templateName: string) => {
+    if (!canEdit) return;
     // Clear form
     const preview = transactionalPreviews.find(p => p.templateName === templateName);
     if (preview?.editableFields) {
@@ -238,10 +262,15 @@ const EmailTemplateEditor = () => {
       setOverrideForms(prev => ({ ...prev, [templateName]: cleared }));
     }
     // Delete from DB
-    await supabase
+    const { error } = await supabase
       .from("email_template_overrides" as any)
       .delete()
       .eq("template_name", templateName);
+    if (error) {
+      toast.error("Erro ao restaurar o padrão");
+      console.error(error);
+      return;
+    }
     toast.info("Textos restaurados para o padrão.");
     fetchTransactionalPreviews();
   };
@@ -259,6 +288,11 @@ const EmailTemplateEditor = () => {
   const set = (key: string, value: string) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const tierRecipientList = tierRecipients
+    .split(/[,;\n]/)
+    .map((r) => r.trim())
+    .filter((r) => r.includes("@"));
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -271,33 +305,39 @@ const EmailTemplateEditor = () => {
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" style={{ color: 'hsl(var(--color-brand))' }} />
             Central de Emails
+            {!canEdit && (
+              <Badge variant="outline" className="text-[10px] font-normal gap-1 ml-1">
+                <Eye className="h-3 w-3" aria-hidden="true" /> consulta
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="mine" className="w-full">
-          <TabsList className={`w-full grid ${isAdmin ? "grid-cols-6" : "grid-cols-1"} mb-4`}>
+          <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6 h-auto mb-4">
             <TabsTrigger value="mine" className="text-xs">Meu E-mail</TabsTrigger>
-            {isAdmin && <TabsTrigger value="welcome" className="text-xs">Padrão da Equipe</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="daily-digest" className="text-xs">Missões do Dia</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="call-scheduled-alert" className="text-xs">Alerta Proposta</TabsTrigger>}
-            {isAdmin && <TabsTrigger value="daily-performance" className="text-xs">Performance</TabsTrigger>}
-            {isAdmin && <TabsTrigger value={TIER_ALERT} className="text-xs">Alerta Tier 1/2</TabsTrigger>}
+            <TabsTrigger value="welcome" className="text-xs">Padrão da Equipe</TabsTrigger>
+            <TabsTrigger value="daily-digest" className="text-xs">Missões do Dia</TabsTrigger>
+            <TabsTrigger value="call-scheduled-alert" className="text-xs">Alerta Proposta</TabsTrigger>
+            <TabsTrigger value="daily-performance" className="text-xs">Performance</TabsTrigger>
+            <TabsTrigger value={TIER_ALERT} className="text-xs">Alerta Tier 1/2</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mine">
             {open && <MyWelcomeEmail userId={user?.id} />}
           </TabsContent>
 
-          {isAdmin && (
-          <>
-
-          {/* Welcome email - editable */}
+          {/* Welcome email — team default */}
           <TabsContent value="welcome">
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
               </div>
-            ) : (
+            ) : !templateId ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Modelo padrão de boas-vindas não encontrado.
+              </div>
+            ) : canEdit ? (
               <div className="space-y-4">
                 <div className="rounded-lg border p-3 mb-2" style={{ background: 'hsl(var(--color-bg-subtle))', borderColor: 'hsl(var(--color-border))' }}>
                   <div className="flex items-center gap-2 text-sm font-medium mb-1">
@@ -366,11 +406,55 @@ const EmailTemplateEditor = () => {
                   {saving ? "Salvando..." : "Salvar Template"}
                 </Button>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <ReadOnlyNotice />
+                <div className="rounded-lg border p-3" style={{ background: 'hsl(var(--color-bg-subtle))', borderColor: 'hsl(var(--color-border))' }}>
+                  <div className="flex items-center gap-2 text-sm font-medium mb-2">
+                    <Send className="h-4 w-4" style={{ color: 'hsl(var(--color-brand))' }} />
+                    E-mail de boas-vindas (padrão da equipe)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <div><strong>Gatilho:</strong> clique em "Boas-Vindas" no lead ou envio automático de lead novo</div>
+                    <div><strong>Remetente:</strong> {form.from_name || "—"}{form.from_email ? ` <${form.from_email}>` : ""}</div>
+                    <div><strong>Responder para:</strong> {form.reply_to || "—"}</div>
+                    <div><strong>Assunto:</strong> {form.subject || "—"}</div>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-2">
+                    Para enviar com o seu texto e assinatura, personalize na aba <strong>Meu E-mail</strong>.
+                  </p>
+                </div>
+
+                <div className="border rounded-lg overflow-hidden" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                  <div className="bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5 border-b" style={{ borderColor: 'hsl(var(--color-border))' }}>
+                    <Eye className="h-3 w-3" />
+                    Preview do padrão da equipe
+                  </div>
+                  <iframe
+                    srcDoc={form.body_html}
+                    title="Preview: e-mail de boas-vindas padrão"
+                    className="w-full bg-white"
+                    style={{ minHeight: 360, border: "none" }}
+                    sandbox=""
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Variáveis usadas neste e-mail:</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[...VARIABLES_LEAD, ...VARIABLES_SIGNATURE].map((v) => (
+                      <Badge key={v.key} variant="outline" className="font-mono text-xs">
+                        {v.key} — {v.label}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </TabsContent>
 
-          {/* Transactional email tabs with editable fields */}
-          {["daily-digest", "call-scheduled-alert", "daily-performance", TIER_ALERT].map((templateName) => {
+          {/* Transactional email tabs */}
+          {TRANSACTIONAL_TABS.map((templateName) => {
             const preview = transactionalPreviews.find((p) => p.templateName === templateName);
             const meta = TRANSACTIONAL_META[templateName];
             const fields = preview?.editableFields;
@@ -382,8 +466,17 @@ const EmailTemplateEditor = () => {
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
                   </div>
+                ) : previewError ? (
+                  <div className="text-center py-8 space-y-3">
+                    <p className="text-sm text-destructive">{previewError}</p>
+                    <Button variant="outline" size="sm" onClick={fetchTransactionalPreviews}>
+                      <RotateCcw className="h-3 w-3 mr-1" /> Tentar novamente
+                    </Button>
+                  </div>
                 ) : (
                   <div className="space-y-4">
+                    {!canEdit && <ReadOnlyNotice />}
+
                     {/* Meta info */}
                     <div className="rounded-lg border p-3" style={{ background: 'hsl(var(--color-bg-subtle))', borderColor: 'hsl(var(--color-border))' }}>
                       <div className="flex items-center gap-2 text-sm font-medium mb-2">
@@ -412,17 +505,31 @@ const EmailTemplateEditor = () => {
                               Dispara assim que o enriquecimento classifica o lead nos tiers selecionados.
                             </p>
                           </div>
-                          <Switch checked={tierEnabled} onCheckedChange={setTierEnabled} />
+                          {canEdit ? (
+                            <Switch checked={tierEnabled} onCheckedChange={setTierEnabled} aria-label="Enviar alerta automático" />
+                          ) : (
+                            <Badge variant={tierEnabled ? "default" : "outline"} className="text-[10px]">
+                              {tierEnabled ? "ativo" : "desativado"}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Destinatários (separados por vírgula)</Label>
-                          <Textarea
-                            value={tierRecipients}
-                            onChange={(e) => setTierRecipients(e.target.value)}
-                            placeholder={DEFAULT_TIER_RECIPIENTS}
-                            className="text-sm min-h-[60px]"
-                          />
+                          <Label className="text-xs text-muted-foreground">Destinatários {canEdit && "(separados por vírgula)"}</Label>
+                          {canEdit ? (
+                            <Textarea
+                              value={tierRecipients}
+                              onChange={(e) => setTierRecipients(e.target.value)}
+                              placeholder={DEFAULT_TIER_RECIPIENTS}
+                              className="text-sm min-h-[60px]"
+                            />
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {tierRecipientList.length > 0 ? tierRecipientList.map((r) => (
+                                <Badge key={r} variant="secondary" className="text-xs font-normal">{r}</Badge>
+                              )) : <span className="text-xs text-muted-foreground">—</span>}
+                            </div>
+                          )}
                         </div>
 
                         <div className="space-y-1">
@@ -434,6 +541,8 @@ const EmailTemplateEditor = () => {
                                 type="button"
                                 size="sm"
                                 variant={tierTiers.includes(t) ? "default" : "outline"}
+                                disabled={!canEdit}
+                                aria-pressed={tierTiers.includes(t)}
                                 onClick={() =>
                                   setTierTiers((prev) =>
                                     prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t].sort(),
@@ -446,20 +555,22 @@ const EmailTemplateEditor = () => {
                           </div>
                         </div>
 
-                        <Button
-                          onClick={() => handleSaveOverride(TIER_ALERT)}
-                          disabled={savingOverride === TIER_ALERT}
-                          size="sm"
-                          className="w-full"
-                        >
-                          <Save className="h-4 w-4 mr-1" />
-                          {savingOverride === TIER_ALERT ? "Salvando..." : "Salvar configuração"}
-                        </Button>
+                        {canEdit && (
+                          <Button
+                            onClick={() => handleSaveOverride(TIER_ALERT)}
+                            disabled={savingOverride === TIER_ALERT}
+                            size="sm"
+                            className="w-full"
+                          >
+                            <Save className="h-4 w-4 mr-1" />
+                            {savingOverride === TIER_ALERT ? "Salvando..." : "Salvar configuração"}
+                          </Button>
+                        )}
                       </div>
                     )}
 
-                    {/* Editable fields */}
-                    {fields && Object.keys(fields).length > 0 && (
+                    {/* Editable fields — managers only */}
+                    {canEdit && fields && Object.keys(fields).length > 0 && (
                       <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: 'hsl(var(--color-border))' }}>
                         <div className="flex items-center justify-between">
                           <Label className="text-sm font-semibold flex items-center gap-1.5">
@@ -536,8 +647,6 @@ const EmailTemplateEditor = () => {
               </TabsContent>
             );
           })}
-          </>
-          )}
         </Tabs>
       </DialogContent>
     </Dialog>
