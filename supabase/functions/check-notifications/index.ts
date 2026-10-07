@@ -1,3 +1,4 @@
+import { sendAppEmail } from "../_shared/transactional-email-templates/app-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -242,10 +243,7 @@ Deno.serve(async (req) => {
         const idempotencyKey = `daily-digest-${adminId}-${todayStr}`;
 
         try {
-          await supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "daily-digest",
-              recipientEmail: email,
+          await sendAppEmail(supabase, "daily-digest", email, {
               idempotencyKey,
               templateData: {
                 missions,
@@ -254,7 +252,6 @@ Deno.serve(async (req) => {
                 allResolved,
                 dateStr,
               },
-            },
           });
           console.log(`Digest sent to ${email}`);
         } catch (e) {
@@ -345,10 +342,7 @@ Deno.serve(async (req) => {
         const email = profileMap.get(adminId);
         if (!email) continue;
         try {
-          await supabase.functions.invoke("send-transactional-email", {
-            body: {
-              templateName: "daily-performance",
-              recipientEmail: email,
+          await sendAppEmail(supabase, "daily-performance", email, {
               idempotencyKey: `daily-perf-${adminId}-${todayStr}-${Date.now()}`,
               templateData: {
                 operators,
@@ -359,7 +353,6 @@ Deno.serve(async (req) => {
                 totalDeals,
                 whatsappText,
               },
-            },
           });
           console.log(`Performance report sent to ${email}`);
         } catch (e) {

@@ -1,3 +1,4 @@
+import { sendAppEmail } from "../_shared/transactional-email-templates/app-email.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -452,13 +453,9 @@ async function sendTierAlert(
 
   for (const recipientEmail of recipients) {
     try {
-      await supabase.functions.invoke("send-transactional-email", {
-        body: {
-          templateName: "lead-tier-alert",
-          recipientEmail,
-          idempotencyKey: `lead-tier-alert-${leadId}-${recipientEmail}`,
-          templateData,
-        },
+      await sendAppEmail(supabase, "lead-tier-alert", recipientEmail, {
+        idempotencyKey: `lead-tier-alert-${leadId}-${recipientEmail}`,
+        templateData,
       });
     } catch (e) {
       console.error("send tier alert failed for", recipientEmail, e);
