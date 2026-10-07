@@ -17,7 +17,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import {
   Building2, Mail, Phone, Briefcase, Calendar, Tag, User,
   Send, FileText, Linkedin, MessageSquare, CheckCircle, XCircle, CalendarPlus,
-  Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings,
+  Globe, Sparkles, Loader2, Copy, RotateCcw, AlertTriangle, Save, Settings, BookOpen,
   ChevronRight, Pencil, Check, X as XIcon, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -689,17 +689,15 @@ const LeadDrawer: React.FC<LeadDrawerProps> = ({ lead, open, onOpenChange, onQui
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="max-h-[50vh] overflow-y-auto space-y-3 pr-1">
-                        {canManageTemplates && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs gap-1 w-full justify-center"
-                            onClick={() => navigate("/admin/templates")}
-                          >
-                            <Settings className="h-3 w-3" />
-                            Gerenciar templates
-                          </Button>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs gap-1 w-full justify-center"
+                          onClick={() => navigate("/admin/templates")}
+                        >
+                          {canManageTemplates ? <Settings className="h-3 w-3" /> : <BookOpen className="h-3 w-3" />}
+                          {canManageTemplates ? "Gerenciar templates" : "Ver todos os templates"}
+                        </Button>
                         {templates.map((t) => {
                           const isEdited = t.id in edits;
                           const hasOverride = !!t.override_body;
