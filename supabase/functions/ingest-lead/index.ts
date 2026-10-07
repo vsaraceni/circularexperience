@@ -20,6 +20,7 @@ import {
   AuthError,
   checkCors,
 } from "../_shared/auth.ts";
+import { sendAppEmail } from "../_shared/transactional-email-templates/app-email.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { findDuplicate } from "../_shared/dedupe.ts";
 import {
@@ -353,14 +354,10 @@ Deno.serve(async (req) => {
     };
     for (const recipient of source.email_notificar) {
       EdgeRuntime.waitUntil(
-        supabase.functions
-          .invoke("send-transactional-email", {
-            body: {
-              templateName: "novo-lead-interno",
-              recipientEmail: recipient,
-              templateData,
-            },
-          })
+        sendAppEmail(supabase, "novo-lead-interno", recipient, {
+          templateData,
+          idempotencyKey: `novo-lead-interno-${leadId}-${recipient}`,
+        })
           .catch((err) => console.error("notify-email invoke failed:", err)),
       );
     }
