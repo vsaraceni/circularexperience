@@ -184,13 +184,16 @@ export default function UsersAdmin() {
         )}
         {u.approval_status === "approved" && (
           <>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground whitespace-nowrap">
+            <label
+              className="flex items-center gap-2 text-xs text-muted-foreground whitespace-nowrap"
+              title="Todos consultam e copiam os templates. Quem tem esta permissão também edita o padrão da equipe (cadências e e-mails do sistema)."
+            >
               <Switch
                 checked={templateManagers.includes(u.id)}
                 onCheckedChange={(v) => toggleTemplateManager(u.id, v)}
-                aria-label={`Permitir que ${u.full_name || u.email} gerencie templates`}
+                aria-label={`Permitir que ${u.full_name || u.email} edite templates e e-mails da equipe`}
               />
-              Gerenciar templates
+              Editar templates e e-mails
             </label>
             <Button
               size="sm"
