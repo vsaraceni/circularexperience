@@ -1,0 +1,6 @@
+# AGENTS.md — decisões técnicas do Muti CRM
+
+- Access control uses roles (`user_roles`) plus granular permissions (`user_permissions` + `has_permission()`); add a permission instead of a new role when a capability must be delegated to specific users — keeps RLS simple and avoids role explosion.
+- Templates and system e-mail templates follow "read for every approved CRM member, write for `manage_templates`": RLS on `message_templates`, `email_templates`, `email_template_overrides` grants SELECT via `is_crm_member()` and writes via `has_permission(uid,'manage_templates')`; the UI only toggles between consult/manage modes and never relies on client checks for security — so SDRs can consult scripts while the team default stays governed.
+- `preview-transactional-email` runs with `verify_jwt = false` and authorizes either `LOVABLE_API_KEY` or a user JWT belonging to an approved member (role + `approval_status = approved`), returning `editableFields` and `currentOverrides` — the Central de Emails depends on this contract; do not regress it to API-key-only when re-scaffolding e-mail templates.
+- Pages outside the main navbar (e.g. `/admin/templates`) use a local header with a "Voltar" that goes back in history (fallback `/admin/pipeline`) so entry from the lead drawer or the account menu both return to where the user came from.
