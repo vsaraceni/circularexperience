@@ -64,8 +64,8 @@ describe("normalize", () => {
     expect(normalizeEmail("  Maria@Empresa.COM ")).toBe("maria@empresa.com");
   });
 
-  it("extrai dígitos do telefone", () => {
-    expect(normalizePhone("+55 (11) 99999-8888")).toBe("5511999998888");
+  it("normaliza telefone para E.164 (com +)", () => {
+    expect(normalizePhone("+55 (11) 99999-8888")).toBe("+5511999998888");
   });
 
   it("retorna null pra telefone vazio", () => {
