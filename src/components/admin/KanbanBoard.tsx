@@ -281,15 +281,6 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
         break;
       }
       case "generate_proposal": {
-        const { data: existingProp } = await supabase
-          .from("proposals")
-          .select("id")
-          .eq("lead_id", lead.id)
-          .maybeSingle();
-        if (existingProp) {
-          toast.info("Este lead já possui uma proposta.");
-          return;
-        }
         onGenerateProposal(lead);
         break;
       }
