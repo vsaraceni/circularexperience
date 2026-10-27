@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 
+const sanitize = (h: string) => {
+  const doc = new DOMParser().parseFromString(h, "text/html");
+  doc.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach((n) => n.remove());
+  doc.querySelectorAll("*").forEach((el) => [...el.attributes].forEach((a) => { if (/^on/i.test(a.name) || /javascript:/i.test(a.value)) el.removeAttribute(a.name); }));
+  return doc.body.innerHTML;
+};
 const stripHtml = (h: string) => h.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 
 interface Props {
@@ -35,7 +41,7 @@ const AiPolishButton: React.FC<Props> = ({ field, label, value, title, company, 
       toast.error(msg);
       return;
     }
-    setSuggestion(data.html);
+    setSuggestion(sanitize(data.html));
   };
 
   return (
@@ -63,7 +69,7 @@ const AiPolishButton: React.FC<Props> = ({ field, label, value, title, company, 
             <div className="space-y-1">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Antes</p>
               <div className="prose prose-sm max-w-none border border-border rounded-md p-3 max-h-[55vh] overflow-auto bg-muted/30"
-                dangerouslySetInnerHTML={{ __html: original }} />
+                dangerouslySetInnerHTML={{ __html: sanitize(original) }} />
             </div>
             <div className="space-y-1">
               <p className="text-xs font-semibold uppercase text-primary">Depois</p>
