@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
     });
     const { data: u } = await sb.auth.getUser(auth.slice(7));
     if (!u?.user) return json({ error: "Não autenticado" }, 401);
-    const { data: member } = await sb.rpc("is_crm_member", { _user_id: u.user.id });
+    const { data: member } = await sb.rpc("is_crm_member", { _uid: u.user.id });
     if (!member) return json({ error: "Acesso negado" }, 403);
 
     const parsed = Body.safeParse(await req.json());
