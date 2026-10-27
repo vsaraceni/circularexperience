@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Copy, Search, FileText, ChevronDown, Package, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import AiPolishButton from "@/components/admin/AiPolishButton";
 import { supabase } from "@/integrations/supabase/client";
 import type { Proposal } from "@/pages/admin/Proposals";
 
@@ -528,6 +529,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
           <div className="flex items-center gap-2">
             <Label>Definição do Escopo</Label>
             <ImportButton field="scope" proposals={recentProposals} onSelect={(v) => set("scope", v)} />
+            <AiPolishButton field="scope" label="Definição do Escopo" value={form.scope} title={form.title} company={form.company_name} onApply={(v) => set("scope", v)} />
           </div>
           <RichTextEditor
             value={form.scope}
@@ -551,6 +553,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ proposal, onSave, onCancel,
           <div className="flex items-center gap-2">
             <Label>Considerações</Label>
             <ImportButton field="considerations" proposals={recentProposals} onSelect={(v) => set("considerations", v)} />
+            <AiPolishButton field="considerations" label="Considerações" value={form.considerations} title={form.title} company={form.company_name} onApply={(v) => set("considerations", v)} />
           </div>
           <RichTextEditor
             value={form.considerations}
