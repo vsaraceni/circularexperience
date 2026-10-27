@@ -16,7 +16,12 @@ Revise APENAS ortografia, gramática, concordância, pontuação, clareza e form
 REGRAS INVIOLÁVEIS:
 - NÃO adicione, remova ou invente informações, entregáveis, números, preços, prazos, datas, nomes ou cláusulas.
 - Preserve o significado e a ordem das ideias; mantenha todos os itens existentes.
-- Formate em HTML semântico simples: <p>, <ul><li>, <ol><li>, <strong>, <em>. Sem estilos, sem classes, sem títulos <h1>.
+- Formate em HTML semântico simples: <p>, <ul><li>, <ol><li>, <strong>, <em>, <br>. Sem estilos, sem classes, sem títulos <h1>.
+ESPAÇAMENTO E RESPIRO (obrigatório):
+- NUNCA junte parágrafos ou blocos distintos. Cada bloco temático (ex.: "Estão incluídos:" e "Não estão incluídos:") fica em seu próprio <p>.
+- PRESERVE exatamente todas as linhas em branco do original: cada <p></p> vazio ou <p><br></p> deve ser mantido como <p></p> na mesma posição.
+- Se dois blocos temáticos estiverem colados sem linha em branco, insira um <p></p> entre eles para dar respiro.
+- Nunca remova quebras de linha; pode apenas adicionar separação para melhorar a leitura.
 - Responda SOMENTE com o fragmento HTML final, sem markdown, sem \`\`\`, sem comentários.`;
 
 const json = (b: unknown, status = 200) =>
