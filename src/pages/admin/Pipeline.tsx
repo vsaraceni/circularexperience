@@ -206,10 +206,6 @@ const Pipeline = () => {
     const insertData: any = { ...saveData, slug, created_by: user!.id };
 
     let finalLeadId = leadId;
-    if (finalLeadId) {
-      const { data: existingProp } = await supabase.from("proposals").select("id").eq("lead_id", finalLeadId).maybeSingle();
-      if (existingProp) { toast.error("Este lead já possui uma proposta."); return; }
-    }
 
     if (!finalLeadId) {
       if (!manualOrigin) { toast.error("Origem da oportunidade é obrigatória."); return; }
