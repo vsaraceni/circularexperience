@@ -535,7 +535,9 @@ const PriorityListView: React.FC<PriorityListViewProps> = ({
   const handleSubmissionConfirm = async (sentAt: Date, channels: string[], notes: string) => {
     if (!submissionLead) return;
     const now = new Date().toISOString();
-    const proposal = proposals.find(p => p.lead_id === submissionLead.id);
+    const proposal = proposals
+      .filter(p => p.lead_id === submissionLead.id)
+      .sort((a: any, b: any) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))[0];
     await supabase.from("proposal_submissions" as any).insert({ lead_id: submissionLead.id, proposal_id: proposal?.id || null, sent_at: sentAt.toISOString().split("T")[0], channels, notes, created_by: userId });
     await supabase.from("leads").update({ kanban_stage: "nutricao", stage_updated_at: now, last_activity_at: now }).eq("id", submissionLead.id);
     await supabase.from("lead_activities").insert({ lead_id: submissionLead.id, user_id: userId, activity_type: "proposta_enviada", content: `Proposta enviada via ${channels.join(", ")}` });

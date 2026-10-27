@@ -417,7 +417,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (!submissionLead) return;
     const now = new Date().toISOString();
     try {
-      const proposal = proposals.find((p) => p.lead_id === submissionLead.id);
+      const proposal = proposals
+        .filter((p) => p.lead_id === submissionLead.id)
+        .sort((a: any, b: any) => String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")))[0];
 
       await supabase.from("proposal_submissions" as any).insert({
         lead_id: submissionLead.id,
